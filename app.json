@@ -11,8 +11,10 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.workly.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#08111F",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -31,9 +33,12 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#08111F"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-status-bar",
+      "./plugins/withAndroidReleaseSigning.js"
     ],
     "experiments": {
       "typedRoutes": true

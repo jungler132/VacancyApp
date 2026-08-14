@@ -2,10 +2,25 @@
   "name": "workly",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "apk": "node scripts/build-apk.cjs"
+  },
   "dependencies": {
+    "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@reduxjs/toolkit": "^2.12.0",
     "expo": "~57.0.12",
+    "expo-blur": "~57.0.2",
+    "expo-clipboard": "~57.0.1",
     "expo-constants": "~57.0.10",
     "expo-font": "~57.0.1",
+    "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.5",
     "expo-router": "~57.0.12",
     "expo-splash-screen": "~57.0.6",
@@ -19,17 +34,11 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.10.1"
+    "react-native-worklets": "0.10.1",
+    "react-redux": "^9.3.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
-  },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "private": true
+  }
 }
