@@ -1,55 +1,33 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
-import { enabledSourceIds } from '@/lib/api/aggregator';
-import { apiCategory, toggleCategory } from '@/lib/catalog';
+import { apiCategory } from '@/lib/catalog';
 import {
-  DEFAULT_EXTRA_FILTERS,
-  extraFiltersActive,
-  filterFeedIds,
-  type AgeFilter,
-  type ExtraFilters,
-} from '@/lib/filters';
-import { CACHE_TTL_MS, clearJobsCache, fetchFeed, makeFeedKey } from '@/lib/store/jobsSlice';
+  closeFilters,
+  openFilters,
+  resetFilters,
+  setExtra,
+  setQuery,
+  setRegion,
+  toggleFilterCategory,
+} from '@/lib/store/filtersSlice';
+import { CACHE_TTL_MS, clearJobsCache, fetchFeed } from '@/lib/store/jobsSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import {
+  selectActiveFeed,
+  selectEnabledSources,
+  selectFiltersActive,
+  selectVisibleIds,
+} from '@/lib/store/selectors';
+import type { ExtraFilters } from '@/lib/filters';
 import type { CategoryId, RegionId } from '@/lib/types';
 
-const EMPTY_IDS: string[] = [];
-
-export function useJobsFeed() {
+export function useJobsQuery() {
   const dispatch = useAppDispatch();
-  const endLock = useRef(false);
-  const [query, setQuery] = useState('');
-  const [region, setRegion] = useState<RegionId>('cis');
-  const [categories, setCategories] = useState<CategoryId[]>(['all']);
-  const [extra, setExtra] = useState<ExtraFilters>(DEFAULT_EXTRA_FILTERS);
-  const [sheetOpen, setSheetOpen] = useState(false);
-
+  const query = useAppSelector((state) => state.filters.query);
+  const region = useAppSelector((state) => state.filters.region);
+  const categories = useAppSelector((state) => state.filters.categories);
+  const enabledSources = useAppSelector(selectEnabledSources);
   const category = apiCategory(categories);
-  const disabledIds = useAppSelector((state) => state.sources.disabledIds);
-  const enabledSources = useMemo(() => enabledSourceIds(disabledIds), [disabledIds]);
-  const key = useMemo(
-    () => makeFeedKey(query, region, category, enabledSources),
-    [query, region, category, enabledSources],
-  );
-  const feed = useAppSelector((state) => state.jobs.feeds[key]);
-  const byId = useAppSelector((state) => state.jobs.byId);
-  const ids = feed?.ids ?? EMPTY_IDS;
-  const status = feed?.status ?? 'idle';
-  const hasMore = feed?.hasMore ?? false;
-  const page = feed?.page ?? 0;
-
-  const visibleIds = useMemo(
-    () => filterFeedIds(ids, byId, categories, extra),
-    [ids, byId, categories, extra],
-  );
-
-  const loading = status === 'loading' && ids.length === 0;
-  const loadingMore = status === 'loadingMore';
-  const refreshing = status === 'refreshing';
-  const cacheAge = feed?.fetchedAt ? Date.now() - feed.fetchedAt : 0;
-  const fromCache = status === 'ready' && cacheAge > 1500 && cacheAge < CACHE_TTL_MS;
-  const filtersActive =
-    extraFiltersActive(extra) || categories.length > 1 || categories[0] !== 'all' || region !== 'cis';
 
   useEffect(() => {
     const action = dispatch(
@@ -64,6 +42,49 @@ export function useJobsFeed() {
     );
     return () => action.abort();
   }, [dispatch, query, region, category, enabledSources]);
+}
+
+export function useFilterSheet() {
+  const dispatch = useAppDispatch();
+  const open = useAppSelector((state) => state.filters.sheetOpen);
+  const region = useAppSelector((state) => state.filters.region);
+  const categories = useAppSelector((state) => state.filters.categories);
+  const extra = useAppSelector((state) => state.filters.extra);
+
+  return {
+    open,
+    region,
+    categories,
+    extra,
+    setRegion: useCallback((value: RegionId) => dispatch(setRegion(value)), [dispatch]),
+    onToggleCategory: useCallback((id: CategoryId) => dispatch(toggleFilterCategory(id)), [dispatch]),
+    setExtra: useCallback((value: ExtraFilters) => dispatch(setExtra(value)), [dispatch]),
+    onClose: useCallback(() => dispatch(closeFilters()), [dispatch]),
+    onReset: useCallback(() => dispatch(resetFilters()), [dispatch]),
+  };
+}
+
+export function useJobsFeed() {
+  const dispatch = useAppDispatch();
+  const endLock = useRef(false);
+  const query = useAppSelector((state) => state.filters.query);
+  const region = useAppSelector((state) => state.filters.region);
+  const categories = useAppSelector((state) => state.filters.categories);
+  const enabledSources = useAppSelector(selectEnabledSources);
+  const feed = useAppSelector(selectActiveFeed);
+  const visibleIds = useAppSelector(selectVisibleIds);
+  const filtersActive = useAppSelector(selectFiltersActive);
+  const category = apiCategory(categories);
+
+  const ids = feed.ids;
+  const status = feed.status;
+  const hasMore = feed.hasMore;
+  const page = feed.page;
+  const loading = status === 'loading' && ids.length === 0;
+  const loadingMore = status === 'loadingMore';
+  const refreshing = status === 'refreshing';
+  const cacheAge = feed.fetchedAt ? Date.now() - feed.fetchedAt : 0;
+  const fromCache = status === 'ready' && cacheAge > 1500 && cacheAge < CACHE_TTL_MS;
 
   const refresh = useCallback(() => {
     dispatch(
@@ -109,46 +130,19 @@ export function useJobsFeed() {
     );
   }, [dispatch, query, region, category, enabledSources]);
 
-  const onToggleCategory = useCallback((id: CategoryId) => {
-    setCategories((current) => toggleCategory(current, id));
-  }, []);
-
-  const setMaxAgeDays = useCallback((maxAgeDays: AgeFilter) => {
-    setExtra((current) => (current.maxAgeDays === maxAgeDays ? current : { ...current, maxAgeDays }));
-  }, []);
-
-  const openSheet = useCallback(() => setSheetOpen(true), []);
-  const closeSheet = useCallback(() => setSheetOpen(false), []);
-
-  const resetFilters = useCallback(() => {
-    setCategories(['all']);
-    setExtra(DEFAULT_EXTRA_FILTERS);
-    setRegion('cis');
-  }, []);
-
   return {
     query,
-    setQuery,
-    region,
-    setRegion,
-    categories,
-    extra,
-    setExtra,
-    setMaxAgeDays,
-    sheetOpen,
-    openSheet,
-    closeSheet,
+    setQuery: useCallback((value: string) => dispatch(setQuery(value)), [dispatch]),
+    filtersActive,
     visibleIds,
     status,
     loading,
     loadingMore,
     refreshing,
     fromCache,
-    filtersActive,
     refresh,
     loadMore,
     resetCache,
-    onToggleCategory,
-    resetFilters,
+    openSheet: useCallback(() => dispatch(openFilters()), [dispatch]),
   };
 }

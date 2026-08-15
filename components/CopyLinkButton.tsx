@@ -1,8 +1,6 @@
 import { memo, useCallback, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Button } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
-
-import { colors, fonts, radius } from '@/lib/theme';
 
 export const CopyLinkButton = memo(function CopyLinkButton({
   url,
@@ -25,45 +23,13 @@ export const CopyLinkButton = memo(function CopyLinkButton({
   if (!url) return null;
 
   return (
-    <Pressable
-      onPress={(event) => {
-        event.stopPropagation();
-        copy();
-      }}
-      hitSlop={8}
-      style={({ pressed }) => [compact ? styles.compact : styles.full, pressed && styles.pressed]}>
-      <Text style={compact ? styles.compactText : styles.fullText}>
-        {copied ? 'Скопировано' : compact ? 'Ссылка' : 'Скопировать ссылку'}
-      </Text>
-    </Pressable>
+    <Button
+      mode={compact ? 'text' : 'outlined'}
+      compact={compact}
+      icon={copied ? 'check' : 'content-copy'}
+      onPress={copy}
+      style={compact ? undefined : { marginTop: 10 }}>
+      {copied ? 'Скопировано' : compact ? 'Ссылка' : 'Скопировать ссылку'}
+    </Button>
   );
-});
-
-const styles = StyleSheet.create({
-  pressed: { opacity: 0.72 },
-  compact: {
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: radius.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  compactText: {
-    color: colors.muted,
-    fontSize: 11,
-    fontFamily: fonts.semibold,
-  },
-  full: {
-    marginTop: 10,
-    borderColor: colors.cardBorder,
-    borderWidth: 1.5,
-    borderRadius: radius.md,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  fullText: {
-    color: colors.text,
-    fontFamily: fonts.semibold,
-    fontSize: 15,
-  },
 });

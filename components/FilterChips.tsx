@@ -1,31 +1,32 @@
 import { memo, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
-import { colors, fonts, radius } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 type Item<T extends string | number> = { id: T; label: string; icon?: string };
 
-const Chip = memo(function Chip({
+export const SelectChip = memo(function SelectChip({
   id,
   label,
-  icon,
-  active,
+  selected,
   compact,
-  onPress,
+  icon,
+  onChange,
 }: {
   id: string | number;
   label: string;
-  icon?: string;
-  active: boolean;
+  selected: boolean;
   compact?: boolean;
-  onPress: (id: string | number) => void;
+  icon?: string;
+  onChange: (id: string | number) => void;
 }) {
   return (
     <Pressable
-      onPress={() => onPress(id)}
-      style={[styles.chip, compact && styles.chipSm, active && styles.active]}>
-      {icon && !compact ? <Text style={styles.icon}>{icon}</Text> : null}
-      <Text style={[styles.label, compact && styles.labelSm, active && styles.labelActive]}>{label}</Text>
+      onPress={() => onChange(id)}
+      style={[styles.chip, compact && styles.chipSm, selected && styles.selected]}>
+      <Text style={[styles.label, compact && styles.labelSm, selected && styles.labelOn]}>
+        {icon ? `${icon}  ${label}` : label}
+      </Text>
     </Pressable>
   );
 });
@@ -48,19 +49,19 @@ function FilterChipsInner<T extends string | number>({
   compact?: boolean;
 }) {
   const selected = values ?? (value != null ? [value] : []);
-  const press = onToggle ?? onChange;
+  const press = (onToggle ?? onChange) as ((id: string | number) => void) | undefined;
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
       {items.map((item) => (
-        <Chip
-          key={item.id}
+        <SelectChip
+          key={String(item.id)}
           id={item.id}
           label={item.label}
           icon={item.icon}
           compact={compact}
-          active={selected.includes(item.id)}
-          onPress={press as (id: string | number) => void}
+          selected={selected.includes(item.id)}
+          onChange={press ?? noop}
         />
       ))}
       {trailing}
@@ -68,31 +69,23 @@ function FilterChipsInner<T extends string | number>({
   );
 }
 
+const noop = () => undefined;
+
 export const FilterChips = memo(FilterChipsInner) as typeof FilterChipsInner;
 
 const styles = StyleSheet.create({
   row: { gap: 6, paddingRight: 8, alignItems: 'center' },
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.chip,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.chipBorder,
+    backgroundColor: colors.chip,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  chipSm: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  active: {
-    backgroundColor: colors.accentDim,
-    borderColor: colors.accent,
-  },
-  icon: { fontSize: 12 },
-  label: { color: colors.muted, fontSize: 13, fontFamily: fonts.semibold },
+  chipSm: { paddingHorizontal: 10, paddingVertical: 5 },
+  selected: { backgroundColor: colors.accentDim, borderColor: colors.accent },
+  label: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   labelSm: { fontSize: 12 },
-  labelActive: { color: colors.accent },
+  labelOn: { color: colors.accent },
 });

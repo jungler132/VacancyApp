@@ -1,19 +1,21 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FAB } from 'react-native-paper';
 
 import { EmptyState } from '@/components/EmptyState';
-import { FiltersSheet } from '@/components/FiltersSheet';
 import { JobCard } from '@/components/JobCard';
 import { JobSkeletonList } from '@/components/JobSkeleton';
 import { JobsHeader } from '@/components/JobsHeader';
 import { ScreenBackdrop } from '@/components/ScreenBackdrop';
 import { useJobsFeed } from '@/lib/hooks/useJobsFeed';
+import { useTabBarLayout } from '@/lib/layout';
 import { colors } from '@/lib/theme';
 
 export default function JobsScreen() {
-  const headerHRef = useRef(112);
-  const [headerH, setHeaderH] = useState(112);
+  const headerHRef = useRef(88);
+  const [headerH, setHeaderH] = useState(88);
   const feed = useJobsFeed();
+  const tabBar = useTabBarLayout();
 
   const renderItem = useCallback(({ item }: { item: string }) => <JobCard jobId={item} />, []);
   const keyExtractor = useCallback((item: string) => item, []);
@@ -30,7 +32,10 @@ export default function JobsScreen() {
         data={feed.visibleIds}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        contentContainerStyle={[styles.list, { paddingTop: headerH + 8, paddingBottom: 108 }]}
+        contentContainerStyle={[
+          styles.list,
+          { paddingTop: headerH + 8, paddingBottom: tabBar.listPaddingBottom + 64 },
+        ]}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="none"
         initialNumToRender={8}
@@ -63,36 +68,24 @@ export default function JobsScreen() {
           )
         }
         ListFooterComponent={
-          feed.loadingMore ? (
-            <ActivityIndicator color={colors.accent} style={{ marginVertical: 16 }} />
-          ) : (
-            <View style={{ height: 8 }} />
-          )
+          feed.loadingMore ? <ActivityIndicator style={{ marginVertical: 16 }} /> : <View style={{ height: 8 }} />
         }
       />
 
       <View style={styles.headerWrap} onLayout={(event) => onHeaderLayout(event.nativeEvent.layout.height)}>
         <JobsHeader
-          maxAgeDays={feed.extra.maxAgeDays}
-          fromCache={feed.fromCache}
           filtersActive={feed.filtersActive}
           onSearch={feed.setQuery}
-          onChangeAge={feed.setMaxAgeDays}
           onOpenFilters={feed.openSheet}
-          onResetCache={feed.resetCache}
         />
       </View>
 
-      <FiltersSheet
-        open={feed.sheetOpen}
-        region={feed.region}
-        categories={feed.categories}
-        extra={feed.extra}
-        onChangeRegion={feed.setRegion}
-        onToggleCategory={feed.onToggleCategory}
-        onChangeExtra={feed.setExtra}
-        onClose={feed.closeSheet}
-        onReset={feed.resetFilters}
+      <FAB
+        icon="refresh"
+        onPress={feed.resetCache}
+        loading={feed.refreshing}
+        style={[styles.fab, { bottom: tabBar.height + 12 }]}
+        accessibilityLabel="Обновить вакансии"
       />
     </View>
   );
@@ -102,4 +95,5 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   list: { paddingHorizontal: 16 },
   headerWrap: { position: 'absolute', top: 0, left: 0, right: 0 },
+  fab: { position: 'absolute', right: 16 },
 });

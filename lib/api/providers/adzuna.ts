@@ -18,7 +18,7 @@ type AdzunaJob = {
 type AdzunaResponse = { results?: AdzunaJob[] };
 
 const REGION_COUNTRIES: Record<string, string[]> = {
-  cis: ['ru'],
+  cis: ['pl', 'de'],
   europe: ['de', 'gb', 'fr', 'pl', 'nl'],
   west: ['us', 'ca', 'gb', 'au'],
   asia: ['in', 'sg'],

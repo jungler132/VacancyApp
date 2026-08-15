@@ -1,3 +1,5 @@
+import { MD3DarkTheme, configureFonts } from 'react-native-paper';
+
 export const colors = {
   bg: '#07090F',
   bgMid: '#0B1220',
@@ -32,10 +34,10 @@ export const fonts = {
 };
 
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 22,
+  sm: 4,
+  md: 6,
+  lg: 8,
+  xl: 10,
 };
 
 export const shadows = {
@@ -64,3 +66,47 @@ export const regionColor: Record<string, string> = {
   all: '#00D4A1',
   global: '#8B9BB4',
 };
+
+export const paperTheme = {
+  ...MD3DarkTheme,
+  roundness: 6,
+  fonts: configureFonts({
+    config: {
+      displaySmall: { fontFamily: fonts.bold },
+      headlineSmall: { fontFamily: fonts.bold },
+      titleLarge: { fontFamily: fonts.bold },
+      titleMedium: { fontFamily: fonts.semibold },
+      titleSmall: { fontFamily: fonts.semibold },
+      bodyLarge: { fontFamily: fonts.regular },
+      bodyMedium: { fontFamily: fonts.regular },
+      bodySmall: { fontFamily: fonts.regular },
+      labelLarge: { fontFamily: fonts.semibold },
+      labelMedium: { fontFamily: fonts.medium },
+      labelSmall: { fontFamily: fonts.medium },
+    },
+  }),
+  colors: {
+    ...MD3DarkTheme.colors,
+    primary: colors.accent,
+    onPrimary: colors.accentText,
+    primaryContainer: colors.accentDim,
+    onPrimaryContainer: colors.accent,
+    secondary: colors.blue,
+    background: colors.bg,
+    surface: colors.card,
+    surfaceVariant: '#1A2436',
+    onSurface: colors.text,
+    onSurfaceVariant: colors.muted,
+    outline: colors.chipBorder,
+    outlineVariant: colors.cardBorder,
+    error: colors.danger,
+    elevation: {
+      ...MD3DarkTheme.colors.elevation,
+      level0: 'transparent',
+      level1: colors.card,
+      level2: '#1A2436',
+      level3: '#1E2A3D',
+    },
+  },
+};
+

@@ -10,9 +10,10 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
+import { PaperProvider } from 'react-native-paper';
 
 import { store } from '@/lib/store';
-import { colors, fonts } from '@/lib/theme';
+import { colors, fonts, paperTheme } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -50,20 +51,22 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <ThemeProvider value={navTheme}>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: colors.bg },
-            headerTintColor: colors.text,
-            headerShadowVisible: false,
-            headerTitleStyle: { fontFamily: fonts.semibold, fontSize: 18 },
-            contentStyle: { backgroundColor: colors.bg },
-          }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="job/[id]" options={{ title: 'Вакансия' }} />
-        </Stack>
-      </ThemeProvider>
+      <PaperProvider theme={paperTheme}>
+        <ThemeProvider value={navTheme}>
+          <StatusBar style="light" />
+          <Stack
+            screenOptions={{
+              headerStyle: { backgroundColor: colors.bg },
+              headerTintColor: colors.text,
+              headerShadowVisible: false,
+              headerTitleStyle: { fontFamily: fonts.semibold, fontSize: 18 },
+              contentStyle: { backgroundColor: colors.bg },
+            }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="job/[id]" options={{ title: 'Вакансия' }} />
+          </Stack>
+        </ThemeProvider>
+      </PaperProvider>
     </Provider>
   );
 }

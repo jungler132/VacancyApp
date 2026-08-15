@@ -3,6 +3,7 @@ import { configureStore, createListenerMiddleware, isAnyOf } from '@reduxjs/tool
 import jobsReducer, { rememberJobs } from './jobsSlice';
 import savedReducer, { hydrateSaved, persistSaved, toggleSaved } from './savedSlice';
 import sourcesReducer, { hydrateSources, persistDisabledSources, toggleSource } from './sourcesSlice';
+import filtersReducer from './filtersSlice';
 
 const listener = createListenerMiddleware();
 
@@ -30,6 +31,7 @@ export const store = configureStore({
     jobs: jobsReducer,
     saved: savedReducer,
     sources: sourcesReducer,
+    filters: filtersReducer,
   },
   middleware: (getDefault) =>
     getDefault({

@@ -38,7 +38,8 @@
       ],
       "expo-font",
       "expo-status-bar",
-      "./plugins/withAndroidReleaseSigning.js"
+      "./plugins/withAndroidReleaseSigning.js",
+      "@react-native-vector-icons/material-design-icons"
     ],
     "experiments": {
       "typedRoutes": true

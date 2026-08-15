@@ -1,7 +1,9 @@
-import { memo } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { memo, useCallback, useEffect } from 'react';
+import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
+import { SelectChip } from '@/components/FilterChips';
 import { CATEGORIES, REGIONS } from '@/lib/catalog';
 import {
   AGE_PRESETS,
@@ -27,6 +29,10 @@ const EMPLOYMENT: { id: EmploymentFilter; label: string }[] = [
   { id: 'shift', label: 'Вахта' },
 ];
 
+const SHEET_TRAVEL = Dimensions.get('window').height;
+const OPEN_CFG = { duration: 220, easing: Easing.out(Easing.cubic) };
+const CLOSE_CFG = { duration: 180, easing: Easing.in(Easing.cubic) };
+
 export const FiltersSheet = memo(function FiltersSheet({
   open,
   region,
@@ -49,122 +55,160 @@ export const FiltersSheet = memo(function FiltersSheet({
   onReset: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const progress = useSharedValue(0);
   const dirty =
     extraFiltersActive(extra) || categories.length > 1 || categories[0] !== 'all' || region !== 'cis';
 
+  useEffect(() => {
+    progress.value = withTiming(open ? 1 : 0, open ? OPEN_CFG : CLOSE_CFG);
+  }, [open, progress]);
+
+  const close = useCallback(() => {
+    if (open) onClose();
+  }, [onClose, open]);
+
+  const onAge = useCallback(
+    (id: string | number) => onChangeExtra({ ...extra, maxAgeDays: id as ExtraFilters['maxAgeDays'] }),
+    [extra, onChangeExtra],
+  );
+  const onSalary = useCallback(
+    (id: string | number) => {
+      const next = SALARY_PRESETS.find((item) => item.id === id);
+      if (next) onChangeExtra({ ...extra, salaryMin: next.value });
+    },
+    [extra, onChangeExtra],
+  );
+  const onFormat = useCallback(
+    (id: string | number) => onChangeExtra({ ...extra, format: id as WorkFormat }),
+    [extra, onChangeExtra],
+  );
+  const onEmployment = useCallback(
+    (id: string | number) => onChangeExtra({ ...extra, employment: id as EmploymentFilter }),
+    [extra, onChangeExtra],
+  );
+
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: (1 - progress.value) * SHEET_TRAVEL }],
+  }));
+
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.root}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <View style={styles.handle} />
-          <View style={styles.head}>
-            <Text style={styles.title}>Фильтры</Text>
-            {dirty ? (
-              <Pressable onPress={onReset} hitSlop={8}>
-                <Text style={styles.reset}>Сбросить</Text>
-              </Pressable>
-            ) : null}
-          </View>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.section}>Регион</Text>
-            <View style={styles.wrap}>
-              {REGIONS.map((item) => {
-                const active = region === item.id;
-                return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => onChangeRegion(item.id)}
-                    style={[styles.chip, active && styles.chipOn]}>
-                    <Text style={[styles.chipText, active && styles.chipTextOn]}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.section}>Сферы</Text>
-            <View style={styles.wrap}>
-              {CATEGORIES.map((item) => {
-                const active = categories.includes(item.id);
-                return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => onToggleCategory(item.id)}
-                    style={[styles.chip, active && styles.chipOn]}>
-                    <Text style={styles.icon}>{item.icon}</Text>
-                    <Text style={[styles.chipText, active && styles.chipTextOn]}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.section}>Давность</Text>
-            <View style={styles.wrap}>
-              {AGE_PRESETS.map((item) => {
-                const active = extra.maxAgeDays === item.id;
-                return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => onChangeExtra({ ...extra, maxAgeDays: item.id })}
-                    style={[styles.chip, active && styles.chipOn]}>
-                    <Text style={[styles.chipText, active && styles.chipTextOn]}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.section}>Зарплата</Text>
-            <View style={styles.wrap}>
-              {SALARY_PRESETS.map((item) => {
-                const active = extra.salaryMin === item.value;
-                return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => onChangeExtra({ ...extra, salaryMin: item.value })}
-                    style={[styles.chip, active && styles.chipOn]}>
-                    <Text style={[styles.chipText, active && styles.chipTextOn]}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.section}>Формат</Text>
-            <View style={styles.wrap}>
-              {FORMATS.map((item) => {
-                const active = extra.format === item.id;
-                return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => onChangeExtra({ ...extra, format: item.id })}
-                    style={[styles.chip, active && styles.chipOn]}>
-                    <Text style={[styles.chipText, active && styles.chipTextOn]}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.section}>Занятость</Text>
-            <View style={styles.wrap}>
-              {EMPLOYMENT.map((item) => {
-                const active = extra.employment === item.id;
-                return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => onChangeExtra({ ...extra, employment: item.id })}
-                    style={[styles.chip, active && styles.chipOn]}>
-                    <Text style={[styles.chipText, active && styles.chipTextOn]}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </ScrollView>
-          <Pressable style={styles.done} onPress={onClose}>
-            <Text style={styles.doneText}>Готово</Text>
-          </Pressable>
+    <View pointerEvents={open ? 'auto' : 'none'} style={styles.root}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={close}>
+        <Animated.View style={[styles.backdrop, backdropStyle]} />
+      </Pressable>
+      <Animated.View style={[styles.sheet, sheetStyle, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={styles.handle} />
+        <View style={styles.head}>
+          <Text style={styles.title}>Фильтры</Text>
+          {dirty ? (
+            <Pressable onPress={onReset} hitSlop={8}>
+              <Text style={styles.reset}>Сбросить</Text>
+            </Pressable>
+          ) : null}
         </View>
-      </View>
-    </Modal>
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <Text style={styles.section}>Регион</Text>
+          <View style={styles.wrap}>
+            {REGIONS.map((item) => (
+              <SelectChip
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                selected={region === item.id}
+                onChange={onChangeRegion as (id: string | number) => void}
+              />
+            ))}
+          </View>
+          <Text style={styles.section}>Сферы</Text>
+          <View style={styles.wrap}>
+            {CATEGORIES.map((item) => (
+              <SelectChip
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                icon={item.icon}
+                selected={categories.includes(item.id)}
+                onChange={onToggleCategory as (id: string | number) => void}
+              />
+            ))}
+          </View>
+          <Text style={styles.section}>Давность</Text>
+          <View style={styles.wrap}>
+            {AGE_PRESETS.map((item) => (
+              <SelectChip
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                selected={extra.maxAgeDays === item.id}
+                onChange={onAge}
+              />
+            ))}
+          </View>
+          <Text style={styles.section}>Зарплата</Text>
+          <View style={styles.wrap}>
+            {SALARY_PRESETS.map((item) => (
+              <SelectChip
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                selected={extra.salaryMin === item.value}
+                onChange={onSalary}
+              />
+            ))}
+          </View>
+          <Text style={styles.section}>Формат</Text>
+          <View style={styles.wrap}>
+            {FORMATS.map((item) => (
+              <SelectChip
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                selected={extra.format === item.id}
+                onChange={onFormat}
+              />
+            ))}
+          </View>
+          <Text style={styles.section}>Занятость</Text>
+          <View style={styles.wrap}>
+            {EMPLOYMENT.map((item) => (
+              <SelectChip
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                selected={extra.employment === item.id}
+                onChange={onEmployment}
+              />
+            ))}
+          </View>
+        </ScrollView>
+        <Pressable onPress={close} style={styles.done}>
+          <Text style={styles.doneText}>Готово</Text>
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
+  root: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: 'flex-end',
+    zIndex: 50,
+    elevation: 50,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
   sheet: {
     backgroundColor: '#121A28',
     borderTopLeftRadius: radius.xl,
@@ -172,8 +216,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 8,
     maxHeight: '82%',
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
   },
   handle: {
     alignSelf: 'center',
@@ -196,25 +238,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    backgroundColor: colors.chip,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  chipOn: { backgroundColor: colors.accentDim, borderColor: colors.accent },
-  icon: { fontSize: 12 },
-  chipText: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 13 },
-  chipTextOn: { color: colors.accent },
   done: {
     marginTop: 16,
     backgroundColor: colors.accent,
-    borderRadius: radius.md,
+    borderRadius: 6,
     paddingVertical: 14,
     alignItems: 'center',
   },

@@ -35,9 +35,23 @@ export function makeFeedKey(query: string, region: RegionId, category: CategoryI
   return `v6|${region}|${category}|${query.trim().toLowerCase()}|${[...sources].sort().join(',')}`;
 }
 
+function sameJob(prev: Job, next: Job) {
+  return (
+    prev.title === next.title &&
+    prev.company === next.company &&
+    prev.location === next.location &&
+    prev.remote === next.remote &&
+    prev.salary === next.salary &&
+    prev.publishedAt === next.publishedAt &&
+    prev.url === next.url &&
+    prev.excerpt === next.excerpt
+  );
+}
+
 function upsertJobs(state: JobsState, jobs: Job[]) {
   for (const job of jobs) {
     const prev = state.byId[job.id];
+    if (prev && sameJob(prev, job)) continue;
     state.byId[job.id] = prev ? { ...prev, ...job } : job;
   }
 }
