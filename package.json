@@ -11,14 +11,13 @@
     "apk": "node scripts/build-apk.cjs"
   },
   "dependencies": {
-    "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-vector-icons/material-design-icons": "^13.1.2",
     "@reduxjs/toolkit": "^2.12.0",
     "expo": "~57.0.12",
     "expo-background-task": "~57.0.10",
-    "expo-blur": "~57.0.2",
+    "expo-build-properties": "~57.0.11",
     "expo-clipboard": "~57.0.1",
     "expo-constants": "~57.0.10",
     "expo-font": "~57.0.1",
@@ -28,7 +27,6 @@
     "expo-router": "~57.0.12",
     "expo-splash-screen": "~57.0.6",
     "expo-status-bar": "~57.0.1",
-    "expo-symbols": "~57.0.2",
     "expo-task-manager": "~57.0.10",
     "expo-web-browser": "~57.0.2",
     "react": "19.2.3",

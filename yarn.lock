@@ -586,11 +586,6 @@
     deepmerge "^3.2.0"
     hoist-non-react-statics "^3.3.0"
 
-"@expo-google-fonts/ibm-plex-sans@^0.4.1":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@expo-google-fonts/ibm-plex-sans/-/ibm-plex-sans-0.4.1.tgz#950301c395e0f436c0c8726af8ee9d91b9b018f7"
-  integrity sha512-allsuhZbvKoKDTB/U8creFVYYzhI97Nw9MgyyNjFzqISNc/sURpA7ZY37Rr+IRI567OV9BWQ/ioUCjAQrVGRbw==
-
 "@expo-google-fonts/inter@^0.4.2":
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/@expo-google-fonts/inter/-/inter-0.4.2.tgz#2d37ffb1cb16600cff616b6c4c0efee9b6c47c28"
@@ -2210,10 +2205,14 @@ expo-background-task@~57.0.10:
   dependencies:
     expo-task-manager "~57.0.10"
 
-expo-blur@~57.0.2:
-  version "57.0.2"
-  resolved "https://registry.yarnpkg.com/expo-blur/-/expo-blur-57.0.2.tgz#a87d7d5f7f038963349b5667d14adc3224b0aedf"
-  integrity sha512-Aoud8H8lmlNkbRufyvRLefmGFELdBf1n5Te/Xm+Zx8ORINH+aXL+gKb5mbftFSha860+I7pMArz77TBYz8HDVg==
+expo-build-properties@~57.0.11:
+  version "57.0.11"
+  resolved "https://registry.yarnpkg.com/expo-build-properties/-/expo-build-properties-57.0.11.tgz#b6a43ad16296130139d372db8885617d5a13a071"
+  integrity sha512-+YlioKtW5rNVoGMGlw2t0pY198vjGYN/JcCQyc2sKhJYh3w2C4Lu72tkQAzNd/lLRIkUXTU7J0ICRQ8EaXTtbQ==
+  dependencies:
+    "@expo/schema-utils" "^57.0.2"
+    resolve-from "^5.0.0"
+    semver "^7.6.0"
 
 expo-clipboard@~57.0.1:
   version "57.0.1"
@@ -2358,7 +2357,7 @@ expo-status-bar@~57.0.1:
   resolved "https://registry.npmjs.org/expo-status-bar/-/expo-status-bar-57.0.1.tgz"
   integrity sha512-Xwaq1gAoVRWx5dPG5VhT5RSbnI9OilhZnO5qoPBnUaBAa5VzRzfdS8q0/bsPt0jR2DKLtGuP0bQ6efMJ4RIMDg==
 
-expo-symbols@^57.0.2, expo-symbols@~57.0.2:
+expo-symbols@^57.0.2:
   version "57.0.2"
   resolved "https://registry.npmjs.org/expo-symbols/-/expo-symbols-57.0.2.tgz"
   integrity sha512-qZ0iqOflm5lZGwRsQ5Y8sDksw3GAUKwHSX1bJBoocXf7gu14vafIXXYWte+JT9VfXAUGyKodJhLHP/GoOrcNWg==

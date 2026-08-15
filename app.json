@@ -50,7 +50,22 @@
           "color": "#00D4A1",
           "defaultChannel": "workly-alerts"
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": ["arm64-v8a"],
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableBundleCompression": true,
+            "useLegacyPackaging": true,
+            "networkInspector": false,
+            "extraProguardRules": "-keep class com.swmansion.reanimated.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.horcrux.svg.** { *; }\n-keep class expo.modules.** { *; }\n-dontwarn expo.modules.**\n-dontwarn com.horcrux.svg.**"
+          }
+        }
+      ],
+      "./plugins/withAndroidApkSize.js"
     ],
     "experiments": {
       "typedRoutes": true
