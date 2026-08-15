@@ -30,8 +30,7 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env
+# local overrides only — .env with API keys is tracked
 .env*.local
 
 # typescript
