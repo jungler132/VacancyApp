@@ -2,14 +2,16 @@ import { useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Chip, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
+import { AppChip } from '@/components/AppChip';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
+import { EmptyState } from '@/components/EmptyState';
 import { displayName, formatDate, formatEmployment, formatPlace, joinMeta, splitParagraphs } from '@/lib/format';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { hydrateJob } from '@/lib/store/jobsSlice';
 import { toggleSaved } from '@/lib/store/savedSlice';
-import { colors } from '@/lib/theme';
+import { colors, radius } from '@/lib/theme';
 
 export default function JobDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -45,7 +47,7 @@ export default function JobDetailsScreen() {
   if (!job) {
     return (
       <View style={styles.center}>
-        <Text variant="bodyMedium">Вакансия не найдена</Text>
+        <EmptyState title="Вакансия не найдена" subtitle="Вернитесь к ленте и выберите другую." />
       </View>
     );
   }
@@ -66,9 +68,9 @@ export default function JobDetailsScreen() {
           {job.salary}
         </Text>
       ) : null}
-      <Chip compact style={styles.tag} textStyle={styles.tagText}>
-        {job.sourceName}
-      </Chip>
+      <View style={styles.tag}>
+        <AppChip label={job.sourceName} selected />
+      </View>
 
       {!job.description && decoded.startsWith('hh:') ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
 
@@ -96,9 +98,8 @@ const styles = StyleSheet.create({
   company: { marginBottom: 8, opacity: 0.8 },
   meta: { marginTop: 12, opacity: 0.85 },
   salary: { color: colors.salary, marginTop: 14 },
-  tag: { alignSelf: 'flex-start', marginTop: 14, marginBottom: 20, backgroundColor: colors.accentDim },
-  tagText: { color: colors.accent },
+  tag: { alignSelf: 'flex-start', marginTop: 14, marginBottom: 20 },
   body: { marginBottom: 12, lineHeight: 23 },
-  primary: { marginTop: 20 },
-  secondary: { marginTop: 10 },
+  primary: { marginTop: 20, borderRadius: radius.md },
+  secondary: { marginTop: 10, borderRadius: radius.md },
 });

@@ -9,7 +9,7 @@ export const colors = {
   text: '#F5F7FB',
   muted: '#A8B4C8',
   faint: '#7B889C',
-  placeholder: '#C5CEDC',
+  placeholder: '#7B889C',
   accent: '#00D4A1',
   accentGlow: 'rgba(0, 212, 161, 0.42)',
   accentDim: 'rgba(0, 212, 161, 0.16)',
@@ -67,8 +67,11 @@ export const regionColor: Record<string, string> = {
   global: '#8B9BB4',
 };
 
+export const CHART_PALETTE = [colors.accent, colors.blue, colors.salary, colors.pink] as const;
+
 export const paperTheme = {
   ...MD3DarkTheme,
+  dark: true,
   roundness: 6,
   fonts: configureFonts({
     config: {

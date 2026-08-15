@@ -28,7 +28,7 @@ export const CopyLinkButton = memo(function CopyLinkButton({
       compact={compact}
       icon={copied ? 'check' : 'content-copy'}
       onPress={copy}
-      style={compact ? undefined : { marginTop: 10 }}>
+      style={compact ? undefined : { marginTop: 10, borderRadius: 6 }}>
       {copied ? 'Скопировано' : compact ? 'Ссылка' : 'Скопировать ссылку'}
     </Button>
   );

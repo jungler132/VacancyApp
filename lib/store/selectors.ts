@@ -51,6 +51,8 @@ export const selectVisibleIds = createSelector(
   (feed, byId, categories, extra) => filterFeedIds(feed.ids.length ? feed.ids : EMPTY_IDS, byId, categories, extra),
 );
 
+export const selectVisibleCount = createSelector([selectVisibleIds], (ids) => ids.length);
+
 export const selectVisibleJobs = createSelector(
   [selectVisibleIds, (state: RootState) => state.jobs.byId],
   (ids, byId) => {
@@ -61,14 +63,15 @@ export const selectVisibleJobs = createSelector(
 
 export const selectJobStats = createSelector([selectVisibleJobs], computeJobStats);
 
-export const selectFiltersActive = createSelector(
-  [(state: RootState) => state.filters],
-  (filters) =>
+export const selectFiltersActive = createSelector([(state: RootState) => state.filters], (filters) => {
+  if (!filters) return false;
+  return (
     extraFiltersActive(filters.extra) ||
     filters.categories.length > 1 ||
     filters.categories[0] !== 'all' ||
-    filters.region !== 'cis',
-);
+    filters.region !== 'cis'
+  );
+});
 
 export const selectFeed = (query: string, region: RegionId, category: CategoryId, sources: string[] = []) =>
   createSelector(

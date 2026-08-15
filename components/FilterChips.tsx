@@ -1,7 +1,8 @@
-import { memo, type ReactNode } from 'react';
+import { memo, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
-import { colors } from '@/lib/theme';
+import { colors, radius } from '@/lib/theme';
 
 type Item<T extends string | number> = { id: T; label: string; icon?: string };
 
@@ -20,13 +21,20 @@ export const SelectChip = memo(function SelectChip({
   icon?: string;
   onChange: (id: string | number) => void;
 }) {
+  const tint = selected ? colors.accent : colors.muted;
+
   return (
     <Pressable
       onPress={() => onChange(id)}
       style={[styles.chip, compact && styles.chipSm, selected && styles.selected]}>
-      <Text style={[styles.label, compact && styles.labelSm, selected && styles.labelOn]}>
-        {icon ? `${icon}  ${label}` : label}
-      </Text>
+      {icon ? (
+        <MaterialDesignIcons
+          name={icon as ComponentProps<typeof MaterialDesignIcons>['name']}
+          size={compact ? 14 : 16}
+          color={tint}
+        />
+      ) : null}
+      <Text style={[styles.label, compact && styles.labelSm, selected && styles.labelOn]}>{label}</Text>
     </Pressable>
   );
 });
@@ -76,10 +84,13 @@ export const FilterChips = memo(FilterChipsInner) as typeof FilterChipsInner;
 const styles = StyleSheet.create({
   row: { gap: 6, paddingRight: 8, alignItems: 'center' },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderWidth: 1,
     borderColor: colors.chipBorder,
     backgroundColor: colors.chip,
-    borderRadius: 6,
+    borderRadius: radius.md,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },

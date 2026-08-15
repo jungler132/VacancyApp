@@ -1,52 +1,50 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button } from 'react-native-paper';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { IconButton } from 'react-native-paper';
 
+import { AppHeader, FiltersButton } from '@/components/AppHeader';
 import { SearchField } from '@/components/SearchField';
 import { colors } from '@/lib/theme';
 
 export const JobsHeader = memo(function JobsHeader({
   filtersActive,
+  refreshing,
   onSearch,
   onOpenFilters,
+  onRefresh,
 }: {
   filtersActive: boolean;
+  refreshing?: boolean;
   onSearch: (value: string) => void;
   onOpenFilters: () => void;
+  onRefresh: () => void;
 }) {
-  const insets = useSafeAreaInsets();
-
   return (
-    <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-      <View style={styles.searchRow}>
-        <View style={styles.search}>
-          <SearchField onSearch={onSearch} />
+    <AppHeader
+      title="Вакансии"
+      right={
+        <View style={styles.actions}>
+          <IconButton
+            icon="refresh"
+            size={20}
+            onPress={onRefresh}
+            disabled={refreshing}
+            iconColor={colors.muted}
+            accessibilityLabel="Обновить вакансии"
+            style={styles.refresh}
+          />
+          <FiltersButton active={filtersActive} onPress={onOpenFilters} />
         </View>
-        <Button
-          mode={filtersActive ? 'contained-tonal' : 'outlined'}
-          compact
-          onPress={onOpenFilters}
-          icon="filter-variant"
-          style={styles.filterBtn}
-          labelStyle={styles.filterLabel}>
-          Фильтры
-        </Button>
+      }>
+      <View style={styles.search}>
+        <SearchField onSearch={onSearch} />
       </View>
-    </View>
+    </AppHeader>
   );
 });
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    backgroundColor: colors.glass,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.cardBorder,
-  },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  search: { flex: 1 },
-  filterBtn: { borderColor: colors.chipBorder, borderRadius: 6 },
-  filterLabel: { marginVertical: 6, fontSize: 12 },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+  refresh: { margin: 0, width: 36, height: 36 },
+  search: { marginTop: 8 },
 });

@@ -37,7 +37,8 @@ export const AGE_PRESETS: { id: AgeFilter; label: string }[] = [
   { id: 90, label: '3 мес' },
 ];
 
-export function extraFiltersActive(filters: ExtraFilters): boolean {
+export function extraFiltersActive(filters?: ExtraFilters | null): boolean {
+  if (!filters) return false;
   return (
     filters.salaryMin != null ||
     filters.format !== 'any' ||
@@ -69,14 +70,14 @@ export function filterFeedIds(
   ids: string[],
   byId: Record<string, Job>,
   categories: CategoryId[],
-  extra: ExtraFilters,
+  extra?: ExtraFilters | null,
 ): string[] {
   const multi = categories.filter((item) => item !== 'all');
   const matched: Job[] = [];
   for (const id of ids) {
     const job = byId[id];
     if (!job) continue;
-    if (!jobMatchesExtra(job, extra)) continue;
+    if (!jobMatchesExtra(job, extra ?? DEFAULT_EXTRA_FILTERS)) continue;
     if (multi.length > 1) {
       const hay = `${job.title} ${job.company} ${job.excerpt} ${job.category ?? ''}`;
       if (!jobMatchesCategories(hay, categories)) continue;

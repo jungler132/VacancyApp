@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Card, Chip, Switch, Text } from 'react-native-paper';
+import { Card, Switch, Text } from 'react-native-paper';
 
+import { AppChip } from '@/components/AppChip';
+import { AppHeader } from '@/components/AppHeader';
 import { ScreenBackdrop } from '@/components/ScreenBackdrop';
 import { SOURCES, availableSourceIds } from '@/lib/api/aggregator';
 import { useTabBarLayout } from '@/lib/layout';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { toggleSource } from '@/lib/store/sourcesSlice';
-import { colors } from '@/lib/theme';
+import { colors, radius } from '@/lib/theme';
 
 const STATUS = {
   live: { label: 'онлайн' },
@@ -25,6 +27,7 @@ export default function SourcesScreen() {
   return (
     <View style={styles.screen}>
       <ScreenBackdrop />
+      <AppHeader title="Источники" />
       <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}>
         <Text variant="bodyMedium" style={styles.lead}>
           Включайте только нужные площадки. Выключенные не запрашиваются.
@@ -53,9 +56,9 @@ export default function SourcesScreen() {
                 }
               />
               <Card.Content>
-                <Chip compact style={styles.badge} textStyle={styles.badgeText}>
-                  {canToggle ? (on ? 'вкл' : 'выкл') : tone.label}
-                </Chip>
+                <View style={styles.badge}>
+                  <AppChip label={canToggle ? (on ? 'вкл' : 'выкл') : tone.label} selected={on} />
+                </View>
                 <Text variant="bodySmall" style={styles.note}>
                   {source.note}
                 </Text>
@@ -73,10 +76,9 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 16, gap: 10 },
   lead: { opacity: 0.8, marginBottom: 4 },
-  card: { backgroundColor: colors.card, borderRadius: 8, overflow: 'hidden' },
+  card: { backgroundColor: colors.card, borderRadius: radius.lg, overflow: 'hidden' },
   cardOff: { opacity: 0.55 },
   switch: { marginRight: 8 },
-  badge: { alignSelf: 'flex-start', marginBottom: 8, borderRadius: 6 },
-  badgeText: { fontSize: 11 },
+  badge: { marginBottom: 8 },
   note: { opacity: 0.8 },
 });

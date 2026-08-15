@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { JobCard } from '@/components/JobCard';
 import { ScreenBackdrop } from '@/components/ScreenBackdrop';
@@ -18,6 +19,7 @@ export default function SavedScreen() {
   return (
     <View style={styles.screen}>
       <ScreenBackdrop />
+      <AppHeader title="Избранное" />
       <FlatList
         data={ids}
         keyExtractor={keyExtractor}

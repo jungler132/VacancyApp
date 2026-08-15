@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, FAB } from 'react-native-paper';
+import { ActivityIndicator } from 'react-native-paper';
 
 import { EmptyState } from '@/components/EmptyState';
 import { JobCard } from '@/components/JobCard';
@@ -25,6 +25,8 @@ export default function JobsScreen() {
     setHeaderH(height);
   }, []);
 
+  const emptyError = feed.status === 'error';
+
   return (
     <View style={styles.screen}>
       <ScreenBackdrop />
@@ -34,7 +36,7 @@ export default function JobsScreen() {
         renderItem={renderItem}
         contentContainerStyle={[
           styles.list,
-          { paddingTop: headerH + 8, paddingBottom: tabBar.listPaddingBottom + 64 },
+          { paddingTop: headerH + 8, paddingBottom: tabBar.listPaddingBottom },
         ]}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="none"
@@ -58,12 +60,12 @@ export default function JobsScreen() {
             <JobSkeletonList />
           ) : (
             <EmptyState
-              title={feed.status === 'error' ? 'Не удалось загрузить' : 'Ничего не нашлось'}
+              title={emptyError ? 'Не удалось загрузить' : 'Ничего не нашлось'}
               subtitle={
-                feed.status === 'error'
-                  ? 'Потяните вниз, чтобы повторить.'
-                  : 'Смените регион, давность или источники.'
+                emptyError ? 'Проверьте сеть и обновите ленту.' : 'Смените регион, давность или источники.'
               }
+              actionLabel={emptyError || !feed.filtersActive ? 'Обновить' : 'Сбросить фильтры'}
+              onAction={emptyError || !feed.filtersActive ? feed.refresh : feed.resetFilters}
             />
           )
         }
@@ -75,18 +77,12 @@ export default function JobsScreen() {
       <View style={styles.headerWrap} onLayout={(event) => onHeaderLayout(event.nativeEvent.layout.height)}>
         <JobsHeader
           filtersActive={feed.filtersActive}
+          refreshing={feed.refreshing}
           onSearch={feed.setQuery}
           onOpenFilters={feed.openSheet}
+          onRefresh={feed.refresh}
         />
       </View>
-
-      <FAB
-        icon="refresh"
-        onPress={feed.resetCache}
-        loading={feed.refreshing}
-        style={[styles.fab, { bottom: tabBar.height + 12 }]}
-        accessibilityLabel="Обновить вакансии"
-      />
     </View>
   );
 }
@@ -95,5 +91,4 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   list: { paddingHorizontal: 16 },
   headerWrap: { position: 'absolute', top: 0, left: 0, right: 0 },
-  fab: { position: 'absolute', right: 16 },
 });

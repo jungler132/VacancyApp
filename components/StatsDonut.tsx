@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import { PieChart } from 'react-native-gifted-charts';
 
 import type { StatSlice } from '@/lib/stats';
-import { colors } from '@/lib/theme';
+import { colors, radius } from '@/lib/theme';
 
 export const StatsDonut = memo(function StatsDonut({
   title,
@@ -29,8 +29,8 @@ export const StatsDonut = memo(function StatsDonut({
           <PieChart
             data={data}
             donut
-            radius={78}
-            innerRadius={48}
+            radius={96}
+            innerRadius={58}
             innerCircleColor={colors.card}
             isAnimated={false}
             centerLabelComponent={() => (
@@ -63,13 +63,13 @@ export const StatsDonut = memo(function StatsDonut({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: 14,
     marginBottom: 12,
   },
   chartRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 },
   center: { textAlign: 'center' },
-  emptyChart: { width: 156, height: 156, alignItems: 'center', justifyContent: 'center' },
+  emptyChart: { width: 192, height: 192, alignItems: 'center', justifyContent: 'center' },
   legend: { flex: 1, gap: 6 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 2 },

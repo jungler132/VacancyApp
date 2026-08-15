@@ -1,6 +1,7 @@
 import { CATEGORIES, jobMatchesSearch } from './catalog';
 import { salaryAmount } from './format';
 import { jobAgeDays } from './freshness';
+import { CHART_PALETTE, colors } from './theme';
 import type { Job } from './types';
 
 export type StatSlice = {
@@ -20,7 +21,7 @@ export type JobStats = {
   categories: StatSlice[];
 };
 
-const PALETTE = ['#00D4A1', '#7BA3FF', '#E8C572', '#FF7A9C', '#A78BFA', '#FFB020', '#5EEAD4', '#60A5FA'];
+const PALETTE = CHART_PALETTE;
 
 const AGE_BUCKETS: { id: string; label: string; test: (days: number) => boolean }[] = [
   { id: '3', label: 'До 3 дней', test: (days) => days < 3 },
@@ -41,7 +42,7 @@ function toSlices(counts: Map<string, number>, limit = 8): StatSlice[] {
     color: PALETTE[index % PALETTE.length],
   }));
   if (rest > 0) {
-    slices.push({ id: 'other', label: 'Другое', value: rest, color: '#4B5568' });
+    slices.push({ id: 'other', label: 'Другое', value: rest, color: PALETTE[top.length % PALETTE.length] });
   }
   return slices.filter((item) => item.value > 0);
 }
@@ -84,8 +85,8 @@ export function computeJobStats(jobs: Job[]): JobStats {
     remote,
     sources: toSlices(sources),
     formats: [
-      { id: 'remote', label: 'Удалёнка', value: remote, color: '#A78BFA' },
-      { id: 'office', label: 'Офис', value: office, color: '#7BA3FF' },
+      { id: 'remote', label: 'Удалёнка', value: remote, color: colors.accent },
+      { id: 'office', label: 'Офис', value: office, color: colors.blue },
     ].filter((item) => item.value > 0),
     ages: AGE_BUCKETS.flatMap((bucket, index) => {
       const value = ages.get(bucket.label) ?? 0;

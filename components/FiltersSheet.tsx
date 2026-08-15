@@ -7,6 +7,7 @@ import { SelectChip } from '@/components/FilterChips';
 import { CATEGORIES, REGIONS } from '@/lib/catalog';
 import {
   AGE_PRESETS,
+  DEFAULT_EXTRA_FILTERS,
   SALARY_PRESETS,
   extraFiltersActive,
   type ExtraFilters,
@@ -38,6 +39,7 @@ export const FiltersSheet = memo(function FiltersSheet({
   region,
   categories,
   extra,
+  resultCount,
   onChangeRegion,
   onToggleCategory,
   onChangeExtra,
@@ -47,7 +49,8 @@ export const FiltersSheet = memo(function FiltersSheet({
   open: boolean;
   region: RegionId;
   categories: CategoryId[];
-  extra: ExtraFilters;
+  extra?: ExtraFilters | null;
+  resultCount?: number | null;
   onChangeRegion: (id: RegionId) => void;
   onToggleCategory: (id: CategoryId) => void;
   onChangeExtra: (next: ExtraFilters) => void;
@@ -56,8 +59,10 @@ export const FiltersSheet = memo(function FiltersSheet({
 }) {
   const insets = useSafeAreaInsets();
   const progress = useSharedValue(0);
+  const current = extra ?? DEFAULT_EXTRA_FILTERS;
   const dirty =
-    extraFiltersActive(extra) || categories.length > 1 || categories[0] !== 'all' || region !== 'cis';
+    extraFiltersActive(current) || categories.length > 1 || categories[0] !== 'all' || region !== 'cis';
+  const doneLabel = resultCount == null ? 'Показать' : `Показать ${resultCount} вакансий`;
 
   useEffect(() => {
     progress.value = withTiming(open ? 1 : 0, open ? OPEN_CFG : CLOSE_CFG);
@@ -68,23 +73,23 @@ export const FiltersSheet = memo(function FiltersSheet({
   }, [onClose, open]);
 
   const onAge = useCallback(
-    (id: string | number) => onChangeExtra({ ...extra, maxAgeDays: id as ExtraFilters['maxAgeDays'] }),
-    [extra, onChangeExtra],
+    (id: string | number) => onChangeExtra({ ...current, maxAgeDays: id as ExtraFilters['maxAgeDays'] }),
+    [current, onChangeExtra],
   );
   const onSalary = useCallback(
     (id: string | number) => {
       const next = SALARY_PRESETS.find((item) => item.id === id);
-      if (next) onChangeExtra({ ...extra, salaryMin: next.value });
+      if (next) onChangeExtra({ ...current, salaryMin: next.value });
     },
-    [extra, onChangeExtra],
+    [current, onChangeExtra],
   );
   const onFormat = useCallback(
-    (id: string | number) => onChangeExtra({ ...extra, format: id as WorkFormat }),
-    [extra, onChangeExtra],
+    (id: string | number) => onChangeExtra({ ...current, format: id as WorkFormat }),
+    [current, onChangeExtra],
   );
   const onEmployment = useCallback(
-    (id: string | number) => onChangeExtra({ ...extra, employment: id as EmploymentFilter }),
-    [extra, onChangeExtra],
+    (id: string | number) => onChangeExtra({ ...current, employment: id as EmploymentFilter }),
+    [current, onChangeExtra],
   );
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
@@ -140,7 +145,7 @@ export const FiltersSheet = memo(function FiltersSheet({
                 key={item.id}
                 id={item.id}
                 label={item.label}
-                selected={extra.maxAgeDays === item.id}
+                selected={current.maxAgeDays === item.id}
                 onChange={onAge}
               />
             ))}
@@ -152,7 +157,7 @@ export const FiltersSheet = memo(function FiltersSheet({
                 key={item.id}
                 id={item.id}
                 label={item.label}
-                selected={extra.salaryMin === item.value}
+                selected={current.salaryMin === item.value}
                 onChange={onSalary}
               />
             ))}
@@ -164,7 +169,7 @@ export const FiltersSheet = memo(function FiltersSheet({
                 key={item.id}
                 id={item.id}
                 label={item.label}
-                selected={extra.format === item.id}
+                selected={current.format === item.id}
                 onChange={onFormat}
               />
             ))}
@@ -176,14 +181,14 @@ export const FiltersSheet = memo(function FiltersSheet({
                 key={item.id}
                 id={item.id}
                 label={item.label}
-                selected={extra.employment === item.id}
+                selected={current.employment === item.id}
                 onChange={onEmployment}
               />
             ))}
           </View>
         </ScrollView>
         <Pressable onPress={close} style={styles.done}>
-          <Text style={styles.doneText}>Готово</Text>
+          <Text style={styles.doneText}>{doneLabel}</Text>
         </Pressable>
       </Animated.View>
     </View>
@@ -241,7 +246,7 @@ const styles = StyleSheet.create({
   done: {
     marginTop: 16,
     backgroundColor: colors.accent,
-    borderRadius: 6,
+    borderRadius: radius.md,
     paddingVertical: 14,
     alignItems: 'center',
   },

@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Searchbar } from 'react-native-paper';
 
-import { colors } from '@/lib/theme';
+import { colors, radius } from '@/lib/theme';
 
 export const SearchField = memo(function SearchField({
   onSearch,
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 26, 40, 0.78)',
     borderWidth: 1,
     borderColor: colors.chipBorder,
-    borderRadius: 6,
+    borderRadius: radius.md,
     height: 44,
   },
   input: {

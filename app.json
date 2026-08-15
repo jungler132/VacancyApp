@@ -6,13 +6,15 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "workly",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "userInterfaceStyle": "dark"
     },
     "android": {
       "package": "com.workly.app",
       "versionCode": 1,
+      "userInterfaceStyle": "dark",
       "adaptiveIcon": {
         "backgroundColor": "#08111F",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

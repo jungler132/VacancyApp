@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors } from '@/lib/theme';
+import { colors, radius } from '@/lib/theme';
 
 function Shimmer({ style }: { style?: object }) {
   const opacity = useSharedValue(0.28);
@@ -57,12 +57,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
     backgroundColor: colors.card,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 12,
   },
   row: { flexDirection: 'row', gap: 10 },
-  logo: { width: 44, height: 44, borderRadius: 6 },
+  logo: { width: 44, height: 44, borderRadius: radius.md },
   lines: { flex: 1, gap: 8, justifyContent: 'center' },
   block: { height: 8, borderRadius: 3, backgroundColor: '#2A3B55' },
 });

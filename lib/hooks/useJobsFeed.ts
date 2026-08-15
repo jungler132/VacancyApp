@@ -18,7 +18,7 @@ import {
   selectFiltersActive,
   selectVisibleIds,
 } from '@/lib/store/selectors';
-import type { ExtraFilters } from '@/lib/filters';
+import { DEFAULT_EXTRA_FILTERS, type ExtraFilters } from '@/lib/filters';
 import type { CategoryId, RegionId } from '@/lib/types';
 
 export function useJobsQuery() {
@@ -55,7 +55,7 @@ export function useFilterSheet() {
     open,
     region,
     categories,
-    extra,
+    extra: extra ?? DEFAULT_EXTRA_FILTERS,
     setRegion: useCallback((value: RegionId) => dispatch(setRegion(value)), [dispatch]),
     onToggleCategory: useCallback((id: CategoryId) => dispatch(toggleFilterCategory(id)), [dispatch]),
     setExtra: useCallback((value: ExtraFilters) => dispatch(setExtra(value)), [dispatch]),
@@ -144,5 +144,6 @@ export function useJobsFeed() {
     loadMore,
     resetCache,
     openSheet: useCallback(() => dispatch(openFilters()), [dispatch]),
+    resetFilters: useCallback(() => dispatch(resetFilters()), [dispatch]),
   };
 }

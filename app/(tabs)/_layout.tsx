@@ -6,6 +6,8 @@ import MaterialDesignIcons from '@react-native-vector-icons/material-design-icon
 import { FiltersSheet } from '@/components/FiltersSheet';
 import { useFilterSheet, useJobsQuery } from '@/lib/hooks/useJobsFeed';
 import { useTabBarLayout } from '@/lib/layout';
+import { useAppSelector } from '@/lib/store/hooks';
+import { selectActiveFeed, selectVisibleCount } from '@/lib/store/selectors';
 import { colors, fonts } from '@/lib/theme';
 
 const TabIcon = memo(function TabIcon({
@@ -37,12 +39,17 @@ const TabIcon = memo(function TabIcon({
 
 const FilterSheetHost = memo(function FilterSheetHost() {
   const sheet = useFilterSheet();
+  const count = useAppSelector(selectVisibleCount);
+  const status = useAppSelector((state) => selectActiveFeed(state).status);
+  const resultCount = status === 'loading' && count === 0 ? null : count;
+
   return (
     <FiltersSheet
       open={sheet.open}
       region={sheet.region}
       categories={sheet.categories}
       extra={sheet.extra}
+      resultCount={resultCount}
       onChangeRegion={sheet.setRegion}
       onToggleCategory={sheet.onToggleCategory}
       onChangeExtra={sheet.setExtra}
@@ -65,7 +72,7 @@ export default function TabLayout() {
           headerStyle: { backgroundColor: colors.bg },
           headerTintColor: colors.text,
           headerShadowVisible: false,
-          headerTitleStyle: { fontFamily: fonts.bold, fontSize: 22 },
+          headerTitleStyle: { fontFamily: fonts.bold, fontSize: 18 },
           tabBarStyle: {
             position: 'absolute',
             backgroundColor: 'rgba(8, 12, 20, 0.92)',
@@ -98,7 +105,6 @@ export default function TabLayout() {
           name="saved"
           options={{
             title: 'Избранное',
-            headerShown: true,
             tabBarIcon: ({ color, focused }) => <TabIcon name="star" color={String(color)} focused={focused} />,
           }}
         />
@@ -106,7 +112,6 @@ export default function TabLayout() {
           name="sources"
           options={{
             title: 'Источники',
-            headerShown: true,
             tabBarIcon: ({ color, focused }) => <TabIcon name="earth" color={String(color)} focused={focused} />,
           }}
         />
