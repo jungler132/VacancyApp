@@ -17,6 +17,7 @@ type JoobleResponse = { jobs?: JoobleJob[] };
 
 const REGION_LOCATION: Record<string, string> = {
   cis: 'Russia',
+  az: 'Azerbaijan',
   europe: 'Germany',
   west: 'United States',
   asia: 'Singapore',
@@ -24,11 +25,17 @@ const REGION_LOCATION: Record<string, string> = {
   remote: 'Remote',
 };
 
+function joobleLang(region: SearchParams['region']) {
+  if (region === 'az') return 'az' as const;
+  if (region === 'cis') return 'ru' as const;
+  return 'en' as const;
+}
+
 export async function searchJooble(params: SearchParams): Promise<Job[]> {
   const key = process.env.EXPO_PUBLIC_JOOBLE_KEY;
   if (!key) return [];
 
-  const keywords = buildQuery(params.query, params.category, params.region === 'cis' ? 'ru' : 'en') || 'job';
+  const keywords = buildQuery(params.query, params.category, joobleLang(params.region)) || (params.region === 'az' ? 'vakansiya' : 'job');
   const data = await fetchJson<JoobleResponse>(`https://jooble.org/api/${key}`, {
     signal: params.signal,
     method: 'POST',
@@ -46,7 +53,7 @@ export async function searchJooble(params: SearchParams): Promise<Job[]> {
     sourceName: 'Jooble',
     title: job.title ?? 'Job',
     company: job.company ?? 'Company',
-    location: job.location ?? '',
+    location: job.location || (params.region === 'az' ? 'Azerbaijan' : ''),
     remote: /remote|удал/i.test(`${job.location} ${job.type}`),
     salary: job.salary || undefined,
     employment: job.type,

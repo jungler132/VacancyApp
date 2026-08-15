@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-const STORAGE_KEY = 'workly:disabled-sources';
+export const DISABLED_SOURCES_KEY = 'workly:disabled-sources';
+const STORAGE_KEY = DISABLED_SOURCES_KEY;
 
 export type SourcesState = {
   disabledIds: string[];

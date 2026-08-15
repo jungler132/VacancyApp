@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { searchJobs } from '@/lib/api/aggregator';
-import { fetchHeadHunterDetails } from '@/lib/api/providers/hh';
+import { fetchHeadHunterDetails, hhVacancyId, isHhJobId } from '@/lib/api/providers/hh';
 import { isAbortError } from '@/lib/api/errors';
 import type { CategoryId, Job, RegionId, SourceError } from '@/lib/types';
 
@@ -113,8 +113,8 @@ export const fetchFeed = createAsyncThunk(
 );
 
 export const hydrateJob = createAsyncThunk('jobs/hydrateJob', async (id: string, { signal }) => {
-  if (!id.startsWith('hh:')) return null;
-  const details = await fetchHeadHunterDetails(id.slice(3), signal);
+  if (!isHhJobId(id)) return null;
+  const details = await fetchHeadHunterDetails(hhVacancyId(id), signal);
   return { id, details };
 });
 
@@ -179,7 +179,7 @@ const jobsSlice = createSlice({
         const current = state.feeds[key];
         if (!current) return;
         if (isAbortError(action.error)) {
-          current.status = current.ids.length ? 'ready' : current.fetchedAt ? 'error' : 'idle';
+          current.status = current.ids.length ? 'ready' : 'loading';
           return;
         }
         current.errors = [

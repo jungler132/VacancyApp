@@ -24,6 +24,7 @@ const REGION_COUNTRIES: Record<string, string[]> = {
   asia: ['in', 'sg'],
   all: ['gb', 'us', 'de', 'in'],
   remote: ['gb', 'us'],
+  az: [],
 };
 
 export async function searchAdzuna(params: SearchParams): Promise<Job[]> {
@@ -32,8 +33,10 @@ export async function searchAdzuna(params: SearchParams): Promise<Job[]> {
   if (!appId || !appKey) return [];
 
   const what = buildQuery(params.query, params.category, 'en');
-  const countries = REGION_COUNTRIES[params.region] ?? ['gb'];
-  const country = countries[params.page % countries.length] ?? 'gb';
+  const countries = REGION_COUNTRIES[params.region] ?? [];
+  if (!countries.length) return [];
+  const country = countries[params.page % countries.length];
+  if (!country) return [];
   const page = params.page + 1;
   const url = new URL(`https://api.adzuna.com/v1/api/jobs/${country}/search/${page}`);
   url.searchParams.set('app_id', appId);

@@ -1,3 +1,4 @@
+import '@/lib/alertsTask';
 import { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
@@ -12,6 +13,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { PaperProvider } from 'react-native-paper';
 
+import { AlertsHost } from '@/components/AlertsHost';
 import { store } from '@/lib/store';
 import { colors, fonts, paperTheme } from '@/lib/theme';
 
@@ -51,6 +53,7 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
+      <AlertsHost />
       <PaperProvider theme={paperTheme}>
         <ThemeProvider value={navTheme}>
           <StatusBar style="light" />

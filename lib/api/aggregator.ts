@@ -1,9 +1,10 @@
 import type { Job, SearchParams, SearchResult, SourceInfo } from '../types';
-import { jobMatchesSearch } from '../catalog';
+import { jobMatchesAnyLang } from '../catalog';
 import { describeSourceError, isAbortError } from './errors';
 import { jobKey } from '../format';
 import { compareJobsByDate, isFreshJob } from '../freshness';
-import { searchHeadHunter } from './providers/hh';
+import { searchHeadHunter, searchHeadHunterAz } from './providers/hh';
+import { searchBirJob } from './providers/birjob';
 import { searchTrudvsem } from './providers/trudvsem';
 import { searchArbeitnow } from './providers/arbeitnow';
 import { searchRemotive } from './providers/remotive';
@@ -23,19 +24,23 @@ type Provider = {
 
 const PROVIDERS: Provider[] = [
   { id: 'hh', run: searchHeadHunter, regions: ['all', 'cis'], paginated: true },
+  { id: 'hhaz', run: searchHeadHunterAz, regions: ['az'], paginated: true },
+  { id: 'birjob', run: searchBirJob, regions: ['all', 'cis', 'az'] },
   { id: 'trudvsem', run: searchTrudvsem, regions: ['all', 'cis'], paginated: true },
   { id: 'arbeitnow', run: searchArbeitnow, regions: ['all', 'europe', 'remote'] },
   { id: 'remotive', run: searchRemotive, regions: ['all', 'europe', 'west', 'asia', 'remote'] },
   { id: 'jobicy', run: searchJobicy, regions: ['all', 'europe', 'west', 'asia', 'remote'] },
   { id: 'remoteok', run: searchRemoteOK, regions: ['all', 'europe', 'west', 'asia', 'remote'] },
   { id: 'himalayas', run: searchHimalayas, regions: ['all', 'europe', 'west', 'asia', 'remote'] },
-  { id: 'adzuna', run: searchAdzuna, regions: ['any'], paginated: true },
+  { id: 'adzuna', run: searchAdzuna, regions: ['all', 'cis', 'europe', 'west', 'asia', 'remote'], paginated: true },
   { id: 'jooble', run: searchJooble, regions: ['any'], paginated: true },
   { id: 'usajobs', run: searchUsaJobs, regions: ['all', 'west', 'remote'] },
 ];
 
 export const SOURCES: SourceInfo[] = [
   { id: 'hh', name: 'HeadHunter', regionLabel: 'СНГ', status: 'live', note: 'hh.ru, все профессии' },
+  { id: 'hhaz', name: 'HeadHunter AZ', regionLabel: 'Азербайджан', status: 'live', note: 'hh.az, вакансии по Азербайджану' },
+  { id: 'birjob', name: 'BirJob', regionLabel: 'Азербайджан', status: 'live', note: 'Агрегатор AZ-площадок: Boss, HelloJob, Glorri и др.' },
   { id: 'trudvsem', name: 'Работа России', regionLabel: 'Россия', status: 'live', note: 'Госпортал trudvsem.ru' },
   { id: 'arbeitnow', name: 'Arbeitnow', regionLabel: 'Европа', status: 'live', note: 'Вакансии по Европе' },
   { id: 'remotive', name: 'Remotive', regionLabel: 'Удалёнка', status: 'live', note: 'Удалёнка, все сферы' },
@@ -93,7 +98,7 @@ export async function searchJobs(params: SearchParams): Promise<SearchResult> {
     }
     for (const job of result.value) {
       const hay = `${job.title} ${job.company} ${job.excerpt} ${job.category ?? ''}`;
-      if (!jobMatchesSearch(hay, params.query, params.category, 'en') && !jobMatchesSearch(hay, params.query, params.category, 'ru')) {
+      if (!jobMatchesAnyLang(hay, params.query, params.category)) {
         continue;
       }
       const key = jobKey(job.title, job.company);

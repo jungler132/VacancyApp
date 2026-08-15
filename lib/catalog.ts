@@ -1,8 +1,11 @@
 import type { CategoryId, RegionId } from './types';
 
+export type QueryLang = 'ru' | 'en' | 'az';
+
 export const REGIONS: { id: RegionId; label: string }[] = [
   { id: 'all', label: 'Все' },
   { id: 'cis', label: 'СНГ' },
+  { id: 'az', label: 'Азербайджан' },
   { id: 'europe', label: 'Европа' },
   { id: 'west', label: 'Запад' },
   { id: 'asia', label: 'Азия' },
@@ -15,25 +18,26 @@ export const CATEGORIES: {
   icon: string;
   ru: string;
   en: string;
+  az: string;
 }[] = [
-  { id: 'all', label: 'Все сферы', icon: 'view-grid-outline', ru: '', en: '' },
-  { id: 'sales', label: 'Продажи', icon: 'cart-outline', ru: 'продавец менеджер по продажам', en: 'sales retail shop assistant' },
-  { id: 'medicine', label: 'Медицина', icon: 'medical-bag', ru: 'врач медсестра фармацевт', en: 'nurse doctor healthcare medical' },
-  { id: 'logistics', label: 'Логистика', icon: 'truck-outline', ru: 'водитель курьер склад логист', en: 'driver warehouse logistics courier' },
-  { id: 'construction', label: 'Стройка', icon: 'hammer-wrench', ru: 'строитель сварщик разнорабочий', en: 'construction welder carpenter electrician' },
-  { id: 'education', label: 'Образование', icon: 'school-outline', ru: 'учитель преподаватель воспитатель', en: 'teacher tutor education school' },
-  { id: 'hospitality', label: 'Общепит', icon: 'silverware-fork-knife', ru: 'повар официант бармен', en: 'cook chef waiter bartender hospitality' },
-  { id: 'manufacturing', label: 'Производство', icon: 'factory', ru: 'оператор токарь слесарь завод', en: 'factory operator manufacturing production' },
-  { id: 'finance', label: 'Финансы', icon: 'cash', ru: 'бухгалтер экономист кассир', en: 'accountant finance cashier bank' },
-  { id: 'admin', label: 'Офис', icon: 'briefcase-outline', ru: 'секретарь администратор офис-менеджер', en: 'assistant administrator office receptionist' },
-  { id: 'it', label: 'IT', icon: 'laptop', ru: 'программист разработчик', en: 'developer software engineer' },
-  { id: 'marketing', label: 'Маркетинг', icon: 'bullhorn-outline', ru: 'маркетолог smm дизайнер', en: 'marketing designer smm content' },
-  { id: 'legal', label: 'Юриспруденция', icon: 'scale-balance', ru: 'юрист адвокат', en: 'lawyer legal counsel attorney' },
-  { id: 'agriculture', label: 'Агро', icon: 'barley', ru: 'агроном тракторист', en: 'farm agriculture agronomist' },
-  { id: 'security', label: 'Охрана', icon: 'shield-outline', ru: 'охранник безопасность', en: 'security guard' },
-  { id: 'beauty', label: 'Красота', icon: 'content-cut', ru: 'парикмахер косметолог мастер маникюра', en: 'beauty salon hairdresser nail' },
-  { id: 'hr', label: 'HR', icon: 'account-group-outline', ru: 'рекрутер кадровик hr', en: 'recruiter hr human resources' },
-  { id: 'home', label: 'Дом и уход', icon: 'home-outline', ru: 'няня сиделка домработница уборщица', en: 'nanny caregiver cleaner housekeeper' },
+  { id: 'all', label: 'Все сферы', icon: 'view-grid-outline', ru: '', en: '', az: '' },
+  { id: 'sales', label: 'Продажи', icon: 'cart-outline', ru: 'продавец менеджер по продажам', en: 'sales retail shop assistant', az: 'satış satıcı menecer' },
+  { id: 'medicine', label: 'Медицина', icon: 'medical-bag', ru: 'врач медсестра фармацевт', en: 'nurse doctor healthcare medical', az: 'həkim əczaçı tibb' },
+  { id: 'logistics', label: 'Логистика', icon: 'truck-outline', ru: 'водитель курьер склад логист', en: 'driver warehouse logistics courier', az: 'sürücü anbar kuryer' },
+  { id: 'construction', label: 'Стройка', icon: 'hammer-wrench', ru: 'строитель сварщик разнорабочий', en: 'construction welder carpenter electrician', az: 'inşaat qaynaqçı fəhlə' },
+  { id: 'education', label: 'Образование', icon: 'school-outline', ru: 'учитель преподаватель воспитатель', en: 'teacher tutor education school', az: 'müəllim müəllimə' },
+  { id: 'hospitality', label: 'Общепит', icon: 'silverware-fork-knife', ru: 'повар официант бармен', en: 'cook chef waiter bartender hospitality', az: 'aşpaz ofisiant barmen' },
+  { id: 'manufacturing', label: 'Производство', icon: 'factory', ru: 'оператор токарь слесарь завод', en: 'factory operator manufacturing production', az: 'operator zavod texnik' },
+  { id: 'finance', label: 'Финансы', icon: 'cash', ru: 'бухгалтер экономист кассир', en: 'accountant finance cashier bank', az: 'mühasib kassir maliyyə' },
+  { id: 'admin', label: 'Офис', icon: 'briefcase-outline', ru: 'секретарь администратор офис-менеджер', en: 'assistant administrator office receptionist', az: 'katibə administrator' },
+  { id: 'it', label: 'IT', icon: 'laptop', ru: 'программист разработчик', en: 'developer software engineer', az: 'proqramçı developer' },
+  { id: 'marketing', label: 'Маркетинг', icon: 'bullhorn-outline', ru: 'маркетолог smm дизайнер', en: 'marketing designer smm content', az: 'marketinq dizayner kontent' },
+  { id: 'legal', label: 'Юриспруденция', icon: 'scale-balance', ru: 'юрист адвокат', en: 'lawyer legal counsel attorney', az: 'hüquqşünas' },
+  { id: 'agriculture', label: 'Агро', icon: 'barley', ru: 'агроном тракторист', en: 'farm agriculture agronomist', az: 'aqronom' },
+  { id: 'security', label: 'Охрана', icon: 'shield-outline', ru: 'охранник безопасность', en: 'security guard', az: 'mühafizəçi' },
+  { id: 'beauty', label: 'Красота', icon: 'content-cut', ru: 'парикмахер косметолог мастер маникюра', en: 'beauty salon hairdresser nail', az: 'bərbər kosmetoloq' },
+  { id: 'hr', label: 'HR', icon: 'account-group-outline', ru: 'рекрутер кадровик hr', en: 'recruiter hr human resources', az: 'rekruter hr' },
+  { id: 'home', label: 'Дом и уход', icon: 'home-outline', ru: 'няня сиделка домработница уборщица', en: 'nanny caregiver cleaner housekeeper', az: 'dayə təmizlikçi' },
 ];
 
 export const CIS_AREAS = ['113', '40', '16', '9', '97', '48', '28', '62', '7', '5'];
@@ -70,10 +74,18 @@ export const ASIA_HINTS = [
   'bengaluru', 'bangalore', 'ho chi minh', 'asia',
 ];
 
+export const AZ_HINTS = [
+  'azerbaijan', 'азербайджан', 'azərbaycan', 'azerbaycan', 'baku', 'bakı', 'баку',
+  'sumqayit', 'sumqayıt', 'gəncə', 'ganja', 'генджа', 'mingachevir', 'mingəçevir',
+  'nakhchivan', 'naxçıvan', 'şirvan', 'lankaran', 'lənkəran', 'azn',
+];
+
 export function hintsForRegion(region: RegionId): string[] | null {
   switch (region) {
     case 'cis':
       return CIS_HINTS;
+    case 'az':
+      return AZ_HINTS;
     case 'europe':
       return EUROPE_HINTS;
     case 'west':
@@ -90,13 +102,14 @@ export function locationMatchesRegion(location: string, region: RegionId): boole
   const hints = hintsForRegion(region);
   if (!hints) return true;
   const hay = location.toLowerCase();
-      if (!hay.trim()) return false;
+  if (!hay.trim()) return false;
   return hints.some((h) => hay.includes(h));
 }
 
-export function categoryTerms(category: CategoryId, lang: 'ru' | 'en'): string {
+export function categoryTerms(category: CategoryId, lang: QueryLang): string {
   const item = CATEGORIES.find((c) => c.id === category);
   if (!item) return '';
+  if (lang === 'az') return item.az;
   return lang === 'ru' ? item.ru : item.en;
 }
 
@@ -108,15 +121,19 @@ export function tokenize(text: string): string[] {
     .filter((token) => token.length > 1);
 }
 
+const WORD_CHARS = 'a-zA-Zа-яА-ЯёЁəƏöÖğıİüÜçÇşŞ0-9+#';
+
 function hasToken(hay: string, token: string): boolean {
   const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(^|[^a-zA-Zа-яА-ЯёЁ0-9+#])${escaped}(?=[^a-zA-Zа-яА-ЯёЁ0-9+#]|$)`, 'i').test(hay);
+  return new RegExp(`(^|[^${WORD_CHARS}])${escaped}(?=[^${WORD_CHARS}]|$)`, 'i').test(hay);
 }
 
-export function buildQuery(query: string, category: CategoryId, lang: 'ru' | 'en'): string {
+export function buildQuery(query: string, category: CategoryId, lang: QueryLang): string {
   const q = query.trim();
   if (q) return q;
-  return categoryTerms(category, lang);
+  const terms = categoryTerms(category, lang);
+  if (lang !== 'az') return terms;
+  return tokenize(terms)[0] ?? '';
 }
 
 export function jobMatchesRegion(location: string, region: RegionId, isRemote = false): boolean {
@@ -129,7 +146,7 @@ export function jobMatchesSearch(
   haystack: string,
   query: string,
   category: CategoryId = 'all',
-  lang: 'en' | 'ru' = 'en',
+  lang: QueryLang = 'en',
 ): boolean {
   const hay = haystack.toLowerCase();
   const userTokens = tokenize(query);
@@ -137,6 +154,14 @@ export function jobMatchesSearch(
   const catTokens = tokenize(categoryTerms(category, lang));
   if (!catTokens.length) return true;
   return catTokens.some((token) => hasToken(hay, token));
+}
+
+export function jobMatchesAnyLang(haystack: string, query: string, category: CategoryId = 'all'): boolean {
+  return (
+    jobMatchesSearch(haystack, query, category, 'en') ||
+    jobMatchesSearch(haystack, query, category, 'ru') ||
+    jobMatchesSearch(haystack, query, category, 'az')
+  );
 }
 
 export function toggleCategory(selected: CategoryId[], id: CategoryId): CategoryId[] {
@@ -158,8 +183,5 @@ export function apiCategory(selected: CategoryId[]): CategoryId {
 export function jobMatchesCategories(haystack: string, categories: CategoryId[]): boolean {
   const selected = categories.filter((id) => id !== 'all');
   if (selected.length <= 1) return true;
-  return selected.some(
-    (category) =>
-      jobMatchesSearch(haystack, '', category, 'ru') || jobMatchesSearch(haystack, '', category, 'en'),
-  );
+  return selected.some((category) => jobMatchesAnyLang(haystack, '', category));
 }

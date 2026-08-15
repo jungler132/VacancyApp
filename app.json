@@ -34,6 +34,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#08111F"
         }
@@ -41,7 +42,15 @@
       "expo-font",
       "expo-status-bar",
       "./plugins/withAndroidReleaseSigning.js",
-      "@react-native-vector-icons/material-design-icons"
+      "@react-native-vector-icons/material-design-icons",
+      "expo-background-task",
+      [
+        "expo-notifications",
+        {
+          "color": "#00D4A1",
+          "defaultChannel": "workly-alerts"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

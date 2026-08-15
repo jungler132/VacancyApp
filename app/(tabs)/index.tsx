@@ -6,7 +6,6 @@ import { EmptyState } from '@/components/EmptyState';
 import { JobCard } from '@/components/JobCard';
 import { JobSkeletonList } from '@/components/JobSkeleton';
 import { JobsHeader } from '@/components/JobsHeader';
-import { ScreenBackdrop } from '@/components/ScreenBackdrop';
 import { useJobsFeed } from '@/lib/hooks/useJobsFeed';
 import { useTabBarLayout } from '@/lib/layout';
 import { colors } from '@/lib/theme';
@@ -29,7 +28,6 @@ export default function JobsScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenBackdrop />
       <FlatList
         data={feed.visibleIds}
         keyExtractor={keyExtractor}
@@ -88,7 +86,7 @@ export default function JobsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   list: { paddingHorizontal: 16 },
   headerWrap: { position: 'absolute', top: 0, left: 0, right: 0 },
 });

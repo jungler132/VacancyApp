@@ -27,9 +27,11 @@ export function useJobsQuery() {
   const region = useAppSelector((state) => state.filters.region);
   const categories = useAppSelector((state) => state.filters.categories);
   const enabledSources = useAppSelector(selectEnabledSources);
+  const sourcesReady = useAppSelector((state) => state.sources.ready);
   const category = apiCategory(categories);
 
   useEffect(() => {
+    if (!sourcesReady) return;
     const action = dispatch(
       fetchFeed({
         query,
@@ -41,12 +43,13 @@ export function useJobsQuery() {
       }),
     );
     return () => action.abort();
-  }, [dispatch, query, region, category, enabledSources]);
+  }, [dispatch, query, region, category, enabledSources, sourcesReady]);
 }
 
 export function useFilterSheet() {
   const dispatch = useAppDispatch();
   const open = useAppSelector((state) => state.filters.sheetOpen);
+  const query = useAppSelector((state) => state.filters.query);
   const region = useAppSelector((state) => state.filters.region);
   const categories = useAppSelector((state) => state.filters.categories);
   const extra = useAppSelector((state) => state.filters.extra);
@@ -56,6 +59,7 @@ export function useFilterSheet() {
     region,
     categories,
     extra: extra ?? DEFAULT_EXTRA_FILTERS,
+    query,
     setRegion: useCallback((value: RegionId) => dispatch(setRegion(value)), [dispatch]),
     onToggleCategory: useCallback((id: CategoryId) => dispatch(toggleFilterCategory(id)), [dispatch]),
     setExtra: useCallback((value: ExtraFilters) => dispatch(setExtra(value)), [dispatch]),
@@ -80,7 +84,7 @@ export function useJobsFeed() {
   const status = feed.status;
   const hasMore = feed.hasMore;
   const page = feed.page;
-  const loading = status === 'loading' && ids.length === 0;
+  const loading = ids.length === 0 && (status === 'loading' || status === 'idle');
   const loadingMore = status === 'loadingMore';
   const refreshing = status === 'refreshing';
   const cacheAge = feed.fetchedAt ? Date.now() - feed.fetchedAt : 0;

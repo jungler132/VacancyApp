@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
+import { applyStatusLabel, type ApplyStatus } from '@/lib/apply';
 import { displayName, formatDate, formatPlace } from '@/lib/format';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { toggleSaved } from '@/lib/store/savedSlice';
@@ -12,11 +13,20 @@ import { colors, fonts, radius } from '@/lib/theme';
 export const JobCard = memo(function JobCard({ jobId }: { jobId: string }) {
   const job = useAppSelector((state) => state.jobs.byId[jobId] ?? state.saved.items.find((item) => item.id === jobId));
   const saved = useAppSelector((state) => state.saved.items.some((item) => item.id === jobId));
+  const applyStatus = useAppSelector((state) => state.saved.statuses[jobId]);
   if (!job) return null;
-  return <JobCardView job={job} saved={saved} />;
+  return <JobCardView job={job} saved={saved} applyStatus={applyStatus} />;
 });
 
-const JobCardView = memo(function JobCardView({ job, saved }: { job: Job; saved: boolean }) {
+const JobCardView = memo(function JobCardView({
+  job,
+  saved,
+  applyStatus,
+}: {
+  job: Job;
+  saved: boolean;
+  applyStatus?: ApplyStatus;
+}) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const company = displayName(job.company);
@@ -59,6 +69,7 @@ const JobCardView = memo(function JobCardView({ job, saved }: { job: Job; saved:
       <Text style={styles.meta} numberOfLines={1}>
         {[formatPlace(job.location, job.remote), formatDate(job.publishedAt)].filter(Boolean).join(' · ')}
       </Text>
+      {applyStatus ? <Text style={styles.status}>{applyStatusLabel(applyStatus)}</Text> : null}
       {job.salary ? <Text style={styles.salary}>{job.salary}</Text> : null}
     </Pressable>
   );
@@ -89,5 +100,6 @@ const styles = StyleSheet.create({
   company: { color: colors.muted, fontSize: 13, fontFamily: fonts.medium, flex: 1 },
   title: { color: colors.text, fontSize: 16, fontFamily: fonts.bold, lineHeight: 22, marginTop: 8 },
   meta: { color: colors.faint, marginTop: 8, fontSize: 12, fontFamily: fonts.medium },
+  status: { color: colors.accent, marginTop: 8, fontSize: 12, fontFamily: fonts.semibold },
   salary: { color: colors.salary, fontFamily: fonts.bold, fontSize: 15, marginTop: 12 },
 });

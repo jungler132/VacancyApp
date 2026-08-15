@@ -1,4 +1,4 @@
-export type RegionId = 'all' | 'cis' | 'europe' | 'west' | 'asia' | 'remote';
+export type RegionId = 'all' | 'cis' | 'az' | 'europe' | 'west' | 'asia' | 'remote';
 
 export type CategoryId =
   | 'all'

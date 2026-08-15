@@ -1,10 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useIsFocused } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 import { AppHeader, FiltersButton } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
-import { ScreenBackdrop } from '@/components/ScreenBackdrop';
 import { StatsBars } from '@/components/StatsBars';
 import { StatsDonut } from '@/components/StatsDonut';
 import { useJobsFeed } from '@/lib/hooks/useJobsFeed';
@@ -16,12 +16,18 @@ import { colors, radius } from '@/lib/theme';
 export default function StatsScreen() {
   const tabBar = useTabBarLayout();
   const focused = useIsFocused();
+  const [chartsReady, setChartsReady] = useState(false);
   const feed = useJobsFeed();
   const stats = useAppSelector(selectJobStats);
 
+  useEffect(() => {
+    if (!focused || chartsReady) return;
+    const frame = requestAnimationFrame(() => setChartsReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [focused, chartsReady]);
+
   return (
     <View style={styles.screen}>
-      <ScreenBackdrop />
       <AppHeader
         title="Сводка"
         subtitle={`По текущим фильтрам ленты · ${stats.total} вакансий`}
@@ -53,7 +59,7 @@ export default function StatsScreen() {
                 <Text variant="bodySmall">с зарплатой</Text>
               </View>
             </View>
-            {focused ? (
+            {chartsReady ? (
               <>
                 <StatsDonut title="Источники" total={stats.total} slices={stats.sources} />
                 <StatsBars title="Формат" total={stats.total} slices={stats.formats} />
@@ -69,7 +75,7 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: 16 },
   kpis: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   kpi: {

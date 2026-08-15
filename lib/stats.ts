@@ -1,4 +1,4 @@
-import { CATEGORIES, jobMatchesSearch } from './catalog';
+import { CATEGORIES, jobMatchesAnyLang } from './catalog';
 import { salaryAmount } from './format';
 import { jobAgeDays } from './freshness';
 import { CHART_PALETTE, colors } from './theme';
@@ -51,7 +51,7 @@ function categoryLabel(job: Job): string {
   const hay = `${job.title} ${job.excerpt} ${job.category ?? ''}`;
   for (const category of CATEGORIES) {
     if (category.id === 'all') continue;
-    if (jobMatchesSearch(hay, '', category.id, 'ru') || jobMatchesSearch(hay, '', category.id, 'en')) {
+    if (jobMatchesAnyLang(hay, '', category.id)) {
       return category.label;
     }
   }

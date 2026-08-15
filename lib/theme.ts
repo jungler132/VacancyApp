@@ -59,6 +59,7 @@ export const shadows = {
 
 export const regionColor: Record<string, string> = {
   cis: '#00D4A1',
+  az: '#F0A05A',
   europe: '#7BA3FF',
   west: '#E8C572',
   asia: '#FF7A9C',

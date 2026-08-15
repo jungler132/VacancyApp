@@ -4,7 +4,6 @@ import { Card, Switch, Text } from 'react-native-paper';
 
 import { AppChip } from '@/components/AppChip';
 import { AppHeader } from '@/components/AppHeader';
-import { ScreenBackdrop } from '@/components/ScreenBackdrop';
 import { SOURCES, availableSourceIds } from '@/lib/api/aggregator';
 import { useTabBarLayout } from '@/lib/layout';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
@@ -26,7 +25,6 @@ export default function SourcesScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenBackdrop />
       <AppHeader title="Источники" />
       <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}>
         <Text variant="bodyMedium" style={styles.lead}>
@@ -72,7 +70,7 @@ export default function SourcesScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   scroll: { flex: 1 },
   content: { padding: 16, gap: 10 },
   lead: { opacity: 0.8, marginBottom: 4 },
