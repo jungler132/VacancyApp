@@ -22,12 +22,17 @@ export const ErrorBanner = memo(function ErrorBanner({
     ...(onDismiss ? [{ label: 'Закрыть', onPress: onDismiss }] : []),
   ];
 
+  const countLabel =
+    safe.length === 1
+      ? '1 источник не ответил'
+      : safe.length < 5
+        ? `${safe.length} источника не ответили`
+        : `${safe.length} источников не ответили`;
+
   return (
     <Banner visible icon="alert-circle-outline" actions={actions}>
-      {safe.length === 1 ? '1 источник не ответил' : `${safe.length} источника не ответили`}
-      {open
-        ? `\n${safe.map((error) => `${error.sourceName} — ${error.message}`).join('\n')}`
-        : ''}
+      {countLabel}
+      {open ? `\n${safe.map((error) => `${error.sourceName} — ${error.message}`).join('\n')}` : ''}
     </Banner>
   );
 });

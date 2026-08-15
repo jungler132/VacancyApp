@@ -13,6 +13,7 @@ import { displayName, formatDate, formatEmployment, formatPlace, joinMeta, split
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { isHhJobId } from '@/lib/api/providers/hh';
 import { hydrateJob } from '@/lib/store/jobsSlice';
+import { selectIsSaved, selectJobById } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
 import { colors, radius } from '@/lib/theme';
 
@@ -20,8 +21,8 @@ export default function JobDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const decoded = decodeURIComponent(Array.isArray(id) ? id[0] : (id ?? ''));
   const dispatch = useAppDispatch();
-  const job = useAppSelector((state) => state.jobs.byId[decoded] ?? state.saved.items.find((item) => item.id === decoded));
-  const saved = useAppSelector((state) => state.saved.items.some((item) => item.id === decoded));
+  const job = useAppSelector(selectJobById(decoded));
+  const saved = useAppSelector(selectIsSaved(decoded));
   const applyStatus = useAppSelector((state) => state.saved.statuses[decoded]);
 
   useEffect(() => {

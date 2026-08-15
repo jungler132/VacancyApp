@@ -1,6 +1,7 @@
 import type { Job, SearchParams } from '../../types';
 import { CIS_AREAS, buildQuery } from '../../catalog';
-import { excerptOf, fetchJson, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { fetchJson } from '../../http';
 
 type HhSalary = { from?: number | null; to?: number | null; currency?: string | null };
 type HhVacancy = {

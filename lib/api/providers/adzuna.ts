@@ -1,6 +1,7 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
-import { excerptOf, fetchJson, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { fetchJson } from '../../http';
 
 type AdzunaJob = {
   id?: string | number;

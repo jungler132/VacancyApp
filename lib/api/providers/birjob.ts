@@ -1,6 +1,7 @@
 import type { CategoryId, Job, SearchParams } from '../../types';
 import { jobMatchesAnyLang } from '../../catalog';
-import { excerptOf, fetchJson, toPublishedAt } from '../../format';
+import { excerptOf, toPublishedAt } from '../../format';
+import { fetchJson } from '../../http';
 
 type BirJobItem = {
   title?: string;

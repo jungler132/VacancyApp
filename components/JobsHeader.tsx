@@ -7,12 +7,14 @@ import { SearchField } from '@/components/SearchField';
 import { colors } from '@/lib/theme';
 
 export const JobsHeader = memo(function JobsHeader({
+  query,
   filtersActive,
   refreshing,
   onSearch,
   onOpenFilters,
   onRefresh,
 }: {
+  query?: string;
   filtersActive: boolean;
   refreshing?: boolean;
   onSearch: (value: string) => void;
@@ -37,7 +39,7 @@ export const JobsHeader = memo(function JobsHeader({
         </View>
       }>
       <View style={styles.search}>
-        <SearchField onSearch={onSearch} />
+        <SearchField value={query} onSearch={onSearch} />
       </View>
     </AppHeader>
   );

@@ -10,11 +10,12 @@ import {
   setRegion,
   toggleFilterCategory,
 } from '@/lib/store/filtersSlice';
-import { CACHE_TTL_MS, clearJobsCache, fetchFeed } from '@/lib/store/jobsSlice';
+import { CACHE_TTL_MS, clearJobsCache, dismissFeedErrors, fetchFeed } from '@/lib/store/jobsSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import {
   selectActiveFeed,
   selectEnabledSources,
+  selectFeedKey,
   selectFiltersActive,
   selectVisibleIds,
 } from '@/lib/store/selectors';
@@ -28,10 +29,11 @@ export function useJobsQuery() {
   const categories = useAppSelector((state) => state.filters.categories);
   const enabledSources = useAppSelector(selectEnabledSources);
   const sourcesReady = useAppSelector((state) => state.sources.ready);
+  const filtersReady = useAppSelector((state) => state.filters.ready);
   const category = apiCategory(categories);
 
   useEffect(() => {
-    if (!sourcesReady) return;
+    if (!sourcesReady || !filtersReady) return;
     const action = dispatch(
       fetchFeed({
         query,
@@ -43,7 +45,7 @@ export function useJobsQuery() {
       }),
     );
     return () => action.abort();
-  }, [dispatch, query, region, category, enabledSources, sourcesReady]);
+  }, [dispatch, query, region, category, enabledSources, sourcesReady, filtersReady]);
 }
 
 export function useFilterSheet() {
@@ -76,6 +78,7 @@ export function useJobsFeed() {
   const categories = useAppSelector((state) => state.filters.categories);
   const enabledSources = useAppSelector(selectEnabledSources);
   const feed = useAppSelector(selectActiveFeed);
+  const feedKey = useAppSelector(selectFeedKey);
   const visibleIds = useAppSelector(selectVisibleIds);
   const filtersActive = useAppSelector(selectFiltersActive);
   const category = apiCategory(categories);
@@ -147,6 +150,8 @@ export function useJobsFeed() {
     refresh,
     loadMore,
     resetCache,
+    errors: feed.errors,
+    dismissErrors: useCallback(() => dispatch(dismissFeedErrors(feedKey)), [dispatch, feedKey]),
     openSheet: useCallback(() => dispatch(openFilters()), [dispatch]),
     resetFilters: useCallback(() => dispatch(resetFilters()), [dispatch]),
   };

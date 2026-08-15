@@ -3,6 +3,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { JobCard } from '@/components/JobCard';
 import { JobSkeletonList } from '@/components/JobSkeleton';
 import { JobsHeader } from '@/components/JobsHeader';
@@ -74,12 +75,16 @@ export default function JobsScreen() {
 
       <View style={styles.headerWrap} onLayout={(event) => onHeaderLayout(event.nativeEvent.layout.height)}>
         <JobsHeader
+          query={feed.query}
           filtersActive={feed.filtersActive}
           refreshing={feed.refreshing}
           onSearch={feed.setQuery}
           onOpenFilters={feed.openSheet}
           onRefresh={feed.refresh}
         />
+        {feed.errors.length ? (
+          <ErrorBanner errors={feed.errors} onRetry={feed.refresh} onDismiss={feed.dismissErrors} />
+        ) : null}
       </View>
     </View>
   );

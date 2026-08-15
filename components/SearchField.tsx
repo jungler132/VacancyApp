@@ -5,16 +5,23 @@ import { Searchbar } from 'react-native-paper';
 import { colors, radius } from '@/lib/theme';
 
 export const SearchField = memo(function SearchField({
+  value = '',
   onSearch,
 }: {
+  value?: string;
   onSearch: (value: string) => void;
 }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(value);
 
   useEffect(() => {
+    setText(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (text.trim() === value.trim()) return;
     const timer = setTimeout(() => onSearch(text.trim()), text ? 400 : 0);
     return () => clearTimeout(timer);
-  }, [text, onSearch]);
+  }, [text, onSearch, value]);
 
   return (
     <Searchbar

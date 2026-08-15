@@ -16,6 +16,7 @@ const emptyFeed: FeedCache = {
   ids: [],
   page: 0,
   hasMore: false,
+  exhaustedSources: [],
   errors: [],
   fetchedAt: 0,
   status: 'idle',
@@ -88,16 +89,21 @@ export const selectFeedJobs = (query: string, region: RegionId, category: Catego
     (feed, byId) => (feed?.ids ?? []).map((id) => byId[id]).filter(Boolean),
   );
 
-export const selectJobById = (id: string) => (state: RootState) =>
-  state.jobs.byId[id] ?? state.saved.items.find((item) => item.id === id);
-
-export const selectIsSaved = (id: string) => (state: RootState) =>
-  state.saved.items.some((item) => item.id === id);
-
-export const selectSavedIdSet = createSelector(
+export const selectSavedJobMap = createSelector(
   [(state: RootState) => state.saved.items],
-  (items) => new Set(items.map((item) => item.id)),
+  (items) => {
+    const map: Record<string, Job> = Object.create(null);
+    for (const item of items) map[item.id] = item;
+    return map;
+  },
 );
+
+export const selectJobById = (id: string) => (state: RootState) =>
+  state.jobs.byId[id] ?? selectSavedJobMap(state)[id];
+
+export const selectIsSaved = (id: string) => (state: RootState) => Boolean(selectSavedJobMap(state)[id]);
+
+export const selectSavedIdSet = createSelector([selectSavedJobMap], (map) => new Set(Object.keys(map)));
 
 const EMPTY_ERRORS: SourceError[] = [];
 

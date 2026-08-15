@@ -44,6 +44,7 @@ export type SearchParams = {
   category: CategoryId;
   page: number;
   enabledSources?: string[];
+  exhaustedSources?: string[];
   signal?: AbortSignal;
 };
 
@@ -57,6 +58,7 @@ export type SearchResult = {
   jobs: Job[];
   errors: SourceError[];
   hasMore: boolean;
+  exhaustedSources: string[];
 };
 
 export type SourceStatus = 'live' | 'key' | 'soon';

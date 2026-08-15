@@ -1,6 +1,7 @@
 import type { Job, SearchParams } from '../../types';
 import { jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, fetchJson, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { fetchJson } from '../../http';
 
 type RemoteOkJob = {
   id?: string | number;

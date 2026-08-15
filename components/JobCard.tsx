@@ -6,13 +6,14 @@ import MaterialDesignIcons from '@react-native-vector-icons/material-design-icon
 import { applyStatusLabel, type ApplyStatus } from '@/lib/apply';
 import { displayName, formatDate, formatPlace } from '@/lib/format';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { selectIsSaved, selectJobById } from '@/lib/store/selectors';
 import { toggleSaved } from '@/lib/store/savedSlice';
 import type { Job } from '@/lib/types';
 import { colors, fonts, radius } from '@/lib/theme';
 
 export const JobCard = memo(function JobCard({ jobId }: { jobId: string }) {
-  const job = useAppSelector((state) => state.jobs.byId[jobId] ?? state.saved.items.find((item) => item.id === jobId));
-  const saved = useAppSelector((state) => state.saved.items.some((item) => item.id === jobId));
+  const job = useAppSelector(selectJobById(jobId));
+  const saved = useAppSelector(selectIsSaved(jobId));
   const applyStatus = useAppSelector((state) => state.saved.statuses[jobId]);
   if (!job) return null;
   return <JobCardView job={job} saved={saved} applyStatus={applyStatus} />;

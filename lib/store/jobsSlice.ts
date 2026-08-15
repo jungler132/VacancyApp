@@ -3,7 +3,10 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 import { searchJobs } from '@/lib/api/aggregator';
 import { fetchHeadHunterDetails, hhVacancyId, isHhJobId } from '@/lib/api/providers/hh';
 import { isAbortError } from '@/lib/api/errors';
+import { makeFeedKey } from '@/lib/feedKey';
 import type { CategoryId, Job, RegionId, SourceError } from '@/lib/types';
+
+export { makeFeedKey } from '@/lib/feedKey';
 
 export const CACHE_TTL_MS = 10 * 60 * 1000;
 const MAX_FEEDS = 18;
@@ -14,6 +17,7 @@ export type FeedCache = {
   ids: string[];
   page: number;
   hasMore: boolean;
+  exhaustedSources: string[];
   errors: SourceError[];
   fetchedAt: number;
   status: FeedStatus;
@@ -30,10 +34,6 @@ const initialState: JobsState = {
   feeds: {},
   lru: [],
 };
-
-export function makeFeedKey(query: string, region: RegionId, category: CategoryId, sources: string[] = []): string {
-  return `v6|${region}|${category}|${query.trim().toLowerCase()}|${[...sources].sort().join(',')}`;
-}
 
 function sameJob(prev: Job, next: Job) {
   return (
@@ -64,6 +64,31 @@ function touchLru(state: JobsState, key: string) {
   }
 }
 
+function pruneById(state: JobsState, extraKeep: string[] = []) {
+  const keep = new Set(extraKeep);
+  for (const feed of Object.values(state.feeds)) {
+    for (const id of feed.ids) keep.add(id);
+  }
+  for (const [id, job] of Object.entries(state.byId)) {
+    if (job.description) keep.add(id);
+  }
+  for (const id of Object.keys(state.byId)) {
+    if (!keep.has(id)) delete state.byId[id];
+  }
+}
+
+function mergeExhausted(prev: string[] | undefined, next: string[]): string[] {
+  if (!prev?.length) return next;
+  const seen = new Set(prev);
+  const out = [...prev];
+  for (const id of next) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 export const fetchFeed = createAsyncThunk(
   'jobs/fetchFeed',
   async (
@@ -75,14 +100,18 @@ export const fetchFeed = createAsyncThunk(
       page: number;
       mode: 'replace' | 'append' | 'refresh';
     },
-    { signal },
+    { signal, getState },
   ) => {
+    const jobsState = (getState() as { jobs: JobsState }).jobs;
+    const key = makeFeedKey(args.query, args.region, args.category, args.enabledSources);
+    const exhausted = args.mode === 'append' ? jobsState.feeds[key]?.exhaustedSources : undefined;
     const result = await searchJobs({
       query: args.query,
       region: args.region,
       category: args.category,
       enabledSources: args.enabledSources,
       page: args.page,
+      exhaustedSources: exhausted,
       signal,
     });
     if (signal.aborted) {
@@ -92,7 +121,7 @@ export const fetchFeed = createAsyncThunk(
     }
     return {
       ...result,
-      key: makeFeedKey(args.query, args.region, args.category, args.enabledSources),
+      key,
       page: args.page,
       mode: args.mode,
     };
@@ -125,6 +154,9 @@ const jobsSlice = createSlice({
     rememberJobs(state, action: PayloadAction<Job[]>) {
       upsertJobs(state, action.payload);
     },
+    pruneUnreferencedJobs(state, action: PayloadAction<string[]>) {
+      pruneById(state, action.payload);
+    },
     clearJobsCache(state) {
       state.feeds = {};
       state.lru = [];
@@ -145,6 +177,7 @@ const jobsSlice = createSlice({
           ids: current?.ids ?? [],
           page: current?.page ?? 0,
           hasMore: current?.hasMore ?? true,
+          exhaustedSources: mode === 'append' ? (current?.exhaustedSources ?? []) : [],
           errors: current?.errors ?? [],
           fetchedAt: current?.fetchedAt ?? 0,
           status,
@@ -152,7 +185,7 @@ const jobsSlice = createSlice({
         touchLru(state, key);
       })
       .addCase(fetchFeed.fulfilled, (state, action) => {
-        const { key, jobs, errors, hasMore, page, mode } = action.payload;
+        const { key, jobs, errors, hasMore, exhaustedSources, page, mode } = action.payload;
         upsertJobs(state, jobs);
         const current = state.feeds[key];
         const prevIds = mode === 'append' ? (current?.ids ?? []) : [];
@@ -167,6 +200,8 @@ const jobsSlice = createSlice({
           ids,
           page,
           hasMore,
+          exhaustedSources:
+            mode === 'append' ? mergeExhausted(current?.exhaustedSources, exhaustedSources) : exhaustedSources,
           errors,
           fetchedAt: Date.now(),
           status: ids.length === 0 && errors.length > 0 ? 'error' : 'ready',
@@ -200,5 +235,5 @@ const jobsSlice = createSlice({
   },
 });
 
-export const { rememberJobs, clearJobsCache, dismissFeedErrors } = jobsSlice.actions;
+export const { rememberJobs, pruneUnreferencedJobs, clearJobsCache, dismissFeedErrors } = jobsSlice.actions;
 export default jobsSlice.reducer;

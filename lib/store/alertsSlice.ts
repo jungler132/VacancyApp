@@ -1,11 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import {
-  ALERTS_KEY,
   MAX_ALERTS,
+  loadAlerts,
   makeAlertKey,
-  normalizeAlerts,
   type SavedSearch,
   type SearchSnapshot,
 } from '@/lib/alerts';
@@ -20,19 +18,7 @@ const initialState: AlertsState = {
   ready: false,
 };
 
-export const hydrateAlerts = createAsyncThunk('alerts/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(ALERTS_KEY);
-  if (!raw) return [] as SavedSearch[];
-  try {
-    return normalizeAlerts(JSON.parse(raw));
-  } catch {
-    return [];
-  }
-});
-
-export async function persistAlertsState(items: SavedSearch[]) {
-  await AsyncStorage.setItem(ALERTS_KEY, JSON.stringify(items)).catch(() => undefined);
-}
+export const hydrateAlerts = createAsyncThunk('alerts/hydrate', () => loadAlerts());
 
 const alertsSlice = createSlice({
   name: 'alerts',

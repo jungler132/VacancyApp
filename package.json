@@ -8,7 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "apk": "node scripts/build-apk.cjs"
+    "apk": "node scripts/build-apk.cjs",
+    "test": "tsx --test lib/api/aggregator.test.ts lib/filters.test.ts lib/feedKey.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "tsx": "^4.23.12",
     "typescript": "~6.0.3"
   }
 }

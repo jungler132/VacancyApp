@@ -2,11 +2,27 @@ import { configureStore, createListenerMiddleware, isAnyOf } from '@reduxjs/tool
 
 import { apiCategory } from '@/lib/catalog';
 import { filterFeedIds } from '@/lib/filters';
-import jobsReducer, { fetchFeed, rememberJobs } from './jobsSlice';
+import jobsReducer, {
+  clearJobsCache,
+  fetchFeed,
+  pruneUnreferencedJobs,
+  rememberJobs,
+} from './jobsSlice';
 import savedReducer, { hydrateSaved, persistSaved, setApplyStatus, toggleSaved } from './savedSlice';
 import sourcesReducer, { hydrateSources, persistDisabledSources, toggleSource } from './sourcesSlice';
-import filtersReducer from './filtersSlice';
-import alertsReducer, { hydrateAlerts, persistAlertsState, rememberSeen, removeSearch, saveSearch, toggleSearch } from './alertsSlice';
+import filtersReducer, {
+  applySearch,
+  hydrateFilters,
+  persistFilters,
+  resetFilters,
+  setExtra,
+  setMaxAgeDays,
+  setQuery,
+  setRegion,
+  toggleFilterCategory,
+} from './filtersSlice';
+import alertsReducer, { hydrateAlerts, rememberSeen, removeSearch, saveSearch, toggleSearch } from './alertsSlice';
+import { persistAlerts } from '@/lib/alerts';
 
 const listener = createListenerMiddleware();
 
@@ -33,7 +49,24 @@ listener.startListening({
   matcher: isAnyOf(saveSearch, removeSearch, toggleSearch, rememberSeen),
   effect: async (_action, listenerApi) => {
     const items = (listenerApi.getState() as RootState).alerts.items;
-    await persistAlertsState(items);
+    await persistAlerts(items);
+  },
+});
+
+listener.startListening({
+  matcher: isAnyOf(setQuery, setRegion, setExtra, setMaxAgeDays, toggleFilterCategory, resetFilters, applySearch),
+  effect: async (_action, listenerApi) => {
+    const filters = (listenerApi.getState() as RootState).filters;
+    if (!filters.ready) return;
+    await persistFilters(filters);
+  },
+});
+
+listener.startListening({
+  matcher: isAnyOf(fetchFeed.pending, fetchFeed.fulfilled, fetchFeed.rejected, clearJobsCache),
+  effect: (_action, listenerApi) => {
+    const savedIds = (listenerApi.getState() as RootState).saved.items.map((item) => item.id);
+    listenerApi.dispatch(pruneUnreferencedJobs(savedIds));
   },
 });
 
@@ -76,6 +109,7 @@ export const store = configureStore({
 
 store.dispatch(hydrateSaved());
 store.dispatch(hydrateSources());
+store.dispatch(hydrateFilters());
 store.dispatch(hydrateAlerts());
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -1,9 +1,43 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { toggleCategory } from '@/lib/catalog';
-import { DEFAULT_EXTRA_FILTERS, type AgeFilter, type ExtraFilters } from '@/lib/filters';
+import {
+  DEFAULT_EXTRA_FILTERS,
+  type AgeFilter,
+  type EmploymentFilter,
+  type ExtraFilters,
+  type WorkFormat,
+} from '@/lib/filters';
 import type { CategoryId, RegionId } from '@/lib/types';
 import type { SearchSnapshot } from '@/lib/alerts';
+
+export const FILTERS_KEY = 'workly:filters';
+
+const REGIONS: RegionId[] = ['all', 'cis', 'az', 'europe', 'west', 'asia', 'remote'];
+const CATEGORIES: CategoryId[] = [
+  'all',
+  'sales',
+  'medicine',
+  'logistics',
+  'construction',
+  'education',
+  'hospitality',
+  'manufacturing',
+  'finance',
+  'admin',
+  'it',
+  'marketing',
+  'legal',
+  'agriculture',
+  'security',
+  'beauty',
+  'hr',
+  'home',
+];
+const AGES: AgeFilter[] = [3, 7, 14, 30, 90];
+const FORMATS: WorkFormat[] = ['any', 'remote', 'office'];
+const EMPLOYMENTS: EmploymentFilter[] = ['any', 'full', 'part', 'shift'];
 
 export type FiltersState = {
   query: string;
@@ -11,6 +45,14 @@ export type FiltersState = {
   categories: CategoryId[];
   extra: ExtraFilters;
   sheetOpen: boolean;
+  ready: boolean;
+};
+
+type PersistedFilters = {
+  query: string;
+  region: RegionId;
+  categories: CategoryId[];
+  extra: ExtraFilters;
 };
 
 const initialState: FiltersState = {
@@ -19,7 +61,64 @@ const initialState: FiltersState = {
   categories: ['all'],
   extra: DEFAULT_EXTRA_FILTERS,
   sheetOpen: false,
+  ready: false,
 };
+
+function asRegion(value: unknown): RegionId {
+  return typeof value === 'string' && (REGIONS as string[]).includes(value) ? (value as RegionId) : 'cis';
+}
+
+function asCategories(value: unknown): CategoryId[] {
+  if (!Array.isArray(value)) return ['all'];
+  const next = value.filter((id): id is CategoryId => typeof id === 'string' && (CATEGORIES as string[]).includes(id));
+  return next.length ? next : ['all'];
+}
+
+function asExtra(value: unknown): ExtraFilters {
+  const row = value && typeof value === 'object' ? (value as Partial<ExtraFilters>) : {};
+  const salaryMin =
+    typeof row.salaryMin === 'number' && Number.isFinite(row.salaryMin) && row.salaryMin > 0 ? row.salaryMin : null;
+  return {
+    salaryMin,
+    format: FORMATS.includes(row.format as WorkFormat) ? (row.format as WorkFormat) : 'any',
+    employment: EMPLOYMENTS.includes(row.employment as EmploymentFilter)
+      ? (row.employment as EmploymentFilter)
+      : 'any',
+    maxAgeDays: AGES.includes(row.maxAgeDays as AgeFilter) ? (row.maxAgeDays as AgeFilter) : DEFAULT_EXTRA_FILTERS.maxAgeDays,
+  };
+}
+
+export function parsePersistedFilters(raw: unknown): PersistedFilters {
+  const row = raw && typeof raw === 'object' ? (raw as Partial<PersistedFilters>) : {};
+  return {
+    query: typeof row.query === 'string' ? row.query : '',
+    region: asRegion(row.region),
+    categories: asCategories(row.categories),
+    extra: asExtra(row.extra),
+  };
+}
+
+export const hydrateFilters = createAsyncThunk('filters/hydrate', async (): Promise<PersistedFilters> => {
+  const raw = await AsyncStorage.getItem(FILTERS_KEY);
+  if (!raw) return parsePersistedFilters(null);
+  try {
+    return parsePersistedFilters(JSON.parse(raw));
+  } catch {
+    return parsePersistedFilters(null);
+  }
+});
+
+export async function persistFilters(state: PersistedFilters): Promise<void> {
+  await AsyncStorage.setItem(
+    FILTERS_KEY,
+    JSON.stringify({
+      query: state.query,
+      region: state.region,
+      categories: state.categories,
+      extra: state.extra,
+    }),
+  ).catch(() => undefined);
+}
 
 const filtersSlice = createSlice({
   name: 'filters',
@@ -59,6 +158,19 @@ const filtersSlice = createSlice({
       state.extra = action.payload.extra ?? DEFAULT_EXTRA_FILTERS;
       state.sheetOpen = false;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(hydrateFilters.fulfilled, (state, action) => {
+        state.query = action.payload.query;
+        state.region = action.payload.region;
+        state.categories = action.payload.categories;
+        state.extra = action.payload.extra;
+        state.ready = true;
+      })
+      .addCase(hydrateFilters.rejected, (state) => {
+        state.ready = true;
+      });
   },
 });
 

@@ -1,6 +1,7 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery, jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, fetchJson, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { fetchJson } from '../../http';
 
 type RemotiveJob = {
   id?: number;
