@@ -7,12 +7,14 @@ import { FiltersButton } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { StatsBars } from '@/components/StatsBars';
 import { StatsDonut } from '@/components/StatsDonut';
+import { useT } from '@/lib/i18n/useT';
 import { useJobsFeed } from '@/lib/hooks/useJobsFeed';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectJobStats } from '@/lib/store/selectors';
 import { colors, radius } from '@/lib/theme';
 
 export default function StatsScreen() {
+  const t = useT();
   const focused = useIsFocused();
   const [chartsReady, setChartsReady] = useState(false);
   const feed = useJobsFeed();
@@ -27,17 +29,17 @@ export default function StatsScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.toolbar}>
-        <Text style={styles.note}>По текущим фильтрам ленты · {stats.total} вакансий</Text>
+        <Text style={styles.note}>{t('stats.note', { count: stats.total })}</Text>
         <FiltersButton active={feed.filtersActive} onPress={feed.openSheet} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {feed.loading && !stats.total ? (
-          <EmptyState title="Считаем сводку" subtitle="Загружаем вакансии по выбранным фильтрам." />
+          <EmptyState title={t('stats.loading')} subtitle={t('stats.loadingHint')} />
         ) : !stats.total ? (
           <EmptyState
-            title="Пока пусто"
-            subtitle="Смените фильтры или обновите ленту вакансий."
-            actionLabel={feed.filtersActive ? 'Сбросить фильтры' : 'Обновить'}
+            title={t('common.empty')}
+            subtitle={t('stats.emptyHint')}
+            actionLabel={feed.filtersActive ? t('common.resetFilters') : t('common.refresh')}
             onAction={feed.filtersActive ? feed.resetFilters : feed.refresh}
           />
         ) : (
@@ -45,23 +47,23 @@ export default function StatsScreen() {
             <View style={styles.kpis}>
               <View style={styles.kpi}>
                 <Text variant="headlineSmall">{stats.total}</Text>
-                <Text variant="bodySmall">вакансий</Text>
+                <Text variant="bodySmall">{t('stats.jobs')}</Text>
               </View>
               <View style={styles.kpi}>
                 <Text variant="headlineSmall">{stats.remote}</Text>
-                <Text variant="bodySmall">удалёнка</Text>
+                <Text variant="bodySmall">{t('stats.remote')}</Text>
               </View>
               <View style={styles.kpi}>
                 <Text variant="headlineSmall">{stats.withSalary}</Text>
-                <Text variant="bodySmall">с зарплатой</Text>
+                <Text variant="bodySmall">{t('stats.salary')}</Text>
               </View>
             </View>
             {chartsReady ? (
               <>
-                <StatsDonut title="Источники" total={stats.total} slices={stats.sources} />
-                <StatsBars title="Формат" total={stats.total} slices={stats.formats} />
-                <StatsBars title="Давность" total={stats.total} slices={stats.ages} />
-                <StatsBars title="Сферы" total={stats.total} slices={stats.categories} />
+                <StatsDonut title={t('stats.sources')} total={stats.total} slices={stats.sources} />
+                <StatsBars title={t('stats.format')} total={stats.total} slices={stats.formats} />
+                <StatsBars title={t('stats.age')} total={stats.total} slices={stats.ages} />
+                <StatsBars title={t('stats.categories')} total={stats.total} slices={stats.categories} />
               </>
             ) : null}
           </>

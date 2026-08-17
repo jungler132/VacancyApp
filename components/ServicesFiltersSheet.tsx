@@ -2,6 +2,8 @@ import { memo, useCallback } from 'react';
 
 import { FilterSheetFrame, FilterSheetSection } from '@/components/FilterSheetFrame';
 import { SelectChip } from '@/components/FilterChips';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 import { SERVICE_KIND_FILTERS } from '@/lib/services/kinds';
 import type { ServiceKindId } from '@/lib/services/types';
 
@@ -20,6 +22,7 @@ export const ServicesFiltersSheet = memo(function ServicesFiltersSheet({
   onClose: () => void;
   onReset: () => void;
 }) {
+  const t = useT();
   const onKind = useCallback(
     (id: string | number) => {
       const next = String(id) as ServiceKindId | 'all';
@@ -36,15 +39,17 @@ export const ServicesFiltersSheet = memo(function ServicesFiltersSheet({
     <FilterSheetFrame
       open={open}
       dirty={kind !== 'all'}
-      doneLabel={`Показать ${resultCount}`}
+      title={t('filters.title')}
+      resetLabel={t('common.reset')}
+      doneLabel={t('filters.showCount', { count: resultCount })}
       onClose={onClose}
       onReset={onReset}>
-      <FilterSheetSection title="Вид услуги">
+      <FilterSheetSection title={t('services.kind')}>
         {SERVICE_KIND_FILTERS.map((item) => (
           <SelectChip
             key={item.id}
             id={item.id}
-            label={item.label}
+            label={t(keyOf('kind', item.id))}
             icon={item.icon}
             selected={kind === item.id}
             onChange={onKind}

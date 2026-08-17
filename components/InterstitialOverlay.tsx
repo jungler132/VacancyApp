@@ -8,6 +8,7 @@ import {
 } from '@/lib/ads';
 import { colors, fonts, radius } from '@/lib/theme';
 import { Text } from '@/components/AppText';
+import { useT } from '@/lib/i18n/useT';
 
 export const InterstitialHost = memo(function InterstitialHost() {
   const [open, setOpen] = useState(false);
@@ -19,6 +20,7 @@ export const InterstitialHost = memo(function InterstitialHost() {
 });
 
 const InterstitialOverlay = memo(function InterstitialOverlay() {
+  const t = useT();
   const [left, setLeft] = useState(INTERSTITIAL_SKIP_AFTER_SEC);
   const canSkip = left <= 0;
 
@@ -43,18 +45,18 @@ const InterstitialOverlay = memo(function InterstitialOverlay() {
       statusBarTranslucent
       onRequestClose={dismissInterstitial}>
       <View style={styles.root}>
-        <Text style={styles.kicker}>Реклама</Text>
+        <Text style={styles.kicker}>{t('ads.kicker')}</Text>
         <View style={styles.card}>
-          <Text style={styles.soon}>Скоро</Text>
-          <Text style={styles.title}>Здесь будет объявление</Text>
-          <Text style={styles.note}>Заглушка. Настоящая реклама подключится позже.</Text>
+          <Text style={styles.soon}>{t('ads.soon')}</Text>
+          <Text style={styles.title}>{t('ads.title')}</Text>
+          <Text style={styles.note}>{t('ads.note')}</Text>
         </View>
         <Pressable
           onPress={canSkip ? dismissInterstitial : undefined}
           disabled={!canSkip}
           style={({ pressed }) => [styles.skip, !canSkip && styles.skipOff, pressed && canSkip && styles.pressed]}>
           <Text style={[styles.skipLabel, !canSkip && styles.skipLabelOff]}>
-            {canSkip ? 'Пропустить' : `Пропустить через ${left} с`}
+            {canSkip ? t('ads.skip') : t('ads.skipIn', { sec: left })}
           </Text>
         </Pressable>
       </View>

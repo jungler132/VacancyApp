@@ -8,7 +8,7 @@ import { colors, radius } from '@/lib/theme';
 export const SearchField = memo(function SearchField({
   value = '',
   onSearch,
-  placeholder = 'Должность или компания',
+  placeholder = '',
 }: {
   value?: string;
   onSearch: (value: string) => void;

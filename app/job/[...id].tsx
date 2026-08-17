@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
@@ -12,7 +12,9 @@ import { requestInterstitial } from '@/lib/ads';
 import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
 import { displayName, formatDate, formatPlace, joinMeta, jobFacts, stripHtml } from '@/lib/format';
 import { Text as AppText } from '@/components/AppText';
-import { colors, fonts, radius } from '@/lib/theme';
+import { keyOf, tokenLabel } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n/useT';
+import { detectTextLocale, translateJobTexts, type JobTextBundle } from '@/lib/translate';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { isHhJobId } from '@/lib/api/providers/hh';
 import { hydrateJob } from '@/lib/store/jobsSlice';
@@ -21,12 +23,15 @@ import { matchRouteJobId, parseJobIdParam } from '@/lib/jobRoute';
 import { selectIsSaved, selectJobById, selectViewedJob } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
 import { isLocalJob, jobTier } from '@/lib/tiers';
+import { colors, fonts, radius } from '@/lib/theme';
 
 export default function JobDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const decoded = parseJobIdParam(id);
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const t = useT();
+  const locale = useLocale();
   const viewed = useAppSelector(selectViewedJob);
   const byId = useAppSelector((state) => state.jobs.byId);
   const lookupId = matchRouteJobId(decoded, Object.keys(byId), viewed?.id);
@@ -77,25 +82,69 @@ export default function JobDetailsScreen() {
 
   const meta = useMemo(() => {
     if (!job) return '';
-    return joinMeta([formatPlace(job.location, job.remote), formatDate(job.publishedAt)]);
-  }, [job]);
+    const place = formatPlace(job.location, job.remote) || (job.remote ? t('fact.remote') : '');
+    return joinMeta([place, formatDate(job.publishedAt, locale)]);
+  }, [job, locale, t]);
+
+  const [translated, setTranslated] = useState<JobTextBundle | null>(null);
+  const [showTranslated, setShowTranslated] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTranslated(null);
+    setShowTranslated(false);
+    setTranslateError(null);
+  }, [job?.id, locale]);
 
   const facts = useMemo(() => (job ? jobFacts(job) : []), [job]);
+  const sourceText = `${job?.title ?? ''} ${job?.company ?? ''} ${body}`;
+  const alreadyLocale = Boolean(sourceText.trim()) && detectTextLocale(sourceText) === locale;
+
+  const onTranslate = useCallback(async () => {
+    if (!job) return;
+    if (showTranslated) {
+      setShowTranslated(false);
+      return;
+    }
+    if (translated) {
+      setShowTranslated(true);
+      return;
+    }
+    setTranslating(true);
+    setTranslateError(null);
+    try {
+      const next = await translateJobTexts(
+        { title: job.title, company: displayName(job.company), body },
+        locale,
+      );
+      setTranslated(next);
+      setShowTranslated(true);
+    } catch {
+      setTranslateError(t('job.translateFail'));
+    } finally {
+      setTranslating(false);
+    }
+  }, [body, job, locale, showTranslated, t, translated]);
 
   if (!job) {
     return (
       <View style={styles.center}>
-        <EmptyState title="Вакансия не найдена" subtitle="Вернитесь к ленте и выберите другую." />
+        <EmptyState title={t('job.notFound')} subtitle={t('job.notFoundHint')} />
       </View>
     );
   }
 
+  const title = showTranslated && translated ? translated.title : job.title;
+  const company = showTranslated && translated ? translated.company : displayName(job.company);
+  const text = showTranslated && translated ? translated.body : body;
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text variant="labelMedium" style={styles.company}>
-        {displayName(job.company)}
+        {company}
       </Text>
-      <Text variant="headlineSmall">{job.title}</Text>
+      <Text variant="headlineSmall">{title}</Text>
       {meta ? (
         <Text variant="bodyMedium" style={styles.meta}>
           {meta}
@@ -109,34 +158,34 @@ export default function JobDetailsScreen() {
       {facts.length ? (
         <View style={styles.facts}>
           {facts.map((fact) => (
-            <View key={fact.label} style={styles.fact}>
+            <View key={fact.id} style={styles.fact}>
               <Text variant="labelSmall" style={styles.factLabel}>
-                {fact.label}
+                {t(keyOf('job.fact', fact.id))}
               </Text>
               <Text variant="bodyMedium" style={styles.factValue}>
-                {fact.value}
+                {tokenLabel(locale, fact.value)}
               </Text>
             </View>
           ))}
         </View>
       ) : null}
       <View style={styles.tag}>
-        <AppChip label={jobTier(job) === 1 ? 'Премиум' : job.sourceName} selected />
+        <AppChip label={jobTier(job) === 1 ? t('common.premium') : job.sourceName} selected />
       </View>
       {job.contact ? (
         <Text variant="bodyMedium" style={styles.meta}>
-          Контакт: {job.contact}
+          {t('job.contact', { value: job.contact })}
         </Text>
       ) : null}
       <Text variant="labelSmall" style={styles.statusTitle}>
-        Статус отклика
+        {t('job.status')}
       </Text>
       <View style={styles.statusRow}>
         {APPLY_STATUSES.map((item) => (
           <SelectChip
             key={item.id}
             id={item.id}
-            label={item.label}
+            label={t(keyOf('apply', item.id))}
             compact
             selected={applyStatus === item.id}
             onChange={onStatus}
@@ -146,27 +195,34 @@ export default function JobDetailsScreen() {
 
       {!job.description && isHhJobId(job.id) ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
 
-      {body ? (
+      {text ? (
         <AppText style={styles.body} selectable>
-          {body}
+          {text}
         </AppText>
       ) : null}
-      {snippetOnly ? (
-        <AppText style={styles.snippetHint}>Полное описание откроется на сайте источника.</AppText>
+      {snippetOnly && !showTranslated ? (
+        <AppText style={styles.snippetHint}>{t('job.snippet')}</AppText>
       ) : null}
+      {translateError ? <AppText style={styles.snippetHint}>{translateError}</AppText> : null}
+      {alreadyLocale && !showTranslated ? (
+        <AppText style={styles.snippetHint}>{t('job.alreadyLocale')}</AppText>
+      ) : null}
+      <Button mode="outlined" onPress={onTranslate} disabled={translating} style={styles.secondary}>
+        {translating ? t('job.translating') : showTranslated ? t('job.translateHide') : t('job.translate')}
+      </Button>
 
       {job.url ? (
         <Button mode="contained" onPress={open} style={styles.primary}>
-          Откликнуться
+          {t('job.apply')}
         </Button>
       ) : null}
       {job.url ? <CopyLinkButton url={job.url} /> : null}
       <Button mode="outlined" onPress={toggle} icon={saved ? 'star' : 'star-outline'} style={styles.secondary}>
-        {saved ? 'Убрать из избранного' : 'Сохранить'}
+        {saved ? t('common.unsave') : t('common.save')}
       </Button>
       {isLocalJob(job) ? (
         <Button mode="text" onPress={onDelete} textColor={colors.danger} style={styles.secondary}>
-          Удалить вакансию
+          {t('job.delete')}
         </Button>
       ) : null}
     </ScrollView>

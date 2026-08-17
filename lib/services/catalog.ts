@@ -40,8 +40,8 @@ export function offerContact(offer: ServiceOffer, profile: ServiceProfile): { ph
   };
 }
 
-export function offerPriceLabel(offer: Pick<ServiceOffer, 'price' | 'currency'>): string {
-  return composeSalary(offer.price, offer.currency) ?? 'Цена по договорённости';
+export function offerPriceLabel(offer: Pick<ServiceOffer, 'price' | 'currency'>, fallback = 'Цена по договорённости'): string {
+  return composeSalary(offer.price, offer.currency) ?? fallback;
 }
 
 export function masterHref(id: string): Href {
@@ -54,3 +54,5 @@ export function offerEditorHref(id: string): Href {
 
 export const SERVICE_ME_HREF = '/service/me' as unknown as Href;
 export const STATS_HREF = '/stats' as unknown as Href;
+export const SAVED_HREF = '/saved' as unknown as Href;
+export const SETTINGS_HREF = '/settings' as unknown as Href;

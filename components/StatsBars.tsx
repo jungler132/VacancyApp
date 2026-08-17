@@ -2,8 +2,12 @@ import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
+import { tokenLabel } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n/useT';
 import type { StatSlice } from '@/lib/stats';
 import { colors, radius } from '@/lib/theme';
+
+const STAT_PREFIXES = ['stats.age', 'fact', 'category', 'kind'];
 
 export const StatsBars = memo(function StatsBars({
   title,
@@ -14,6 +18,8 @@ export const StatsBars = memo(function StatsBars({
   total: number;
   slices: StatSlice[];
 }) {
+  const t = useT();
+  const locale = useLocale();
   const max = Math.max(total, 1);
 
   return (
@@ -25,7 +31,7 @@ export const StatsBars = memo(function StatsBars({
             <View key={slice.id} style={styles.row}>
               <View style={styles.meta}>
                 <Text variant="bodySmall" numberOfLines={1} style={styles.label}>
-                  {slice.label}
+                  {tokenLabel(locale, slice.id, STAT_PREFIXES)}
                 </Text>
                 <Text variant="labelSmall">{slice.value}</Text>
               </View>
@@ -40,7 +46,7 @@ export const StatsBars = memo(function StatsBars({
             </View>
           ))
         ) : (
-          <Text variant="bodySmall">Нет данных</Text>
+          <Text variant="bodySmall">{t('stats.empty')}</Text>
         )}
       </View>
     </View>

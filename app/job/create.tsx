@@ -7,6 +7,8 @@ import { FormField, formStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
 import { CATEGORIES } from '@/lib/catalog';
 import { SALARY_CURRENCIES } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
+import { keyOf } from '@/lib/i18n';
 import { LOCAL_JOBS_LIMIT } from '@/lib/tiers';
 import { buildLocalJob, upsertLocalJob } from '@/lib/store/localJobsSlice';
 import { jobHref } from '@/lib/jobRoute';
@@ -19,6 +21,7 @@ import { colors, fonts, radius } from '@/lib/theme';
 const FORM_CATEGORIES = CATEGORIES.filter((item) => item.id !== 'all');
 
 export default function CreateJobScreen() {
+  const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const isPremium = useAppSelector((state) => state.premium.isPremium);
@@ -45,11 +48,11 @@ export default function CreateJobScreen() {
       const nextTitle = form.title.trim();
       const nextCompany = form.company.trim();
       if (!nextTitle || !nextCompany) {
-        Alert.alert('Не хватает данных', 'Укажите должность и компанию.');
+        Alert.alert(t('common.missing'), t('create.needTitle'));
         return;
       }
       if (localCount >= LOCAL_JOBS_LIMIT) {
-        Alert.alert('Лимит', `На устройстве можно хранить не больше ${LOCAL_JOBS_LIMIT} своих вакансий.`);
+        Alert.alert(t('common.limit'), t('create.limit', { limit: LOCAL_JOBS_LIMIT }));
         return;
       }
       const job = buildLocalJob({
@@ -68,7 +71,7 @@ export default function CreateJobScreen() {
       dispatch(pinViewedJob(job));
       router.replace(jobHref(job.id));
     },
-    [dispatch, localCount, router],
+    [dispatch, localCount, router, t],
   );
 
   const onFree = useCallback(() => publish(2), [publish]);
@@ -100,18 +103,18 @@ export default function CreateJobScreen() {
   return (
     <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
-        <Text style={formStyles.lead}>Вакансия появится в ленте на этом устройстве. Позже это уйдёт на сервер.</Text>
-        <FormField label="Должность" value={title} onChangeText={setTitle} placeholder="Например, продавец" />
-        <FormField label="Компания" value={company} onChangeText={setCompany} placeholder="Название" />
-        <FormField label="Город" value={location} onChangeText={setLocation} placeholder="Москва" />
+        <Text style={formStyles.lead}>{t('create.lead')}</Text>
+        <FormField label={t('create.title')} value={title} onChangeText={setTitle} placeholder={t('create.titlePh')} />
+        <FormField label={t('create.company')} value={company} onChangeText={setCompany} placeholder={t('create.companyPh')} />
+        <FormField label={t('create.city')} value={location} onChangeText={setLocation} placeholder={t('create.cityPh')} />
         <FormField
-          label="Зарплата"
+          label={t('create.salary')}
           value={salary}
           onChangeText={setSalary}
           placeholder="150 000"
           keyboardType="numeric"
         />
-        <Text style={formStyles.label}>Валюта</Text>
+        <Text style={formStyles.label}>{t('offer.currency')}</Text>
         <View style={formStyles.wrap}>
           {SALARY_CURRENCIES.map((item) => (
             <SelectChip
@@ -124,14 +127,14 @@ export default function CreateJobScreen() {
             />
           ))}
         </View>
-        <FormField label="Контакт" value={contact} onChangeText={setContact} placeholder="Телефон или Telegram" />
-        <Text style={formStyles.label}>Сфера</Text>
+        <FormField label={t('create.contact')} value={contact} onChangeText={setContact} placeholder={t('create.contactPh')} />
+        <Text style={formStyles.label}>{t('create.category')}</Text>
         <View style={formStyles.wrap}>
           {FORM_CATEGORIES.map((item) => (
             <SelectChip
               key={item.id}
               id={item.id}
-              label={item.label}
+              label={t(keyOf('category', item.id))}
               compact
               selected={category === item.id}
               onChange={onCategory}
@@ -139,21 +142,21 @@ export default function CreateJobScreen() {
           ))}
         </View>
         <View style={formStyles.wrap}>
-          <SelectChip id="office" label="Офис" compact selected={!remote} onChange={onOffice} />
-          <SelectChip id="remote" label="Удалёнка" compact selected={remote} onChange={onRemote} />
+          <SelectChip id="office" label={t('create.office')} compact selected={!remote} onChange={onOffice} />
+          <SelectChip id="remote" label={t('create.remote')} compact selected={remote} onChange={onRemote} />
         </View>
         <FormField
-          label="Описание"
+          label={t('create.description')}
           value={description}
           onChangeText={setDescription}
-          placeholder="Обязанности, условия"
+          placeholder={t('create.descriptionPh')}
           multiline
         />
         <Pressable onPress={onFree} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
-          <Text style={formStyles.primaryText}>Опубликовать</Text>
+          <Text style={formStyles.primaryText}>{t('create.publish')}</Text>
         </Pressable>
         <Pressable onPress={onPremium} style={({ pressed }) => [styles.premium, pressed && formStyles.pressed]}>
-          <Text style={styles.premiumText}>Премиум-размещение</Text>
+          <Text style={styles.premiumText}>{t('create.premium')}</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

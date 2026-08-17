@@ -16,19 +16,11 @@ import {
 } from '@/lib/filters';
 import type { CategoryId, RegionId } from '@/lib/types';
 import { colors, fonts, radius } from '@/lib/theme';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 
-const FORMATS: { id: WorkFormat; label: string }[] = [
-  { id: 'any', label: 'Любой' },
-  { id: 'remote', label: 'Удалёнка' },
-  { id: 'office', label: 'Офис' },
-];
-
-const EMPLOYMENT: { id: EmploymentFilter; label: string }[] = [
-  { id: 'any', label: 'Любой' },
-  { id: 'full', label: 'Полная' },
-  { id: 'part', label: 'Частичная' },
-  { id: 'shift', label: 'Вахта' },
-];
+const FORMATS: WorkFormat[] = ['any', 'remote', 'office'];
+const EMPLOYMENT: EmploymentFilter[] = ['any', 'full', 'part', 'shift'];
 
 export const FiltersSheet = memo(function FiltersSheet({
   open,
@@ -65,10 +57,11 @@ export const FiltersSheet = memo(function FiltersSheet({
   onClose: () => void;
   onReset: () => void;
 }) {
+  const t = useT();
   const current = extra ?? DEFAULT_EXTRA_FILTERS;
   const dirty =
     extraFiltersActive(current) || categories.length > 1 || categories[0] !== 'all' || region !== 'all';
-  const doneLabel = resultCount == null ? 'Показать' : `Показать ${resultCount} вакансий`;
+  const doneLabel = resultCount == null ? t('common.show') : t('filters.showJobs', { count: resultCount });
 
   const onAge = useCallback(
     (id: string | number) => onChangeExtra({ ...current, maxAgeDays: id as ExtraFilters['maxAgeDays'] }),
@@ -94,6 +87,8 @@ export const FiltersSheet = memo(function FiltersSheet({
     <FilterSheetFrame
       open={open}
       dirty={dirty}
+      title={t('filters.title')}
+      resetLabel={t('common.reset')}
       doneLabel={doneLabel}
       onClose={onClose}
       onReset={onReset}
@@ -102,7 +97,7 @@ export const FiltersSheet = memo(function FiltersSheet({
           {onToggleWatch ? (
             <Pressable onPress={onToggleWatch} style={[styles.watch, watching && styles.watchOn]}>
               <Text style={[styles.watchText, watching && styles.watchTextOn]}>
-                {watching ? 'Вы следите за этим поиском' : 'Следить за новыми вакансиями'}
+                {watching ? t('filters.watchOn') : t('filters.watchOff')}
               </Text>
             </Pressable>
           ) : null}
@@ -123,57 +118,59 @@ export const FiltersSheet = memo(function FiltersSheet({
           ) : null}
         </>
       }>
-      <FilterSheetSection title="Регион">
+      <FilterSheetSection title={t('filters.region')}>
         {REGIONS.map((item) => (
           <SelectChip
             key={item.id}
             id={item.id}
-            label={item.label}
+            label={t(keyOf('region', item.id))}
             selected={region === item.id}
             onChange={onChangeRegion as (id: string | number) => void}
           />
         ))}
       </FilterSheetSection>
-      <FilterSheetSection title="Сферы">
+      <FilterSheetSection title={t('filters.category')}>
         {CATEGORIES.map((item) => (
           <SelectChip
             key={item.id}
             id={item.id}
-            label={item.label}
+            label={t(keyOf('category', item.id))}
             icon={item.icon}
             selected={categories.includes(item.id)}
             onChange={onToggleCategory as (id: string | number) => void}
           />
         ))}
       </FilterSheetSection>
-      <FilterSheetSection title="Давность">
+      <FilterSheetSection title={t('filters.age')}>
         {AGE_PRESETS.map((item) => (
-          <SelectChip key={item.id} id={item.id} label={item.label} selected={current.maxAgeDays === item.id} onChange={onAge} />
+          <SelectChip key={item.id} id={item.id} label={t(keyOf('filters.age', item.id))} selected={current.maxAgeDays === item.id} onChange={onAge} />
         ))}
       </FilterSheetSection>
-      <FilterSheetSection title="Зарплата">
+      <FilterSheetSection title={t('filters.salary')}>
         {SALARY_PRESETS.map((item) => (
           <SelectChip
             key={item.id}
             id={item.id}
-            label={item.label}
+            label={
+              item.value == null ? t('filters.salary.any') : t('filters.salary.from', { amount: String(item.value) })
+            }
             selected={current.salaryMin === item.value}
             onChange={onSalary}
           />
         ))}
       </FilterSheetSection>
-      <FilterSheetSection title="Формат">
-        {FORMATS.map((item) => (
-          <SelectChip key={item.id} id={item.id} label={item.label} selected={current.format === item.id} onChange={onFormat} />
+      <FilterSheetSection title={t('filters.format')}>
+        {FORMATS.map((id) => (
+          <SelectChip key={id} id={id} label={t(keyOf('filters.format', id))} selected={current.format === id} onChange={onFormat} />
         ))}
       </FilterSheetSection>
-      <FilterSheetSection title="Занятость">
-        {EMPLOYMENT.map((item) => (
+      <FilterSheetSection title={t('filters.employment')}>
+        {EMPLOYMENT.map((id) => (
           <SelectChip
-            key={item.id}
-            id={item.id}
-            label={item.label}
-            selected={current.employment === item.id}
+            key={id}
+            id={id}
+            label={t(keyOf('filters.employment', id))}
+            selected={current.employment === id}
             onChange={onEmployment}
           />
         ))}
@@ -197,6 +194,7 @@ const WatchRow = memo(function WatchRow({
   onToggle?: (id: string) => void;
   onRemove?: (id: string) => void;
 }) {
+  const t = useT();
   const open = useCallback(() => onOpen?.(id), [id, onOpen]);
   const toggle = useCallback(() => onToggle?.(id), [id, onToggle]);
   const remove = useCallback(() => onRemove?.(id), [id, onRemove]);
@@ -207,13 +205,13 @@ const WatchRow = memo(function WatchRow({
         <Text style={styles.watchLabel} numberOfLines={2}>
           {label}
         </Text>
-        <Text style={styles.watchMeta}>{enabled ? 'уведомления вкл' : 'пауза'}</Text>
+        <Text style={styles.watchMeta}>{enabled ? t('filters.watchEnabled') : t('filters.watchPaused')}</Text>
       </Pressable>
       <Pressable onPress={toggle} hitSlop={8}>
-        <Text style={styles.watchAction}>{enabled ? 'Пауза' : 'Вкл'}</Text>
+        <Text style={styles.watchAction}>{enabled ? t('filters.pause') : t('filters.enable')}</Text>
       </Pressable>
       <Pressable onPress={remove} hitSlop={8}>
-        <Text style={styles.watchRemove}>Удалить</Text>
+        <Text style={styles.watchRemove}>{t('common.delete')}</Text>
       </Pressable>
     </View>
   );

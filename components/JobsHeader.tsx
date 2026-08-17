@@ -10,6 +10,8 @@ import { TIER_FILTERS, type TierFilter } from '@/lib/tiers';
 import { setTierFilter } from '@/lib/store/filtersSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { colors } from '@/lib/theme';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 
 export const JobsHeader = memo(function JobsHeader({
   query,
@@ -26,6 +28,7 @@ export const JobsHeader = memo(function JobsHeader({
   onOpenFilters: () => void;
   onRefresh: () => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const tierFilter = useAppSelector((state) => state.filters.tierFilter);
@@ -39,7 +42,7 @@ export const JobsHeader = memo(function JobsHeader({
 
   return (
     <AppHeader
-      title="Вакансии"
+      title={t('tab.jobs')}
       right={
         <View style={styles.actions}>
           <IconButton
@@ -47,7 +50,7 @@ export const JobsHeader = memo(function JobsHeader({
             size={20}
             onPress={() => router.push('/job/create')}
             iconColor={colors.text}
-            accessibilityLabel="Создать вакансию"
+            accessibilityLabel={t('jobs.createA11y')}
             style={styles.icon}
           />
           <IconButton
@@ -56,14 +59,14 @@ export const JobsHeader = memo(function JobsHeader({
             onPress={onRefresh}
             disabled={refreshing}
             iconColor={colors.muted}
-            accessibilityLabel="Обновить вакансии"
+            accessibilityLabel={t('jobs.refreshA11y')}
             style={styles.icon}
           />
           <FiltersButton active={filtersActive} onPress={onOpenFilters} />
         </View>
       }>
       <View style={styles.search}>
-        <SearchField value={query} onSearch={onSearch} />
+        <SearchField value={query} onSearch={onSearch} placeholder={t('search.jobs')} />
       </View>
       <ScrollView
         horizontal
@@ -74,7 +77,7 @@ export const JobsHeader = memo(function JobsHeader({
           <SelectChip
             key={String(item.id)}
             id={item.id}
-            label={item.label}
+            label={item.id === 'all' ? t('common.all') : t(keyOf('common', item.id === 1 ? 'premium' : item.id === 2 ? 'workly' : 'platforms'))}
             compact
             selected={tierFilter === item.id}
             onChange={onTier}

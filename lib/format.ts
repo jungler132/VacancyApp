@@ -1,3 +1,8 @@
+import { t } from './i18n';
+import type { AppLocale } from './i18n/locale';
+
+const DATE_LOCALE: Record<AppLocale, string> = { ru: 'ru-RU', en: 'en-GB', az: 'az-AZ' };
+
 export function stripHtml(value?: string | null): string {
   if (!value) return '';
   return value
@@ -183,7 +188,7 @@ export function toPublishedAt(value?: string | number | null): string | undefine
   return date.toISOString();
 }
 
-export function formatDate(iso?: string): string {
+export function formatDate(iso?: string, locale: AppLocale = 'ru'): string {
   const normalized = toPublishedAt(iso) ?? iso;
   if (!normalized) return '';
   const time = Date.parse(normalized);
@@ -191,14 +196,15 @@ export function formatDate(iso?: string): string {
   const year = new Date(time).getFullYear();
   if (year < 2000 || year > 2100) return '';
   const diff = Date.now() - time;
-  if (diff < 0) return new Date(time).toLocaleDateString('ru-RU');
+  const stamp = () => new Date(time).toLocaleDateString(DATE_LOCALE[locale]);
+  if (diff < 0) return stamp();
   const min = Math.floor(diff / 60000);
-  if (min < 60) return `${Math.max(1, min)} мин`;
+  if (min < 60) return t(locale, 'date.min', { count: Math.max(1, min) });
   const hours = Math.floor(min / 60);
-  if (hours < 24) return `${hours} ч`;
+  if (hours < 24) return t(locale, 'date.hour', { count: hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} дн`;
-  return new Date(time).toLocaleDateString('ru-RU');
+  if (days < 7) return t(locale, 'date.day', { count: days });
+  return stamp();
 }
 
 export function displayName(value: string): string {
@@ -266,7 +272,7 @@ export function splitParagraphs(text: string): string[] {
 export function formatPlace(location?: string, remote?: boolean): string {
   const raw = (location ?? '').trim();
   if (!raw || /^(remote|worldwide|anywhere|удал)/i.test(raw)) {
-    return remote ? 'Удалённо' : raw;
+    return remote ? '' : raw;
   }
   return displayName(raw);
 }
@@ -274,33 +280,33 @@ export function formatPlace(location?: string, remote?: boolean): string {
 export function formatEmployment(value?: string): string {
   if (!value) return '';
   const v = value.toLowerCase();
-  if (/full[\s-]?time|полная/.test(v)) return 'Полная занятость';
-  if (/part[\s-]?time|частич|неполн/.test(v)) return 'Частичная';
-  if (/contract|контракт/.test(v)) return 'Контракт';
-  if (/intern|стаж/.test(v)) return 'Стажировка';
-  if (/temporary|врем/.test(v)) return 'Временная';
+  if (/full[\s-]?time|полная|tam ştat/.test(v)) return 'full';
+  if (/part[\s-]?time|частич|неполн|yarımştat/.test(v)) return 'part';
+  if (/contract|контракт/.test(v)) return 'contract';
+  if (/intern|стаж/.test(v)) return 'intern';
+  if (/temporary|врем/.test(v)) return 'temp';
   return value;
 }
 
 export function formatSchedule(value?: string): string {
   if (!value) return '';
   const v = value.toLowerCase();
-  if (/удал|remote|distant|telework/.test(v)) return 'Удалёнка';
-  if (/гибрид|hybrid/.test(v)) return 'Гибрид';
-  if (/гибк|flex/.test(v)) return 'Гибкий график';
-  if (/вахт|rotat/.test(v)) return 'Вахта';
-  if (/смен|shift/.test(v)) return 'Сменный график';
-  if (/полн(ый)? день|full[\s-]?day/.test(v)) return 'Полный день';
+  if (/удал|remote|distant|telework/.test(v)) return 'remote';
+  if (/гибрид|hybrid/.test(v)) return 'hybrid';
+  if (/гибк|flex/.test(v)) return 'flex';
+  if (/вахт|rotat/.test(v)) return 'rotation';
+  if (/смен|shift/.test(v)) return 'shift';
+  if (/полн(ый)? день|full[\s-]?day/.test(v)) return 'fullday';
   return value;
 }
 
 export function formatExperience(value?: string): string {
   if (!value) return '';
   const v = value.toLowerCase();
-  if (/нет опыта|no experience|без опыта/.test(v)) return 'Без опыта';
-  if (/более 6|6\+|over 6/.test(v)) return 'От 6 лет';
-  if (/3.?6|от 3|3 to 6/.test(v)) return 'От 3 лет';
-  if (/1.?3|от 1|1 to 3|1 год/.test(v)) return 'От 1 года';
+  if (/нет опыта|no experience|без опыта/.test(v)) return 'none';
+  if (/более 6|6\+|over 6/.test(v)) return 'y6';
+  if (/3.?6|от 3|3 to 6/.test(v)) return 'y3';
+  if (/1.?3|от 1|1 to 3|1 год/.test(v)) return 'y1';
   return value;
 }
 
@@ -313,18 +319,18 @@ function inferExperience(job: {
   const fromApi = formatExperience(job.experience);
   if (fromApi) return fromApi;
   const hay = `${job.title ?? ''} ${job.excerpt ?? ''}`.toLowerCase();
-  if (/intern|стажёр|стажер/.test(hay)) return 'Стажировка';
-  if (/без опыта|no experience|junior|джун/.test(hay)) return 'Junior / без опыта';
-  if (/\bmiddle\b|мидл/.test(hay)) return 'Middle';
-  if (/\bsenior\b|сеньор|тимлид|\blead\b/.test(hay)) return 'Senior';
+  if (/intern|стажёр|стажер/.test(hay)) return 'intern';
+  if (/без опыта|no experience|junior|джун/.test(hay)) return 'junior';
+  if (/\bmiddle\b|мидл/.test(hay)) return 'middle';
+  if (/\bsenior\b|сеньор|тимлид|\blead\b/.test(hay)) return 'senior';
   return '';
 }
 
 function inferFormat(job: { remote?: boolean; location?: string; schedule?: string; title?: string; excerpt?: string }): string {
   const hay = `${job.schedule ?? ''} ${job.title ?? ''} ${job.location ?? ''} ${job.excerpt ?? ''}`.toLowerCase();
-  if (/гибрид|hybrid/.test(hay)) return 'Гибрид';
-  if (job.remote || /удал|remote|worldwide|anywhere/.test(hay)) return 'Удалённо';
-  if ((job.location ?? '').trim()) return 'Офис';
+  if (/гибрид|hybrid/.test(hay)) return 'hybrid';
+  if (job.remote || /удал|remote|worldwide|anywhere/.test(hay)) return 'remote';
+  if ((job.location ?? '').trim()) return 'office';
   return '';
 }
 
@@ -350,23 +356,23 @@ export function jobFacts(job: {
   category?: string;
   excerpt?: string;
   description?: string;
-}): { label: string; value: string }[] {
+}): { id: 'source' | 'format' | 'employment' | 'schedule' | 'experience' | 'category' | 'langs'; value: string }[] {
   const format = inferFormat(job);
   const employment = formatEmployment(job.employment);
   const schedule = formatSchedule(job.schedule);
   const experience = inferExperience(job);
   const langs = inferLangs(job);
   const category = (job.category ?? '').trim();
-  const rows: { label: string; value: string }[] = [];
-  if (job.sourceName) rows.push({ label: 'Источник', value: job.sourceName });
-  if (format) rows.push({ label: 'Формат', value: format });
-  if (employment) rows.push({ label: 'Занятость', value: employment });
-  if (schedule && schedule !== format && schedule !== 'Удалёнка') {
-    rows.push({ label: 'График', value: schedule });
+  const rows: { id: 'source' | 'format' | 'employment' | 'schedule' | 'experience' | 'category' | 'langs'; value: string }[] = [];
+  if (job.sourceName) rows.push({ id: 'source', value: job.sourceName });
+  if (format) rows.push({ id: 'format', value: format });
+  if (employment) rows.push({ id: 'employment', value: employment });
+  if (schedule && schedule !== format && schedule !== 'remote') {
+    rows.push({ id: 'schedule', value: schedule });
   }
-  if (experience) rows.push({ label: 'Опыт', value: experience });
-  if (category && category.length < 42) rows.push({ label: 'Сфера', value: category });
-  if (langs) rows.push({ label: 'Язык', value: langs });
+  if (experience) rows.push({ id: 'experience', value: experience });
+  if (category && category.length < 42) rows.push({ id: 'category', value: category });
+  if (langs) rows.push({ id: 'langs', value: langs });
   return rows;
 }
 
@@ -398,11 +404,11 @@ export function jobTags(job: {
 }): string[] {
   const tags: string[] = [];
   const format = inferFormat(job);
-  if (format && format !== 'Офис') tags.push(format);
+  if (format && format !== 'office') tags.push(format);
   const schedule = formatSchedule(job.schedule);
-  if (schedule && schedule !== 'Удалёнка' && schedule !== format && !tags.includes(schedule)) tags.push(schedule);
+  if (schedule && schedule !== 'remote' && schedule !== format && !tags.includes(schedule)) tags.push(schedule);
   const employment = formatEmployment(job.employment);
-  if (employment && employment !== 'Полная занятость') tags.push(employment);
+  if (employment && employment !== 'full') tags.push(employment);
   const experience = inferExperience(job);
   if (experience && !tags.includes(experience)) tags.push(experience);
   return tags.slice(0, 3);

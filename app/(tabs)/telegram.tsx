@@ -18,28 +18,31 @@ import {
   type CatalogLink,
 } from '@/lib/telegramGroups';
 import { colors, fonts } from '@/lib/theme';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 
 const SECTIONS = [
-  { id: 'telegram', label: 'Telegram', items: TELEGRAM_GROUPS, telegram: true },
-  { id: 'sites', label: 'Сайты', items: JOB_SITES, telegram: false },
+  { id: 'telegram', items: TELEGRAM_GROUPS, telegram: true },
+  { id: 'sites', items: JOB_SITES, telegram: false },
 ] as const;
 
 type CatalogRow =
   | { type: 'header'; id: string; title: string }
   | { type: 'card'; id: string; item: CatalogLink; telegram: boolean };
 
-function toRows(items: CatalogLink[], telegram: boolean): CatalogRow[] {
+function toRows(items: CatalogLink[], telegram: boolean, countryName: (id: string) => string): CatalogRow[] {
   const groups = groupCatalogByCountry(items);
   const rows: CatalogRow[] = [];
   const showHeaders = groups.length > 1;
   for (const group of groups) {
-    if (showHeaders) rows.push({ type: 'header', id: `h-${group.id}`, title: group.label });
+    if (showHeaders) rows.push({ type: 'header', id: `h-${group.id}`, title: countryName(group.id) });
     for (const item of group.items) rows.push({ type: 'card', id: item.id, item, telegram });
   }
   return rows;
 }
 
 export default function ResourcesScreen() {
+  const t = useT();
   const tabBar = useTabBarLayout();
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<CatalogFilters>(DEFAULT_CATALOG_FILTERS);
@@ -50,7 +53,10 @@ export default function ResourcesScreen() {
     () => filterCatalogBySelection(section.items, filters),
     [section.items, filters],
   );
-  const rows = useMemo(() => toRows(visible, section.telegram), [visible, section.telegram]);
+  const rows = useMemo(
+    () => toRows(visible, section.telegram, (id) => t(keyOf('country', id))),
+    [visible, section.telegram, t],
+  );
   const filtersActive = catalogFiltersActive(filters);
 
   const openSheet = useCallback(() => {
@@ -71,13 +77,15 @@ export default function ResourcesScreen() {
   return (
     <View style={styles.screen}>
       <AppHeader
-        title="Ресурсы"
-        subtitle={`${visible.length} из ${section.items.length}`}
+        title={t('tab.resources')}
+        subtitle={t('resources.subtitle', { visible: visible.length, total: section.items.length })}
         right={<FiltersButton active={filtersActive} onPress={openSheet} />}>
         <View style={styles.tabs}>
           {SECTIONS.map((item, index) => (
             <Pressable key={item.id} onPress={() => setPage(index)} style={styles.tab} android_ripple={null}>
-              <Text style={[styles.tabLabel, page === index && styles.tabLabelOn]}>{item.label}</Text>
+              <Text style={[styles.tabLabel, page === index && styles.tabLabelOn]}>
+                {item.id === 'telegram' ? t('saved.telegram') : t('saved.sites')}
+              </Text>
               <View style={[styles.tabLine, page === index && styles.tabLineOn]} />
             </Pressable>
           ))}
@@ -97,9 +105,9 @@ export default function ResourcesScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
-            title="Нет ресурсов в этой стране"
-            subtitle="Выберите другую страну или сбросьте фильтр."
-            actionLabel="Сбросить фильтры"
+            title={t('resources.emptyTitle')}
+            subtitle={t('resources.emptyHint')}
+            actionLabel={t('common.resetFilters')}
             onAction={resetFilters}
           />
         }

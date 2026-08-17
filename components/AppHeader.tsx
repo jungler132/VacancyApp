@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fonts, radius } from '@/lib/theme';
 import { Text } from '@/components/AppText';
+import { useT } from '@/lib/i18n/useT';
 
 export const FiltersButton = memo(function FiltersButton({
   active,
@@ -13,6 +14,7 @@ export const FiltersButton = memo(function FiltersButton({
   active: boolean;
   onPress: () => void;
 }) {
+  const t = useT();
   return (
     <Button
       mode={active ? 'contained-tonal' : 'outlined'}
@@ -21,7 +23,7 @@ export const FiltersButton = memo(function FiltersButton({
       icon="filter-variant"
       style={styles.filterBtn}
       labelStyle={styles.filterLabel}>
-      Фильтры
+      {t('common.filters')}
     </Button>
   );
 });

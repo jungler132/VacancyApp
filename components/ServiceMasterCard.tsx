@@ -3,9 +3,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { Text } from '@/components/AppText';
-import { formatServiceHours, serviceKindLabel } from '@/lib/services/kinds';
+import { formatServiceHours } from '@/lib/services/kinds';
 import type { ServiceMaster } from '@/lib/services/types';
 import { colors, fonts, radius } from '@/lib/theme';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 
 export const ServiceMasterCard = memo(function ServiceMasterCard({
   master,
@@ -14,7 +16,8 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   master: ServiceMaster;
   onPress: (id: string) => void;
 }) {
-  const kinds = master.kinds.map(serviceKindLabel).join(' · ');
+  const t = useT();
+  const kinds = master.kinds.map((id) => t(keyOf('kind', id))).join(' · ');
   const hours = formatServiceHours(master.hours.open, master.hours.close);
   const count = master.offers.length;
   const open = useCallback(() => onPress(master.id), [master.id, onPress]);
@@ -27,13 +30,13 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
           <Text style={styles.name} numberOfLines={1}>
             {master.displayName}
           </Text>
-          {master.mine ? <Text style={styles.mine}>Вы</Text> : null}
+          {master.mine ? <Text style={styles.mine}>{t('common.you')}</Text> : null}
         </View>
         <Text style={styles.meta} numberOfLines={1}>
           {[kinds, master.address].filter(Boolean).join(' · ')}
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
-          {[hours ? `до ${master.hours.close}` : null, count ? `${count} услуг` : 'Пока без услуг']
+          {[hours ? t('services.until', { time: master.hours.close }) : null, count ? t('services.offerCount', { count }) : t('services.noOffers')]
             .filter(Boolean)
             .join(' · ')}
         </Text>

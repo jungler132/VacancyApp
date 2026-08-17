@@ -6,8 +6,11 @@ import MaterialDesignIcons from '@react-native-vector-icons/material-design-icon
 
 import { catalogFacts, countryMeta, type CatalogLink } from '@/lib/telegramGroups';
 import { Text } from '@/components/AppText';
+import { keyOf, type MsgId } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 import { selectIsCatalogSaved } from '@/lib/store/selectors';
 import { toSavedCatalogItem, toggleSavedCatalog } from '@/lib/store/savedCatalogSlice';
+import { recordVisit } from '@/lib/store/visitsSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { colors, fonts, radius, regionColor } from '@/lib/theme';
 
@@ -27,6 +30,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
   telegram: boolean;
 }) {
   const dispatch = useAppDispatch();
+  const t = useT();
   const saved = useAppSelector(selectIsCatalogSaved(telegram ? 'telegram' : 'site', item.id));
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -36,8 +40,16 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
   const facts = useMemo(() => (open ? catalogFacts(item, telegram) : []), [open, item, telegram]);
 
   const onOpen = useCallback(() => {
+    dispatch(
+      recordVisit({
+        id: `${telegram ? 'telegram' : 'site'}:${item.id}`,
+        title: item.title,
+        url: item.url,
+        kind: telegram ? 'telegram' : 'site',
+      }),
+    );
     openCatalogLink(item).catch(() => undefined);
-  }, [item]);
+  }, [dispatch, item, telegram]);
 
   const onCopy = useCallback(async () => {
     await Clipboard.setStringAsync(item.url);
@@ -57,7 +69,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
       <View style={styles.cardHead}>
         <Text style={styles.cardTitle}>{item.title}</Text>
         <View style={[styles.countryBadge, { borderColor: tint }]}>
-          <Text style={[styles.countryLabel, { color: tint }]}>{country.label}</Text>
+          <Text style={[styles.countryLabel, { color: tint }]}>{t(keyOf('country', country.id) as MsgId)}</Text>
         </View>
         <Pressable
           onPress={(event) => {
@@ -66,7 +78,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
           }}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel={saved ? 'Убрать из избранного' : 'Сохранить'}>
+          accessibilityLabel={saved ? t('common.unsave') : t('common.save')}>
           <MaterialDesignIcons
             name={saved ? 'star' : 'star-outline'}
             size={20}
@@ -78,12 +90,25 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
       {open ? (
         <View style={styles.details}>
           {item.note ? <Text style={styles.note}>{item.note}</Text> : null}
-          {facts.map((fact) => (
-            <View key={fact.label} style={styles.fact}>
-              <Text style={styles.factLabel}>{fact.label}</Text>
-              <Text style={styles.factValue}>{fact.value}</Text>
-            </View>
-          ))}
+          {facts.map((fact) => {
+            const label = t(keyOf('catalog.fact', fact.id));
+            const value =
+              fact.id === 'type'
+                ? t(keyOf('catalog.type', fact.value))
+                : fact.id === 'region'
+                  ? t(keyOf('region', fact.value))
+                  : fact.id === 'focus'
+                    ? t(keyOf('catalog.focus', fact.value))
+                    : fact.id === 'access'
+                      ? t(keyOf('catalog.access', fact.value))
+                      : fact.value;
+            return (
+              <View key={fact.id} style={styles.fact}>
+                <Text style={styles.factLabel}>{label}</Text>
+                <Text style={styles.factValue}>{value}</Text>
+              </View>
+            );
+          })}
           <Pressable
             onPress={(event) => {
               event.stopPropagation();
@@ -91,7 +116,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
             }}
             hitSlop={6}>
             <Text style={styles.url} numberOfLines={2}>
-              {copied ? 'Скопировано' : item.url}
+              {copied ? t('common.copied') : item.url}
             </Text>
           </Pressable>
           <Pressable
@@ -101,7 +126,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
             }}
             style={({ pressed }) => [styles.openBtn, pressed && styles.pressed]}>
             <MaterialDesignIcons name={telegram ? 'send' : 'open-in-new'} size={16} color={colors.accentText} />
-            <Text style={styles.openLabel}>Открыть</Text>
+            <Text style={styles.openLabel}>{t('common.open')}</Text>
           </Pressable>
         </View>
       ) : null}

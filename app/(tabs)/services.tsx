@@ -14,21 +14,31 @@ import { useTabBarLayout } from '@/lib/layout';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectCatalogMasters, selectOwnMaster } from '@/lib/store/selectors';
 import { colors, fonts } from '@/lib/theme';
+import { useT } from '@/lib/i18n/useT';
 
 const Separator = memo(function Separator() {
   return <View style={styles.sep} />;
 });
 
-const CreatePageBanner = memo(function CreatePageBanner({ onPress }: { onPress: () => void }) {
+const CreatePageBanner = memo(function CreatePageBanner({
+  title,
+  meta,
+  onPress,
+}: {
+  title: string;
+  meta: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.create, pressed && styles.pressed]}>
-      <Text style={styles.createTitle}>Создать свою страницу</Text>
-      <Text style={styles.createMeta}>Профиль, виды услуг и цены — на этом устройстве, потом уйдёт в сеть.</Text>
+      <Text style={styles.createTitle}>{title}</Text>
+      <Text style={styles.createMeta}>{meta}</Text>
     </Pressable>
   );
 });
 
 export default function ServicesScreen() {
+  const t = useT();
   const router = useRouter();
   const tabBar = useTabBarLayout();
   const own = useAppSelector(selectOwnMaster);
@@ -61,10 +71,10 @@ export default function ServicesScreen() {
   return (
     <View style={styles.screen}>
       <AppHeader
-        title="Услуги"
-        subtitle={`${visible.length} мастеров`}
+        title={t('tab.services')}
+        subtitle={t('services.subtitle', { count: visible.length })}
         right={<FiltersButton active={filtersActive} onPress={openSheet} />}>
-        <SearchField value={query} onSearch={setQuery} placeholder="Имя или услуга" />
+        <SearchField value={query} onSearch={setQuery} placeholder={t('search.services')} />
       </AppHeader>
       <FlatList
         data={visible}
@@ -72,12 +82,20 @@ export default function ServicesScreen() {
         renderItem={renderItem}
         contentContainerStyle={listPadding}
         ItemSeparatorComponent={Separator}
-        ListHeaderComponent={own?.displayName.trim() ? null : <CreatePageBanner onPress={openEditor} />}
+        ListHeaderComponent={
+          own?.displayName.trim() ? null : (
+            <CreatePageBanner
+              title={t('services.createTitle')}
+              meta={t('services.createMeta')}
+              onPress={openEditor}
+            />
+          )
+        }
         ListEmptyComponent={
           <EmptyState
-            title="Никого не нашли"
-            subtitle="Смените вид услуги или сбросьте поиск."
-            actionLabel={filtersActive ? 'Сбросить фильтры' : undefined}
+            title={t('services.emptyTitle')}
+            subtitle={t('services.emptyHint')}
+            actionLabel={filtersActive ? t('common.resetFilters') : undefined}
             onAction={filtersActive ? resetFilters : undefined}
           />
         }

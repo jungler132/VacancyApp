@@ -5,6 +5,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 
 import { closePaywall, purchasePremiumStub } from '@/lib/store/premiumSlice';
 import { Text } from '@/components/AppText';
+import { useT } from '@/lib/i18n/useT';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { colors, fonts, radius } from '@/lib/theme';
 
@@ -37,6 +38,7 @@ export const PaywallSheet = memo(function PaywallSheet({
   onClose: () => void;
   onPurchase: () => void;
 }) {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const progress = useSharedValue(0);
 
@@ -61,24 +63,22 @@ export const PaywallSheet = memo(function PaywallSheet({
       </Pressable>
       <Animated.View style={[styles.sheet, sheetStyle, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.handle} />
-        <Text style={styles.kicker}>Премиум</Text>
-        <Text style={styles.title}>Размещение в топе ленты</Text>
-        <Text style={styles.note}>
-          T1 поднимает вашу вакансию выше площадок и бесплатных объявлений Workly. Оплата пока заглушка — без списания.
-        </Text>
+        <Text style={styles.kicker}>{t('paywall.kicker')}</Text>
+        <Text style={styles.title}>{t('paywall.title')}</Text>
+        <Text style={styles.note}>{t('paywall.note')}</Text>
         <View style={styles.list}>
-          <Text style={styles.item}>Вакансия в начале ленты</Text>
-          <Text style={styles.item}>Бейдж «Премиум» на карточке</Text>
-          <Text style={styles.item}>Покупка один раз на этом устройстве</Text>
+          <Text style={styles.item}>{t('paywall.item1')}</Text>
+          <Text style={styles.item}>{t('paywall.item2')}</Text>
+          <Text style={styles.item}>{t('paywall.item3')}</Text>
         </View>
         <Pressable
           onPress={purchasing ? undefined : onPurchase}
           disabled={purchasing}
           style={({ pressed }) => [styles.buy, pressed && !purchasing && styles.pressed]}>
-          <Text style={styles.buyText}>{purchasing ? 'Покупаем…' : 'Купить премиум'}</Text>
+          <Text style={styles.buyText}>{purchasing ? t('paywall.buying') : t('paywall.buy')}</Text>
         </Pressable>
         <Pressable onPress={close} style={styles.later}>
-          <Text style={styles.laterText}>Не сейчас</Text>
+          <Text style={styles.laterText}>{t('paywall.later')}</Text>
         </Pressable>
       </Animated.View>
     </View>

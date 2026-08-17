@@ -15,6 +15,7 @@ import { removeSearch, saveSearch, toggleSearch } from '@/lib/store/alertsSlice'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectActiveFeed, selectVisibleCount, selectVisibleIds } from '@/lib/store/selectors';
 import { colors, fonts } from '@/lib/theme';
+import { useT } from '@/lib/i18n/useT';
 
 const TabBarButton = memo(function TabBarButton({
   children,
@@ -46,15 +47,15 @@ const TabIcon = memo(function TabIcon({
   color,
   focused,
 }: {
-  name: 'magnify' | 'briefcase-account' | 'star' | 'cog' | 'book-open-variant';
+  name: 'magnify' | 'briefcase-account' | 'account' | 'book-open-variant';
   color: string;
   focused: boolean;
 }) {
   const icon =
-    name === 'star'
+    name === 'account'
       ? focused
-        ? 'star'
-        : 'star-outline'
+        ? 'account'
+        : 'account-outline'
       : name === 'briefcase-account'
         ? focused
           ? 'briefcase-account'
@@ -63,11 +64,7 @@ const TabIcon = memo(function TabIcon({
           ? focused
             ? 'book-open-variant'
             : 'book-open-outline'
-          : name === 'cog'
-            ? focused
-              ? 'cog'
-              : 'cog-outline'
-            : name;
+          : name;
   return (
     <View style={styles.iconWrap}>
       {focused ? <View style={styles.indicator} /> : <View style={styles.indicatorSpacer} />}
@@ -79,6 +76,7 @@ const TabIcon = memo(function TabIcon({
 const FilterSheetHost = memo(function FilterSheetHost() {
   const dispatch = useAppDispatch();
   const sheet = useFilterSheet();
+  const locale = useAppSelector((state) => state.appearance.locale);
   const count = useAppSelector(selectVisibleCount);
   const visibleIds = useAppSelector(selectVisibleIds);
   const status = useAppSelector((state) => selectActiveFeed(state).status);
@@ -96,8 +94,8 @@ const FilterSheetHost = memo(function FilterSheetHost() {
   const currentKey = makeAlertKey(snapshot);
   const watching = alerts.some((item) => item.enabled && makeAlertKey(item) === currentKey);
   const watches = useMemo(
-    () => alerts.map((item) => ({ id: item.id, label: alertLabel(item), enabled: item.enabled })),
-    [alerts],
+    () => alerts.map((item) => ({ id: item.id, label: alertLabel(item, locale), enabled: item.enabled })),
+    [alerts, locale],
   );
 
   const onToggleWatch = useCallback(() => {
@@ -140,7 +138,7 @@ const FilterSheetHost = memo(function FilterSheetHost() {
   );
 });
 
-const TAB_LABEL_WIDTH = Math.floor(Dimensions.get('window').width / 5) - 6;
+const TAB_LABEL_WIDTH = Math.floor(Dimensions.get('window').width / 4) - 6;
 
 const TabLabel = memo(function TabLabel({
   children,
@@ -164,6 +162,7 @@ const TabLabel = memo(function TabLabel({
 export default function TabLayout() {
   useJobsQuery();
   const tabBar = useTabBarLayout();
+  const t = useT();
 
   return (
     <View style={styles.root}>
@@ -199,38 +198,31 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Вакансии',
+            title: t('tab.jobs'),
             tabBarIcon: ({ color, focused }) => <TabIcon name="magnify" color={String(color)} focused={focused} />,
           }}
         />
         <Tabs.Screen
           name="services"
           options={{
-            title: 'Услуги',
+            title: t('tab.services'),
             tabBarIcon: ({ color, focused }) => (
               <TabIcon name="briefcase-account" color={String(color)} focused={focused} />
             ),
           }}
         />
         <Tabs.Screen
-          name="saved"
-          options={{
-            title: 'Избранное',
-            tabBarIcon: ({ color, focused }) => <TabIcon name="star" color={String(color)} focused={focused} />,
-          }}
-        />
-        <Tabs.Screen
           name="telegram"
           options={{
-            title: 'Ресурсы',
+            title: t('tab.resources'),
             tabBarIcon: ({ color, focused }) => <TabIcon name="book-open-variant" color={String(color)} focused={focused} />,
           }}
         />
         <Tabs.Screen
-          name="settings"
+          name="profile"
           options={{
-            title: 'Настройки',
-            tabBarIcon: ({ color, focused }) => <TabIcon name="cog" color={String(color)} focused={focused} />,
+            title: t('tab.profile'),
+            tabBarIcon: ({ color, focused }) => <TabIcon name="account" color={String(color)} focused={focused} />,
           }}
         />
       </Tabs>

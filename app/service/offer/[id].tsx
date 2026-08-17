@@ -5,6 +5,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, formStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 import { SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { pickServiceImage } from '@/lib/services/images';
 import { SERVICE_KINDS } from '@/lib/services/kinds';
@@ -28,6 +30,7 @@ export default function ServiceOfferEditor() {
 }
 
 function OfferForm() {
+  const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
@@ -54,12 +57,12 @@ function OfferForm() {
 
   const addPhoto = useCallback(async () => {
     if (images.length >= OFFER_PHOTOS_LIMIT) {
-      Alert.alert('Лимит', `Не больше ${OFFER_PHOTOS_LIMIT} фото на услугу.`);
+      Alert.alert(t('common.limit'), t('offer.photoLimit', { limit: OFFER_PHOTOS_LIMIT }));
       return;
     }
     const uri = await pickServiceImage();
     if (uri) setImages((current) => [...current, uri].slice(0, OFFER_PHOTOS_LIMIT));
-  }, [images.length]);
+  }, [images.length, t]);
 
   const removePhoto = useCallback((uri: string) => {
     setImages((current) => current.filter((item) => item !== uri));
@@ -68,16 +71,16 @@ function OfferForm() {
   const onSave = useCallback(() => {
     const nextTitle = title.trim();
     if (!nextTitle) {
-      Alert.alert('Не хватает данных', 'Укажите название услуги.');
+      Alert.alert(t('common.missing'), t('offer.needTitle'));
       return;
     }
     if (!profile?.displayName) {
-      Alert.alert('Сначала профиль', 'Сохраните страницу мастера, потом добавляйте услуги.');
+      Alert.alert(t('offer.needProfileTitle'), t('offer.needProfile'));
       router.replace(SERVICE_ME_HREF);
       return;
     }
     if (isNew && offers.length >= OFFERS_LIMIT) {
-      Alert.alert('Лимит', `Не больше ${OFFERS_LIMIT} услуг на странице.`);
+      Alert.alert(t('common.limit'), t('me.offerLimit', { limit: OFFERS_LIMIT }));
       return;
     }
     dispatch(
@@ -96,14 +99,14 @@ function OfferForm() {
       }),
     );
     router.back();
-  }, [address, currency, description, dispatch, existing?.id, images, isNew, kind, offers.length, phone, price, profile?.displayName, router, title]);
+  }, [address, currency, description, dispatch, existing?.id, images, isNew, kind, offers.length, phone, price, profile?.displayName, router, t, title]);
 
   const onDelete = useCallback(() => {
     if (!existing) return;
-    Alert.alert('Удалить услугу?', existing.title, [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t('offer.deleteTitle'), existing.title, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Удалить',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           dispatch(removeOffer(existing.id));
@@ -111,12 +114,12 @@ function OfferForm() {
         },
       },
     ]);
-  }, [dispatch, existing, router]);
+  }, [dispatch, existing, router, t]);
 
   if (!isNew && !existing) {
     return (
       <View style={formStyles.center}>
-        <Text style={formStyles.lead}>Эту услугу нельзя править здесь — откройте свою карточку из «Моя страница».</Text>
+        <Text style={formStyles.lead}>{t('offer.foreign')}</Text>
       </View>
     );
   }
@@ -124,17 +127,15 @@ function OfferForm() {
   return (
     <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
-        <Text style={formStyles.lead}>
-          Карточка на вашей странице: описание, цена, фото, адрес и телефон если отличаются от профиля.
-        </Text>
-        <FormField label="Название" value={title} onChangeText={setTitle} placeholder="Маникюр с покрытием" />
-        <Text style={formStyles.label}>Вид</Text>
+        <Text style={formStyles.lead}>{t('offer.lead')}</Text>
+        <FormField label={t('offer.title')} value={title} onChangeText={setTitle} placeholder={t('offer.titlePh')} />
+        <Text style={formStyles.label}>{t('offer.kind')}</Text>
         <View style={formStyles.wrap}>
           {SERVICE_KINDS.map((item) => (
             <SelectChip
               key={item.id}
               id={item.id}
-              label={item.label}
+              label={t(keyOf('kind', item.id))}
               compact
               selected={kind === item.id}
               onChange={onKind}
@@ -142,20 +143,20 @@ function OfferForm() {
           ))}
         </View>
         <FormField
-          label="Описание"
+          label={t('offer.description')}
           value={description}
           onChangeText={setDescription}
-          placeholder="Что входит, сколько длится, выезд или нет"
+          placeholder={t('offer.descriptionPh')}
           multiline
         />
-        <FormField label="Цена" value={price} onChangeText={setPrice} placeholder="2500" keyboardType="numeric" />
-        <Text style={formStyles.label}>Валюта</Text>
+        <FormField label={t('offer.price')} value={price} onChangeText={setPrice} placeholder="2500" keyboardType="numeric" />
+        <Text style={formStyles.label}>{t('offer.currency')}</Text>
         <View style={formStyles.wrap}>
           {SALARY_CURRENCIES.map((item) => (
             <SelectChip key={item.id} id={item.id} label={item.id} compact selected={currency === item.id} onChange={onCurrency} />
           ))}
         </View>
-        <Text style={formStyles.label}>Фото</Text>
+        <Text style={formStyles.label}>{t('offer.photos')}</Text>
         <View style={styles.photos}>
           {images.map((uri) => (
             <PhotoThumb key={uri} uri={uri} onRemove={removePhoto} />
@@ -166,21 +167,21 @@ function OfferForm() {
             </Pressable>
           ) : null}
         </View>
-        <Text style={formStyles.hint}>Нажмите фото, чтобы убрать. Пустой адрес и телефон возьмутся из профиля.</Text>
-        <FormField label="Адрес услуги" value={address} onChangeText={setAddress} placeholder={profile?.address || 'Как в профиле'} />
+        <Text style={formStyles.hint}>{t('offer.photoHint')}</Text>
+        <FormField label={t('offer.address')} value={address} onChangeText={setAddress} placeholder={profile?.address || t('offer.asProfile')} />
         <FormField
-          label="Телефон услуги"
+          label={t('offer.phone')}
           value={phone}
           onChangeText={setPhone}
-          placeholder={profile?.phone || 'Как в профиле'}
+          placeholder={profile?.phone || t('offer.asProfile')}
           keyboardType="phone-pad"
         />
         <Pressable onPress={onSave} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
-          <Text style={formStyles.primaryText}>{isNew ? 'Добавить услугу' : 'Сохранить'}</Text>
+          <Text style={formStyles.primaryText}>{isNew ? t('offer.add') : t('common.save')}</Text>
         </Pressable>
         {existing ? (
           <Pressable onPress={onDelete} style={({ pressed }) => [styles.danger, pressed && formStyles.pressed]}>
-            <Text style={styles.dangerText}>Удалить</Text>
+            <Text style={styles.dangerText}>{t('common.delete')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>

@@ -3,9 +3,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
-import { applyStatusLabel, type ApplyStatus } from '@/lib/apply';
+import { type ApplyStatus } from '@/lib/apply';
 import { Text } from '@/components/AppText';
 import { displayName, formatDate, formatPlace, jobTags } from '@/lib/format';
+import { keyOf, tokenLabel } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n/useT';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectIsSaved, selectJobById } from '@/lib/store/selectors';
 import { pinViewedJob } from '@/lib/store/jobsSlice';
@@ -34,9 +36,12 @@ const JobCardView = memo(function JobCardView({
 }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const t = useT();
+  const locale = useLocale();
   const company = displayName(job.company);
   const tier = jobTier(job);
   const tags = jobTags(job);
+  const place = formatPlace(job.location, job.remote) || (job.remote ? t('fact.remote') : '');
 
   const open = useCallback(() => {
     dispatch(pinViewedJob(job));
@@ -58,8 +63,8 @@ const JobCardView = memo(function JobCardView({
         <Text style={styles.company} numberOfLines={1}>
           {company}
         </Text>
-        {tier === 1 ? <Text style={styles.badgePrem}>Премиум</Text> : null}
-        {tier === 2 ? <Text style={styles.badgeLocal}>Workly</Text> : null}
+        {tier === 1 ? <Text style={styles.badgePrem}>{t('common.premium')}</Text> : null}
+        {tier === 2 ? <Text style={styles.badgeLocal}>{t('common.workly')}</Text> : null}
         <Pressable
           onPress={(event) => {
             event.stopPropagation();
@@ -67,7 +72,7 @@ const JobCardView = memo(function JobCardView({
           }}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel={saved ? 'Убрать из избранного' : 'Сохранить'}>
+          accessibilityLabel={saved ? t('common.unsave') : t('common.save')}>
           <MaterialDesignIcons
             name={saved ? 'star' : 'star-outline'}
             size={20}
@@ -79,18 +84,18 @@ const JobCardView = memo(function JobCardView({
         {job.title}
       </Text>
       <Text style={styles.meta} numberOfLines={1}>
-        {[formatPlace(job.location, job.remote), formatDate(job.publishedAt)].filter(Boolean).join(' · ')}
+        {[place, formatDate(job.publishedAt, locale)].filter(Boolean).join(' · ')}
       </Text>
       {tags.length ? (
         <View style={styles.tags}>
           {tags.map((tag) => (
             <Text key={tag} style={styles.tag}>
-              {tag}
+              {tokenLabel(locale, tag)}
             </Text>
           ))}
         </View>
       ) : null}
-      {applyStatus ? <Text style={styles.status}>{applyStatusLabel(applyStatus)}</Text> : null}
+      {applyStatus ? <Text style={styles.status}>{t(keyOf('apply', applyStatus))}</Text> : null}
       {job.salary ? <Text style={styles.salary}>{job.salary}</Text> : null}
     </Pressable>
   );

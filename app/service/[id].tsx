@@ -7,20 +7,26 @@ import { formStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { ServiceOfferCard } from '@/components/ServiceOfferCard';
 import { Text } from '@/components/AppText';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 import { offerEditorHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
-import { formatServiceHours, serviceKindLabel } from '@/lib/services/kinds';
+import { formatServiceHours } from '@/lib/services/kinds';
 import { OFFERS_LIMIT } from '@/lib/store/freelanceSlice';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectMasterById } from '@/lib/store/selectors';
 import { colors, fonts } from '@/lib/theme';
 
 export default function ServicePublicScreen() {
+  const t = useT();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const profileId = Array.isArray(id) ? id.join('/') : String(id ?? '');
   const master = useAppSelector((state) => selectMasterById(state, profileId));
   const hours = formatServiceHours(master?.hours.open, master?.hours.close);
-  const kinds = useMemo(() => (master ? master.kinds.map(serviceKindLabel).join(' · ') : ''), [master]);
+  const kinds = useMemo(
+    () => (master ? master.kinds.map((id) => t(keyOf('kind', id))).join(' · ') : ''),
+    [master, t],
+  );
 
   const call = useCallback(() => {
     const phone = master?.phone?.trim();
@@ -42,7 +48,7 @@ export default function ServicePublicScreen() {
   if (!master) {
     return (
       <View style={formStyles.center}>
-        <EmptyState title="Страница не найдена" subtitle="Вернитесь в каталог услуг и выберите мастера." />
+        <EmptyState title={t('master.notFound')} subtitle={t('master.notFoundHint')} />
       </View>
     );
   }
@@ -54,35 +60,35 @@ export default function ServicePublicScreen() {
         <View style={styles.headBody}>
           <Text style={styles.name}>{master.displayName}</Text>
           {kinds ? <Text style={styles.meta}>{kinds}</Text> : null}
-          {hours ? <Text style={styles.meta}>Работает {hours}</Text> : null}
-          {master.mine ? <Text style={styles.mine}>Ваша страница</Text> : null}
+          {hours ? <Text style={styles.meta}>{t('master.hours', { value: hours })}</Text> : null}
+          {master.mine ? <Text style={styles.mine}>{t('master.mine')}</Text> : null}
         </View>
       </View>
       {master.bio ? <Text style={styles.bio}>{master.bio}</Text> : null}
-      {master.address ? <Text style={styles.meta}>Адрес: {master.address}</Text> : null}
+      {master.address ? <Text style={styles.meta}>{t('master.address', { value: master.address })}</Text> : null}
       {master.phone ? (
         <Pressable onPress={call}>
-          <Text style={styles.link}>Телефон: {master.phone}</Text>
+          <Text style={styles.link}>{t('master.phone', { value: master.phone })}</Text>
         </Pressable>
       ) : null}
       {master.email ? (
         <Pressable onPress={mail}>
-          <Text style={styles.link}>Почта: {master.email}</Text>
+          <Text style={styles.link}>{t('master.email', { value: master.email })}</Text>
         </Pressable>
       ) : null}
 
       {master.mine ? (
         <View style={styles.actions}>
           <Pressable onPress={goEdit} style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
-            <Text style={formStyles.secondaryText}>Редактировать профиль</Text>
+            <Text style={formStyles.secondaryText}>{t('master.edit')}</Text>
           </Pressable>
           <Pressable onPress={addOffer} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
-            <Text style={formStyles.primaryText}>Добавить услугу</Text>
+            <Text style={formStyles.primaryText}>{t('master.addOffer')}</Text>
           </Pressable>
         </View>
       ) : null}
 
-      <Text style={styles.section}>Услуги</Text>
+      <Text style={styles.section}>{t('master.offers')}</Text>
       {master.offers.length ? (
         master.offers.map((offer) => (
           <ServiceOfferCard
@@ -93,7 +99,7 @@ export default function ServicePublicScreen() {
           />
         ))
       ) : (
-        <Text style={styles.empty}>Пока нет карточек услуг.</Text>
+        <Text style={styles.empty}>{t('master.empty')}</Text>
       )}
     </ScrollView>
   );

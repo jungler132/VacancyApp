@@ -13,6 +13,8 @@ const CLOSE_CFG = { duration: 180, easing: Easing.in(Easing.cubic) };
 export const FilterSheetFrame = memo(function FilterSheetFrame({
   open,
   dirty,
+  title,
+  resetLabel,
   doneLabel,
   onClose,
   onReset,
@@ -21,6 +23,8 @@ export const FilterSheetFrame = memo(function FilterSheetFrame({
 }: {
   open: boolean;
   dirty: boolean;
+  title: string;
+  resetLabel: string;
   doneLabel: string;
   onClose: () => void;
   onReset: () => void;
@@ -51,10 +55,10 @@ export const FilterSheetFrame = memo(function FilterSheetFrame({
       <Animated.View style={[styles.sheet, sheetStyle, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.handle} />
         <View style={styles.head}>
-          <Text style={styles.title}>Фильтры</Text>
+          <Text style={styles.title}>{title}</Text>
           {dirty ? (
             <Pressable onPress={onReset} hitSlop={8}>
-              <Text style={styles.reset}>Сбросить</Text>
+              <Text style={styles.reset}>{resetLabel}</Text>
             </Pressable>
           ) : null}
         </View>

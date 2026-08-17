@@ -20,6 +20,7 @@ import { FONT_SCALE, FontScaleContext, scaleFont, useFontScale } from '@/lib/fon
 import { store } from '@/lib/store';
 import { useAppSelector } from '@/lib/store/hooks';
 import { colors, fonts, makePaperTheme } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -55,6 +56,7 @@ function AppShell({ children }: { children: ReactNode }) {
 
 function Navigation() {
   const scale = useFontScale();
+  const locale = useAppSelector((state) => state.appearance.locale);
   return (
     <ThemeProvider value={navTheme}>
       <StatusBar style="light" />
@@ -67,12 +69,14 @@ function Navigation() {
           contentStyle: { backgroundColor: colors.bg },
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="job/create" options={{ title: 'Новая вакансия' }} />
-        <Stack.Screen name="job/[...id]" options={{ title: 'Вакансия' }} />
-        <Stack.Screen name="service/me" options={{ title: 'Моя страница' }} />
-        <Stack.Screen name="service/[id]" options={{ title: 'Мастер' }} />
-        <Stack.Screen name="service/offer/[id]" options={{ title: 'Услуга' }} />
-        <Stack.Screen name="stats" options={{ title: 'Сводка' }} />
+        <Stack.Screen name="job/create" options={{ title: t(locale, 'nav.createJob') }} />
+        <Stack.Screen name="job/[...id]" options={{ title: t(locale, 'nav.job') }} />
+        <Stack.Screen name="service/me" options={{ title: t(locale, 'nav.serviceMe') }} />
+        <Stack.Screen name="service/[id]" options={{ title: t(locale, 'nav.master') }} />
+        <Stack.Screen name="service/offer/[id]" options={{ title: t(locale, 'nav.offer') }} />
+        <Stack.Screen name="stats" options={{ title: t(locale, 'nav.stats') }} />
+        <Stack.Screen name="saved" options={{ title: t(locale, 'nav.saved') }} />
+        <Stack.Screen name="settings" options={{ title: t(locale, 'nav.settings') }} />
       </Stack>
     </ThemeProvider>
   );

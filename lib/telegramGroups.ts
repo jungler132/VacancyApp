@@ -256,31 +256,6 @@ const COUNTRY_LANG: Record<CatalogCountryId, string> = {
   intl: 'EN',
 };
 
-const REGION_LABEL: Record<CatalogRegionId, string> = {
-  cis: 'СНГ',
-  europe: 'Европа',
-  west: 'Запад',
-  asia: 'Азия',
-  remote: 'Удалёнка',
-  intl: 'Мир',
-};
-
-const FOCUS_LABEL: Record<CatalogFocus, string> = {
-  all: 'Все профессии',
-  it: 'IT и digital',
-  junior: 'Junior и стажировки',
-  gov: 'Госпортал',
-  remote: 'Удалёнка',
-  classifieds: 'Доска объявлений',
-  startup: 'Стартапы',
-};
-
-const ACCESS_LABEL: Record<CatalogAccess, string> = {
-  free: 'Бесплатный просмотр',
-  account: 'Нужен аккаунт',
-  paid: 'Платный доступ',
-};
-
 export function inferCatalogMeta(item: CatalogLink): {
   focus: CatalogFocus;
   access: CatalogAccess;
@@ -318,15 +293,15 @@ export function inferCatalogMeta(item: CatalogLink): {
   };
 }
 
-export function catalogFacts(item: CatalogLink, telegram: boolean): { label: string; value: string }[] {
+export function catalogFacts(item: CatalogLink, telegram: boolean): { id: 'type' | 'region' | 'focus' | 'langs' | 'access'; value: string }[] {
   const meta = inferCatalogMeta(item);
   const country = countryMeta(item.country);
   return [
-    { label: 'Тип', value: telegram ? 'Telegram-канал' : 'Сайт вакансий' },
-    { label: 'Регион', value: REGION_LABEL[country.region] },
-    { label: 'Охват', value: FOCUS_LABEL[meta.focus] },
-    { label: 'Язык', value: meta.langs },
-    { label: 'Доступ', value: ACCESS_LABEL[meta.access] },
+    { id: 'type', value: telegram ? 'telegram' : 'site' },
+    { id: 'region', value: country.region },
+    { id: 'focus', value: meta.focus },
+    { id: 'langs', value: meta.langs },
+    { id: 'access', value: meta.access },
   ];
 }
 

@@ -6,6 +6,8 @@ import { SelectChip } from '@/components/FilterChips';
 import { FormField, formStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { Text } from '@/components/AppText';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 import { masterHref, offerEditorHref, offerPriceLabel } from '@/lib/services/catalog';
 import { pickServiceImage } from '@/lib/services/images';
 import { HOUR_OPTIONS, SERVICE_KINDS, formatServiceHours } from '@/lib/services/kinds';
@@ -22,6 +24,7 @@ export default function ServiceProfileEditor() {
 }
 
 function ProfileForm() {
+  const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const own = useAppSelector(selectOwnMaster);
@@ -51,18 +54,18 @@ function ProfileForm() {
 
   const addOffer = useCallback(() => {
     if ((own?.offers.length ?? 0) >= OFFERS_LIMIT) {
-      Alert.alert('Лимит', `Не больше ${OFFERS_LIMIT} услуг на странице.`);
+      Alert.alert(t('common.limit'), t('me.offerLimit', { limit: OFFERS_LIMIT }));
       return;
     }
     router.push(offerEditorHref('new'));
-  }, [own?.offers.length, router]);
+  }, [own?.offers.length, router, t]);
 
   const openOffer = useCallback((id: string) => router.push(offerEditorHref(id)), [router]);
 
   const onSave = useCallback(() => {
     const name = displayName.trim();
     if (!name) {
-      Alert.alert('Не хватает данных', 'Укажите, как вас представлять.');
+      Alert.alert(t('common.missing'), t('me.needName'));
       return;
     }
     dispatch(
@@ -80,71 +83,69 @@ function ProfileForm() {
       }),
     );
     router.replace(masterHref(own?.id ?? OWN_PROFILE_ID));
-  }, [address, avatarUri, bio, close, dispatch, displayName, email, kinds, open, own, phone, router]);
+  }, [address, avatarUri, bio, close, dispatch, displayName, email, kinds, open, own, phone, router, t]);
 
   return (
     <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
-        <Text style={formStyles.lead}>
-          Это витрина самозанятого. Пока хранится на устройстве, поля уже как у будущего API.
-        </Text>
+        <Text style={formStyles.lead}>{t('me.lead')}</Text>
         <Pressable onPress={pickAvatar} style={styles.avatarWrap}>
-          <ServiceAvatar uri={avatarUri} name={displayName || 'Вы'} size={88} />
-          <Text style={styles.avatarHint}>Аватар из галереи</Text>
+          <ServiceAvatar uri={avatarUri} name={displayName || t('common.you')} size={88} />
+          <Text style={styles.avatarHint}>{t('me.avatar')}</Text>
         </Pressable>
-        <FormField label="Как вас зовут" value={displayName} onChangeText={setDisplayName} placeholder="Анна Крылова" />
+        <FormField label={t('me.name')} value={displayName} onChangeText={setDisplayName} placeholder={t('me.namePh')} />
         <FormField
-          label="Кто вы и что делаете"
+          label={t('me.bio')}
           value={bio}
           onChangeText={setBio}
-          placeholder="Мастер маникюра, выезд по району"
+          placeholder={t('me.bioPh')}
           multiline
         />
         <FormField
-          label="Почта"
+          label={t('me.email')}
           value={email}
           onChangeText={setEmail}
           placeholder="you@mail.com"
           keyboardType="email-address"
         />
-        <FormField label="Телефон" value={phone} onChangeText={setPhone} placeholder="+7 900 000 00 00" keyboardType="phone-pad" />
-        <FormField label="Адрес или район" value={address} onChangeText={setAddress} placeholder="Москва, Сокол" />
-        <Text style={formStyles.label}>Виды услуг</Text>
+        <FormField label={t('me.phone')} value={phone} onChangeText={setPhone} placeholder={t('me.phonePh')} keyboardType="phone-pad" />
+        <FormField label={t('me.address')} value={address} onChangeText={setAddress} placeholder={t('me.addressPh')} />
+        <Text style={formStyles.label}>{t('me.kinds')}</Text>
         <View style={formStyles.wrap}>
           {SERVICE_KINDS.map((item) => (
             <SelectChip
               key={item.id}
               id={item.id}
-              label={item.label}
+              label={t(keyOf('kind', item.id))}
               compact
               selected={kinds.includes(item.id)}
               onChange={toggleKind}
             />
           ))}
         </View>
-        <Text style={formStyles.label}>Работаю с</Text>
+        <Text style={formStyles.label}>{t('me.open')}</Text>
         <View style={formStyles.wrap}>
           {HOUR_OPTIONS.map((item) => (
             <SelectChip key={`o-${item}`} id={item} label={item} compact selected={open === item} onChange={onOpenHour} />
           ))}
         </View>
-        <Text style={formStyles.label}>До</Text>
+        <Text style={formStyles.label}>{t('me.close')}</Text>
         <View style={formStyles.wrap}>
           {HOUR_OPTIONS.map((item) => (
             <SelectChip key={`c-${item}`} id={item} label={item} compact selected={close === item} onChange={onCloseHour} />
           ))}
         </View>
-        {hoursLabel ? <Text style={styles.hoursPreview}>На странице будет: {hoursLabel}</Text> : null}
+        {hoursLabel ? <Text style={styles.hoursPreview}>{t('me.hoursPreview', { value: hoursLabel })}</Text> : null}
         <Pressable onPress={onSave} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
-          <Text style={formStyles.primaryText}>Сохранить страницу</Text>
+          <Text style={formStyles.primaryText}>{t('me.save')}</Text>
         </Pressable>
 
         {own?.displayName ? (
           <>
             <View style={styles.rowBetween}>
-              <Text style={styles.section}>Услуги</Text>
+              <Text style={styles.section}>{t('me.offers')}</Text>
               <Pressable onPress={addOffer} hitSlop={8}>
-                <Text style={styles.link}>Добавить</Text>
+                <Text style={styles.link}>{t('me.add')}</Text>
               </Pressable>
             </View>
             {own.offers.length ? (
@@ -153,12 +154,12 @@ function ProfileForm() {
                   key={item.id}
                   id={item.id}
                   title={item.title}
-                  price={offerPriceLabel(item)}
+                  price={offerPriceLabel(item, t('services.priceNegotiable'))}
                   onPress={openOffer}
                 />
               ))
             ) : (
-              <Text style={styles.empty}>Добавьте первую услугу: описание, цена, фото.</Text>
+              <Text style={styles.empty}>{t('me.emptyOffers')}</Text>
             )}
           </>
         ) : null}

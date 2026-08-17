@@ -3,15 +3,17 @@ import { StyleSheet, View } from 'react-native';
 
 import { colors } from '@/lib/theme';
 import { Text } from '@/components/AppText';
+import { useT } from '@/lib/i18n/useT';
 
 export default function NotFoundScreen() {
+  const t = useT();
   return (
     <>
-      <Stack.Screen options={{ title: 'Нет такой страницы' }} />
+      <Stack.Screen options={{ title: t('nav.notFound') }} />
       <View style={styles.container}>
-        <Text style={styles.title}>Экран не найден</Text>
+        <Text style={styles.title}>{t('notFound.body')}</Text>
         <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>К вакансиям</Text>
+          <Text style={styles.linkText}>{t('notFound.back')}</Text>
         </Link>
       </View>
     </>

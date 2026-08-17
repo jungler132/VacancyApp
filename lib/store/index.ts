@@ -22,7 +22,13 @@ import localJobsReducer, {
   upsertLocalJob,
 } from './localJobsSlice';
 import premiumReducer, { hydratePremium } from './premiumSlice';
-import appearanceReducer, { hydrateAppearance, persistFontSize, setFontSize } from './appearanceSlice';
+import appearanceReducer, {
+  hydrateAppearance,
+  persistAppearance,
+  setFontSize,
+  setLocale,
+} from './appearanceSlice';
+import visitsReducer, { hydrateVisits, persistVisits, recordVisit } from './visitsSlice';
 import freelanceReducer, {
   hydrateFreelance,
   persistFreelance,
@@ -136,9 +142,17 @@ listener.startListening({
 });
 
 listener.startListening({
-  actionCreator: setFontSize,
-  effect: async (action) => {
-    await persistFontSize(action.payload);
+  matcher: isAnyOf(setFontSize, setLocale),
+  effect: async (_action, listenerApi) => {
+    const appearance = (listenerApi.getState() as RootState).appearance;
+    await persistAppearance(appearance.fontSize, appearance.locale);
+  },
+});
+
+listener.startListening({
+  actionCreator: recordVisit,
+  effect: async (_action, listenerApi) => {
+    await persistVisits((listenerApi.getState() as RootState).visits.items);
   },
 });
 
@@ -164,6 +178,7 @@ export const store = configureStore({
     appearance: appearanceReducer,
     freelance: freelanceReducer,
     servicesCatalog: servicesCatalogReducer,
+    visits: visitsReducer,
   },
   middleware: (getDefault) =>
     getDefault({
@@ -182,6 +197,7 @@ store.dispatch(hydrateLocalJobs());
 store.dispatch(hydratePremium());
 store.dispatch(hydrateAppearance());
 store.dispatch(hydrateFreelance());
+store.dispatch(hydrateVisits());
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

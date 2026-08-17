@@ -9,7 +9,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "apk": "node scripts/build-apk.cjs",
-    "test": "tsx --test lib/api/aggregator.test.ts lib/filters.test.ts lib/feedKey.test.ts lib/telegramGroups.test.ts lib/format.test.ts lib/ads.test.ts lib/tiers.test.ts lib/store/savedCatalogSlice.test.ts lib/fontScale.test.ts lib/jobRoute.test.ts lib/services/catalog.test.ts lib/store/freelanceSlice.test.ts"
+    "test": "tsx --test lib/api/aggregator.test.ts lib/filters.test.ts lib/feedKey.test.ts lib/telegramGroups.test.ts lib/format.test.ts lib/ads.test.ts lib/tiers.test.ts lib/store/savedCatalogSlice.test.ts lib/fontScale.test.ts lib/jobRoute.test.ts lib/services/catalog.test.ts lib/store/freelanceSlice.test.ts lib/i18n/i18n.test.ts lib/store/visitsSlice.test.ts lib/translate.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -25,6 +25,7 @@
     "expo-image-picker": "~57.0.11",
     "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.5",
+    "expo-localization": "~57.0.1",
     "expo-notifications": "~57.0.11",
     "expo-router": "~57.0.12",
     "expo-splash-screen": "~57.0.6",
