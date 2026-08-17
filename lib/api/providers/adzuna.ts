@@ -28,6 +28,19 @@ const REGION_COUNTRIES: Record<string, string[]> = {
   az: [],
 };
 
+const ADZUNA_CURRENCY: Record<string, string> = {
+  gb: 'GBP',
+  us: 'USD',
+  de: 'EUR',
+  fr: 'EUR',
+  nl: 'EUR',
+  pl: 'PLN',
+  ca: 'CAD',
+  au: 'AUD',
+  in: 'INR',
+  sg: 'SGD',
+};
+
 export async function searchAdzuna(params: SearchParams): Promise<Job[]> {
   const appId = process.env.EXPO_PUBLIC_ADZUNA_APP_ID;
   const appKey = process.env.EXPO_PUBLIC_ADZUNA_APP_KEY;
@@ -55,7 +68,7 @@ export async function searchAdzuna(params: SearchParams): Promise<Job[]> {
     company: job.company?.display_name ?? 'Company',
     location: job.location?.display_name ?? country.toUpperCase(),
     remote: /remote/i.test(job.title ?? '') || /remote/i.test(job.location?.display_name ?? ''),
-    salary: formatSalary(job.salary_min, job.salary_max, country === 'gb' ? 'GBP' : country === 'us' ? 'USD' : undefined),
+    salary: formatSalary(job.salary_min, job.salary_max, ADZUNA_CURRENCY[country]),
     employment: job.contract_time,
     publishedAt: toPublishedAt(job.created),
     url: job.redirect_url ?? 'https://www.adzuna.com',

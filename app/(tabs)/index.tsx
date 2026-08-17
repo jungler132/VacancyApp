@@ -14,8 +14,13 @@ import { colors } from '@/lib/theme';
 export default function JobsScreen() {
   const headerHRef = useRef(88);
   const [headerH, setHeaderH] = useState(88);
+  const endGuard = useRef(false);
+  const visibleCount = useRef(0);
   const feed = useJobsFeed();
   const tabBar = useTabBarLayout();
+
+  if (feed.visibleIds.length > visibleCount.current) endGuard.current = false;
+  visibleCount.current = feed.visibleIds.length;
 
   const renderItem = useCallback(({ item }: { item: string }) => <JobCard jobId={item} />, []);
   const keyExtractor = useCallback((item: string) => item, []);
@@ -23,6 +28,16 @@ export default function JobsScreen() {
     if (Math.abs(height - headerHRef.current) < 2) return;
     headerHRef.current = height;
     setHeaderH(height);
+  }, []);
+
+  const onEndReached = useCallback(() => {
+    if (endGuard.current || feed.loadingMore || !feed.visibleIds.length) return;
+    endGuard.current = true;
+    feed.loadMore();
+  }, [feed]);
+
+  const onScrollBeginDrag = useCallback(() => {
+    endGuard.current = false;
   }, []);
 
   const emptyError = feed.status === 'error';
@@ -43,9 +58,10 @@ export default function JobsScreen() {
         maxToRenderPerBatch={8}
         windowSize={7}
         updateCellsBatchingPeriod={50}
-        removeClippedSubviews
-        onEndReachedThreshold={0.4}
-        onEndReached={feed.loadMore}
+        removeClippedSubviews={false}
+        onEndReachedThreshold={0.15}
+        onEndReached={onEndReached}
+        onScrollBeginDrag={onScrollBeginDrag}
         refreshControl={
           <RefreshControl
             refreshing={feed.refreshing}
@@ -69,7 +85,7 @@ export default function JobsScreen() {
           )
         }
         ListFooterComponent={
-          feed.loadingMore ? <ActivityIndicator style={{ marginVertical: 16 }} /> : <View style={{ height: 8 }} />
+          <View style={styles.footer}>{feed.loadingMore ? <ActivityIndicator /> : null}</View>
         }
       />
 
@@ -94,4 +110,5 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
   list: { paddingHorizontal: 16 },
   headerWrap: { position: 'absolute', top: 0, left: 0, right: 0 },
+  footer: { height: 48, alignItems: 'center', justifyContent: 'center' },
 });

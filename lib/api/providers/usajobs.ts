@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
-import { excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type UsaJob = {
@@ -49,7 +49,7 @@ export async function searchUsaJobs(params: SearchParams): Promise<Job[]> {
       company: d.OrganizationName ?? 'U.S. Government',
       location: d.PositionLocationDisplay ?? 'United States',
       remote: /remote|telework/i.test(d.PositionLocationDisplay ?? ''),
-      salary: pay ? `${pay.MinimumRange ?? ''} – ${pay.MaximumRange ?? ''}`.trim() : undefined,
+      salary: formatSalary(Number(pay?.MinimumRange) || null, Number(pay?.MaximumRange) || null, 'USD'),
       publishedAt: toPublishedAt(d.PublicationStartDate),
       url: d.PositionURI ?? 'https://www.usajobs.gov',
       excerpt: excerptOf(d.UserArea?.Details?.JobSummary || d.PositionTitle || ''),

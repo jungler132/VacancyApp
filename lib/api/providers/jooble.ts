@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
-import { excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { annotateSalary, excerptOf, stripHtml, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type JoobleJob = {
@@ -25,6 +25,14 @@ const REGION_LOCATION: Record<string, string> = {
   all: '',
   remote: 'Remote',
 };
+
+function joobleCurrency(region: SearchParams['region']): string | undefined {
+  if (region === 'az') return 'AZN';
+  if (region === 'cis') return 'RUB';
+  if (region === 'europe') return 'EUR';
+  if (region === 'west') return 'USD';
+  return undefined;
+}
 
 function joobleLang(region: SearchParams['region']) {
   if (region === 'az') return 'az' as const;
@@ -56,7 +64,7 @@ export async function searchJooble(params: SearchParams): Promise<Job[]> {
     company: job.company ?? 'Company',
     location: job.location || (params.region === 'az' ? 'Azerbaijan' : ''),
     remote: /remote|удал/i.test(`${job.location} ${job.type}`),
-    salary: job.salary || undefined,
+    salary: annotateSalary(job.salary, joobleCurrency(params.region)),
     employment: job.type,
     publishedAt: toPublishedAt(job.updated),
     url: job.link ?? 'https://jooble.org',

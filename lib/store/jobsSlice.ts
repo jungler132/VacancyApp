@@ -196,10 +196,11 @@ const jobsSlice = createSlice({
           seen.add(job.id);
           ids.push(job.id);
         }
+        const added = ids.length - prevIds.length;
         state.feeds[key] = {
           ids,
           page,
-          hasMore,
+          hasMore: mode === 'append' && added === 0 ? false : hasMore,
           exhaustedSources:
             mode === 'append' ? mergeExhausted(current?.exhaustedSources, exhaustedSources) : exhaustedSources,
           errors,

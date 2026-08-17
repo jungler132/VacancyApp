@@ -20,36 +20,127 @@ export function excerptOf(text: string, max = 180): string {
   return `${clean.slice(0, max).trim()}…`;
 }
 
+const CURRENCY_ALIASES: Record<string, string> = {
+  RUR: 'RUB',
+  RUB: 'RUB',
+  РУБ: 'RUB',
+  РУБЛЬ: 'RUB',
+  РУБЛЕЙ: 'RUB',
+  KZT: 'KZT',
+  ТГ: 'KZT',
+  ТЕНГЕ: 'KZT',
+  TENGE: 'KZT',
+  AZN: 'AZN',
+  МАН: 'AZN',
+  МАНАТ: 'AZN',
+  MANAT: 'AZN',
+  UAH: 'UAH',
+  ГРН: 'UAH',
+  ГРИВНА: 'UAH',
+  UZS: 'UZS',
+  СУМ: 'UZS',
+  BYN: 'BYN',
+  BYR: 'BYN',
+  KGS: 'KGS',
+  СОМ: 'KGS',
+  GEL: 'GEL',
+  TJS: 'TJS',
+  AMD: 'AMD',
+  MDL: 'MDL',
+  USD: 'USD',
+  EUR: 'EUR',
+  GBP: 'GBP',
+  PLN: 'PLN',
+  CZK: 'CZK',
+  HUF: 'HUF',
+  TRY: 'TRY',
+  CNY: 'CNY',
+  JPY: 'JPY',
+  INR: 'INR',
+  CHF: 'CHF',
+  CAD: 'CAD',
+  AUD: 'AUD',
+  SGD: 'SGD',
+  SEK: 'SEK',
+  NOK: 'NOK',
+  DKK: 'DKK',
+};
+
+const CURRENCY_LABEL: Record<string, string> = {
+  RUB: '₽',
+  KZT: '₸',
+  AZN: '₼',
+  UAH: '₴',
+  UZS: 'сум',
+  BYN: 'Br',
+  KGS: 'сом',
+  GEL: '₾',
+  TJS: 'сомони',
+  AMD: '֏',
+  MDL: 'L',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  PLN: 'zł',
+  CZK: 'Kč',
+  HUF: 'Ft',
+  TRY: '₺',
+  CNY: '¥',
+  JPY: '¥',
+  INR: '₹',
+  CHF: 'Fr',
+  CAD: 'C$',
+  AUD: 'A$',
+  SGD: 'S$',
+  SEK: 'kr',
+  NOK: 'kr',
+  DKK: 'kr',
+};
+
+const HAS_CURRENCY =
+  /[₽$€£¥₸₴₼₹₺]|RUB|RUR|KZT|USD|EUR|GBP|AZN|UAH|UZS|BYN|KGS|GEL|PLN|CZK|CHF|CAD|AUD|SGD|INR|TRY|руб|тенге|сум|манат|грн|сом|zł|Br\b/i;
+
+export function currencyLabel(currency?: string | null): string {
+  const code = normalizeCurrency(currency);
+  if (!code) return '';
+  return CURRENCY_LABEL[code] ?? code;
+}
+
 export function formatSalary(
   from?: number | null,
   to?: number | null,
   currency?: string | null,
 ): string | undefined {
   if (!from && !to) return undefined;
-  const cur = normalizeCurrency(currency);
-  const a = from ? formatMoney(from, cur) : '';
-  const b = to ? formatMoney(to, cur) : '';
-  if (a && b && a !== b) return `${a} – ${b}`;
-  return a || b;
+  const a = from ? formatAmount(from) : '';
+  const b = to ? formatAmount(to) : '';
+  const range = a && b && a !== b ? `${a} – ${b}` : a || b;
+  const label = currencyLabel(currency);
+  return label ? `${range} ${label}` : range;
+}
+
+export function annotateSalary(raw?: string | null, currency?: string | null): string | undefined {
+  const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) return undefined;
+  if (!/\d/.test(text) || HAS_CURRENCY.test(text)) return text;
+  const label = currencyLabel(currency);
+  return label ? `${text} ${label}` : text;
 }
 
 function normalizeCurrency(currency?: string | null): string {
-  const raw = (currency || '').replace(/[«»]/g, '').trim().toUpperCase();
-  if (raw === 'RUR' || raw === 'RUB' || raw === 'РУБ') return 'RUB';
+  const raw = (currency || '')
+    .replace(/[«».]/g, '')
+    .replace(/\s+/g, '')
+    .trim()
+    .toUpperCase();
   if (!raw) return '';
-  return raw;
+  return CURRENCY_ALIASES[raw] ?? (/^[A-Z]{3}$/.test(raw) ? raw : '');
 }
 
-function formatMoney(value: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('ru-RU', {
-      style: currency ? 'currency' : 'decimal',
-      currency: currency || undefined,
-      maximumFractionDigits: 0,
-    }).format(value);
-  } catch {
-    return `${value.toLocaleString('ru-RU')} ${currency}`.trim();
-  }
+function formatAmount(value: number): string {
+  return Math.round(value)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 export function toPublishedAt(value?: string | number | null): string | undefined {

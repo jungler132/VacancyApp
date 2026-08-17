@@ -46,7 +46,7 @@ const TabIcon = memo(function TabIcon({
   color,
   focused,
 }: {
-  name: 'magnify' | 'chart-donut' | 'star' | 'earth' | 'send';
+  name: 'magnify' | 'chart-donut' | 'star' | 'earth' | 'book-open-variant';
   color: string;
   focused: boolean;
 }) {
@@ -59,10 +59,10 @@ const TabIcon = memo(function TabIcon({
         ? focused
           ? 'chart-donut'
           : 'chart-arc'
-        : name === 'send'
+        : name === 'book-open-variant'
           ? focused
-            ? 'send'
-            : 'send-outline'
+            ? 'book-open-variant'
+            : 'book-open-outline'
           : name;
   return (
     <View style={styles.iconWrap}>
@@ -194,8 +194,8 @@ export default function TabLayout() {
         <Tabs.Screen
           name="telegram"
           options={{
-            title: 'Чаты',
-            tabBarIcon: ({ color, focused }) => <TabIcon name="send" color={String(color)} focused={focused} />,
+            title: 'Ресурсы',
+            tabBarIcon: ({ color, focused }) => <TabIcon name="book-open-variant" color={String(color)} focused={focused} />,
           }}
         />
         <Tabs.Screen

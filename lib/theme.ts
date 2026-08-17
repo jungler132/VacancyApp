@@ -66,6 +66,7 @@ export const regionColor: Record<string, string> = {
   remote: '#A78BFA',
   all: '#00D4A1',
   global: '#8B9BB4',
+  intl: '#8B9BB4',
 };
 
 export const CHART_PALETTE = [colors.accent, colors.blue, colors.salary, colors.pink] as const;

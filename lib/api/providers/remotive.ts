@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery, jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { annotateSalary, excerptOf, stripHtml, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type RemotiveJob = {
@@ -44,7 +44,7 @@ export async function searchRemotive(params: SearchParams): Promise<Job[]> {
       companyLogo: job.company_logo,
       location: job.candidate_required_location ?? 'Remote',
       remote: true,
-      salary: job.salary || undefined,
+      salary: annotateSalary(job.salary, 'USD'),
       employment: job.job_type,
       category: job.category,
       publishedAt: toPublishedAt(job.publication_date),

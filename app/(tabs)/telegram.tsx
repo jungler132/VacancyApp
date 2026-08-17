@@ -1,19 +1,34 @@
-import { memo, useCallback, useRef, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as WebBrowser from 'expo-web-browser';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
-import PagerView from 'react-native-pager-view';
 
-import { AppHeader } from '@/components/AppHeader';
+import { AppHeader, FiltersButton } from '@/components/AppHeader';
+import { CatalogFiltersSheet } from '@/components/CatalogFiltersSheet';
+import { EmptyState } from '@/components/EmptyState';
 import { useTabBarLayout } from '@/lib/layout';
-import { AZ_JOB_SITES, TELEGRAM_GROUPS, type CatalogLink } from '@/lib/telegramGroups';
-import { colors, fonts, radius } from '@/lib/theme';
+import {
+  DEFAULT_CATALOG_FILTERS,
+  JOB_SITES,
+  TELEGRAM_GROUPS,
+  catalogFiltersActive,
+  countryMeta,
+  filterCatalogBySelection,
+  groupCatalogByCountry,
+  type CatalogFilters,
+  type CatalogLink,
+} from '@/lib/telegramGroups';
+import { colors, fonts, radius, regionColor } from '@/lib/theme';
 
 const SECTIONS = [
   { id: 'telegram', label: 'Telegram', items: TELEGRAM_GROUPS, telegram: true },
-  { id: 'sites', label: 'Сайты', items: AZ_JOB_SITES, telegram: false },
+  { id: 'sites', label: 'Сайты', items: JOB_SITES, telegram: false },
 ] as const;
+
+type CatalogRow =
+  | { type: 'header'; id: string; title: string }
+  | { type: 'card'; id: string; item: CatalogLink; telegram: boolean };
 
 async function openCatalogLink(item: CatalogLink) {
   if (item.handle) {
@@ -23,9 +38,11 @@ async function openCatalogLink(item: CatalogLink) {
   await WebBrowser.openBrowserAsync(item.url);
 }
 
-const LinkCard = memo(function LinkCard({ item, telegram }: { item: CatalogLink; telegram?: boolean }) {
+const LinkCard = memo(function LinkCard({ item, telegram }: { item: CatalogLink; telegram: boolean }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const country = countryMeta(item.country);
+  const tint = regionColor[country.region] ?? colors.muted;
 
   const onOpen = useCallback(() => {
     openCatalogLink(item).catch(() => undefined);
@@ -40,7 +57,12 @@ const LinkCard = memo(function LinkCard({ item, telegram }: { item: CatalogLink;
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{item.title}</Text>
+      <View style={styles.cardHead}>
+        <Text style={styles.cardTitle}>{item.title}</Text>
+        <View style={[styles.countryBadge, { borderColor: tint }]}>
+          <Text style={[styles.countryLabel, { color: tint }]}>{country.label}</Text>
+        </View>
+      </View>
       {telegram && item.handle ? <Text style={styles.handle}>@{item.handle}</Text> : null}
       {item.note ? <Text style={styles.note}>{item.note}</Text> : null}
       <View style={styles.actions}>
@@ -57,45 +79,92 @@ const LinkCard = memo(function LinkCard({ item, telegram }: { item: CatalogLink;
   );
 });
 
-export default function TelegramScreen() {
-  const tabBar = useTabBarLayout();
-  const pager = useRef<PagerView>(null);
-  const [page, setPage] = useState(0);
+function toRows(items: CatalogLink[], telegram: boolean): CatalogRow[] {
+  const groups = groupCatalogByCountry(items);
+  const rows: CatalogRow[] = [];
+  const showHeaders = groups.length > 1;
+  for (const group of groups) {
+    if (showHeaders) rows.push({ type: 'header', id: `h-${group.id}`, title: group.label });
+    for (const item of group.items) rows.push({ type: 'card', id: item.id, item, telegram });
+  }
+  return rows;
+}
 
-  const goTo = useCallback((index: number) => {
-    setPage(index);
-    pager.current?.setPage(index);
+export default function ResourcesScreen() {
+  const tabBar = useTabBarLayout();
+  const [page, setPage] = useState(0);
+  const [filters, setFilters] = useState<CatalogFilters>(DEFAULT_CATALOG_FILTERS);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetReady, setSheetReady] = useState(false);
+  const section = SECTIONS[page];
+  const visible = useMemo(
+    () => filterCatalogBySelection(section.items, filters),
+    [section.items, filters],
+  );
+  const rows = useMemo(() => toRows(visible, section.telegram), [visible, section.telegram]);
+  const filtersActive = catalogFiltersActive(filters);
+
+  const openSheet = useCallback(() => {
+    setSheetReady(true);
+    setSheetOpen(true);
   }, []);
+
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
+  const resetFilters = useCallback(() => setFilters(DEFAULT_CATALOG_FILTERS), []);
+
+  const renderItem = useCallback(({ item }: { item: CatalogRow }) => {
+    if (item.type === 'header') return <Text style={styles.groupTitle}>{item.title}</Text>;
+    return <LinkCard item={item.item} telegram={item.telegram} />;
+  }, []);
+
+  const keyExtractor = useCallback((item: CatalogRow) => item.id, []);
 
   return (
     <View style={styles.screen}>
-      <AppHeader title="Чаты">
+      <AppHeader
+        title="Ресурсы"
+        subtitle={`${visible.length} из ${section.items.length}`}
+        right={<FiltersButton active={filtersActive} onPress={openSheet} />}>
         <View style={styles.tabs}>
           {SECTIONS.map((item, index) => (
-            <Pressable key={item.id} onPress={() => goTo(index)} style={styles.tab} android_ripple={null}>
+            <Pressable key={item.id} onPress={() => setPage(index)} style={styles.tab} android_ripple={null}>
               <Text style={[styles.tabLabel, page === index && styles.tabLabelOn]}>{item.label}</Text>
               <View style={[styles.tabLine, page === index && styles.tabLineOn]} />
             </Pressable>
           ))}
         </View>
       </AppHeader>
-      <PagerView
-        ref={pager}
-        style={styles.pager}
-        initialPage={0}
-        onPageSelected={(event) => setPage(event.nativeEvent.position)}>
-        {SECTIONS.map((section) => (
-          <View key={section.id} style={styles.page}>
-            <ScrollView
-              contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}
-              showsVerticalScrollIndicator={false}>
-              {section.items.map((item) => (
-                <LinkCard key={item.id} item={item} telegram={section.telegram} />
-              ))}
-            </ScrollView>
-          </View>
-        ))}
-      </PagerView>
+      <FlatList
+        key={section.id}
+        data={rows}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
+        contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            title="Нет ресурсов в этой стране"
+            subtitle="Выберите другую страну или сбросьте фильтр."
+            actionLabel="Сбросить фильтры"
+            onAction={resetFilters}
+          />
+        }
+      />
+      {sheetReady ? (
+        <CatalogFiltersSheet
+          open={sheetOpen}
+          filters={filters}
+          resultCount={visible.length}
+          onChange={setFilters}
+          onClose={closeSheet}
+          onReset={resetFilters}
+        />
+      ) : null}
     </View>
   );
 }
@@ -108,17 +177,26 @@ const styles = StyleSheet.create({
   tabLabelOn: { color: colors.text },
   tabLine: { height: 2, alignSelf: 'stretch', borderRadius: 1, backgroundColor: 'transparent' },
   tabLineOn: { backgroundColor: colors.accent },
-  pager: { flex: 1 },
-  page: { flex: 1 },
-  content: { padding: 16, gap: 10 },
+  content: { padding: 16 },
+  groupTitle: { color: colors.faint, fontSize: 13, fontFamily: fonts.semibold, marginTop: 6, marginBottom: 2 },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     padding: 14,
+    marginBottom: 10,
   },
-  cardTitle: { color: colors.text, fontSize: 16, fontFamily: fonts.semibold },
+  cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  cardTitle: { color: colors.text, fontSize: 16, fontFamily: fonts.semibold, flex: 1 },
+  countryBadge: {
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    maxWidth: 140,
+  },
+  countryLabel: { fontSize: 11, fontFamily: fonts.semibold },
   handle: { color: colors.faint, fontSize: 13, fontFamily: fonts.medium, marginTop: 4 },
   note: { color: colors.muted, fontSize: 13, marginTop: 6, lineHeight: 18 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 12 },

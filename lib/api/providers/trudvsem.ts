@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
-import { excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { annotateSalary, excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type TrudVacancy = {
@@ -51,7 +51,7 @@ export async function searchTrudvsem(params: SearchParams): Promise<Job[]> {
         company: v.company?.name ?? 'Работодатель',
         location: v.region?.name ?? 'Россия',
         remote: /удал/i.test(String(v.schedule ?? '')),
-        salary: formatSalary(min, max, v.currency) ?? (v.salary ? String(v.salary) : undefined),
+        salary: formatSalary(min, max, v.currency) ?? annotateSalary(v.salary ? String(v.salary) : undefined, v.currency || 'RUB'),
         employment: typeof v.employment === 'string' ? v.employment : undefined,
         publishedAt: toPublishedAt(v['creation-date']),
         url: v.vac_url ?? 'https://trudvsem.ru',

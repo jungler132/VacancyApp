@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type RemoteOkJob = {
@@ -38,10 +38,7 @@ export async function searchRemoteOK(params: SearchParams): Promise<Job[]> {
       companyLogo: job.logo,
       location: job.location ?? 'Remote',
       remote: true,
-      salary:
-        job.salary_min || job.salary_max
-          ? `${job.salary_min ? `$${job.salary_min.toLocaleString('en-US')}` : ''}${job.salary_min && job.salary_max ? ' – ' : ''}${job.salary_max ? `$${job.salary_max.toLocaleString('en-US')}` : ''}`
-          : undefined,
+      salary: formatSalary(job.salary_min, job.salary_max, 'USD'),
       publishedAt: toPublishedAt(job.date),
       url: job.url ?? 'https://remoteok.com',
       excerpt: excerptOf(job.description || job.position || ''),
