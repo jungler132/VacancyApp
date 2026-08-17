@@ -46,7 +46,7 @@ const TabIcon = memo(function TabIcon({
   color,
   focused,
 }: {
-  name: 'magnify' | 'chart-donut' | 'star' | 'cog' | 'book-open-variant';
+  name: 'magnify' | 'briefcase-account' | 'star' | 'cog' | 'book-open-variant';
   color: string;
   focused: boolean;
 }) {
@@ -55,10 +55,10 @@ const TabIcon = memo(function TabIcon({
       ? focused
         ? 'star'
         : 'star-outline'
-      : name === 'chart-donut'
+      : name === 'briefcase-account'
         ? focused
-          ? 'chart-donut'
-          : 'chart-arc'
+          ? 'briefcase-account'
+          : 'briefcase-account-outline'
         : name === 'book-open-variant'
           ? focused
             ? 'book-open-variant'
@@ -204,10 +204,12 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="stats"
+          name="services"
           options={{
-            title: 'Сводка',
-            tabBarIcon: ({ color, focused }) => <TabIcon name="chart-donut" color={String(color)} focused={focused} />,
+            title: 'Услуги',
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon name="briefcase-account" color={String(color)} focused={focused} />
+            ),
           }}
         />
         <Tabs.Screen

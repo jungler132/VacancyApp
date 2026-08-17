@@ -41,6 +41,14 @@
       ],
       "expo-font",
       "expo-status-bar",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Workly нужен доступ к фото, чтобы поставить аватар и картинки услуг.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       "./plugins/withAndroidReleaseSigning.js",
       "@react-native-vector-icons/material-design-icons",
       "expo-background-task",

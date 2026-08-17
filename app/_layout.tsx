@@ -69,6 +69,10 @@ function Navigation() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="job/create" options={{ title: 'Новая вакансия' }} />
         <Stack.Screen name="job/[...id]" options={{ title: 'Вакансия' }} />
+        <Stack.Screen name="service/me" options={{ title: 'Моя страница' }} />
+        <Stack.Screen name="service/[id]" options={{ title: 'Мастер' }} />
+        <Stack.Screen name="service/offer/[id]" options={{ title: 'Услуга' }} />
+        <Stack.Screen name="stats" options={{ title: 'Сводка' }} />
       </Stack>
     </ThemeProvider>
   );

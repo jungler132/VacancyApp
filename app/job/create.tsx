@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { SelectChip } from '@/components/FilterChips';
-import { Text, TextInput } from '@/components/AppText';
+import { FormField, formStyles } from '@/components/FormField';
+import { Text } from '@/components/AppText';
 import { CATEGORIES } from '@/lib/catalog';
 import { SALARY_CURRENCIES } from '@/lib/format';
 import { LOCAL_JOBS_LIMIT } from '@/lib/tiers';
@@ -79,6 +72,10 @@ export default function CreateJobScreen() {
   );
 
   const onFree = useCallback(() => publish(2), [publish]);
+  const onCurrency = useCallback((id: string | number) => setCurrency(String(id)), []);
+  const onCategory = useCallback((id: string | number) => setCategory(id as CategoryId), []);
+  const onOffice = useCallback(() => setRemote(false), []);
+  const onRemote = useCallback(() => setRemote(true), []);
 
   const onPremium = useCallback(() => {
     if (isPremium) {
@@ -101,21 +98,21 @@ export default function CreateJobScreen() {
   }, [isPremium, paywallOpen, publish]);
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.lead}>Вакансия появится в ленте на этом устройстве. Позже это уйдёт на сервер.</Text>
-        <Field label="Должность" value={title} onChangeText={setTitle} placeholder="Например, продавец" />
-        <Field label="Компания" value={company} onChangeText={setCompany} placeholder="Название" />
-        <Field label="Город" value={location} onChangeText={setLocation} placeholder="Москва" />
-        <Field
+    <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
+        <Text style={formStyles.lead}>Вакансия появится в ленте на этом устройстве. Позже это уйдёт на сервер.</Text>
+        <FormField label="Должность" value={title} onChangeText={setTitle} placeholder="Например, продавец" />
+        <FormField label="Компания" value={company} onChangeText={setCompany} placeholder="Название" />
+        <FormField label="Город" value={location} onChangeText={setLocation} placeholder="Москва" />
+        <FormField
           label="Зарплата"
           value={salary}
           onChangeText={setSalary}
           placeholder="150 000"
           keyboardType="numeric"
         />
-        <Text style={styles.label}>Валюта</Text>
-        <View style={styles.wrap}>
+        <Text style={formStyles.label}>Валюта</Text>
+        <View style={formStyles.wrap}>
           {SALARY_CURRENCIES.map((item) => (
             <SelectChip
               key={item.id}
@@ -123,13 +120,13 @@ export default function CreateJobScreen() {
               label={`${item.label} ${item.id}`}
               compact
               selected={currency === item.id}
-              onChange={(id) => setCurrency(String(id))}
+              onChange={onCurrency}
             />
           ))}
         </View>
-        <Field label="Контакт" value={contact} onChangeText={setContact} placeholder="Телефон или Telegram" />
-        <Text style={styles.label}>Сфера</Text>
-        <View style={styles.wrap}>
+        <FormField label="Контакт" value={contact} onChangeText={setContact} placeholder="Телефон или Telegram" />
+        <Text style={formStyles.label}>Сфера</Text>
+        <View style={formStyles.wrap}>
           {FORM_CATEGORIES.map((item) => (
             <SelectChip
               key={item.id}
@@ -137,25 +134,25 @@ export default function CreateJobScreen() {
               label={item.label}
               compact
               selected={category === item.id}
-              onChange={(id) => setCategory(id as CategoryId)}
+              onChange={onCategory}
             />
           ))}
         </View>
-        <View style={styles.wrap}>
-          <SelectChip id="office" label="Офис" compact selected={!remote} onChange={() => setRemote(false)} />
-          <SelectChip id="remote" label="Удалёнка" compact selected={remote} onChange={() => setRemote(true)} />
+        <View style={formStyles.wrap}>
+          <SelectChip id="office" label="Офис" compact selected={!remote} onChange={onOffice} />
+          <SelectChip id="remote" label="Удалёнка" compact selected={remote} onChange={onRemote} />
         </View>
-        <Field
+        <FormField
           label="Описание"
           value={description}
           onChangeText={setDescription}
           placeholder="Обязанности, условия"
           multiline
         />
-        <Pressable onPress={onFree} style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-          <Text style={styles.primaryText}>Опубликовать</Text>
+        <Pressable onPress={onFree} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
+          <Text style={formStyles.primaryText}>Опубликовать</Text>
         </Pressable>
-        <Pressable onPress={onPremium} style={({ pressed }) => [styles.premium, pressed && styles.pressed]}>
+        <Pressable onPress={onPremium} style={({ pressed }) => [styles.premium, pressed && formStyles.pressed]}>
           <Text style={styles.premiumText}>Премиум-размещение</Text>
         </Pressable>
       </ScrollView>
@@ -163,65 +160,7 @@ export default function CreateJobScreen() {
   );
 }
 
-function Field({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  multiline,
-  keyboardType,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder: string;
-  multiline?: boolean;
-  keyboardType?: 'default' | 'numeric';
-}) {
-  return (
-    <View>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.placeholder}
-        style={[styles.input, multiline && styles.area]}
-        multiline={multiline}
-        keyboardType={keyboardType}
-        textAlignVertical={multiline ? 'top' : 'center'}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 20, paddingBottom: 40, gap: 12 },
-  lead: { color: colors.muted, fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, marginBottom: 4 },
-  label: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 12, marginBottom: 6 },
-  input: {
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    backgroundColor: colors.card,
-    color: colors.text,
-    fontFamily: fonts.medium,
-    fontSize: 15,
-    paddingHorizontal: 12,
-  },
-  area: { minHeight: 120, paddingTop: 12 },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  primary: {
-    marginTop: 8,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryText: { color: colors.accentText, fontFamily: fonts.bold, fontSize: 16 },
   premium: {
     height: 48,
     borderRadius: radius.md,
@@ -231,5 +170,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   premiumText: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 16 },
-  pressed: { opacity: 0.86 },
 });

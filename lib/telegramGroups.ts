@@ -176,7 +176,7 @@ export function filterCatalogBySelection(items: CatalogLink[], filters: CatalogF
 
 export function catalogFilterChips(items: CatalogLink[]): { id: CatalogFilterId; label: string }[] {
   const present = new Set(items.map((item) => item.country));
-  const regions = new Set(
+  const regions = new Set<CatalogFilters['region']>(
     [...present]
       .map((id) => countryMeta(id).region)
       .filter((region) => region === 'cis' || region === 'europe' || region === 'west' || region === 'asia'),

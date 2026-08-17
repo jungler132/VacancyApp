@@ -1546,6 +1546,13 @@
   dependencies:
     undici-types "~8.3.0"
 
+"@types/node@^26.2.0":
+  version "26.2.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-26.2.0.tgz#5a4875a862fda8fdc57de8faa579bb81ecba1685"
+  integrity sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg==
+  dependencies:
+    undici-types "~8.3.0"
+
 "@types/react@~19.2.2":
   version "19.2.18"
   resolved "https://registry.npmjs.org/@types/react/-/react-19.2.18.tgz"
@@ -2411,6 +2418,18 @@ expo-glass-effect@^57.0.1:
   version "57.0.1"
   resolved "https://registry.npmjs.org/expo-glass-effect/-/expo-glass-effect-57.0.1.tgz"
   integrity sha512-m/n8maxqNcHk6ZDhuqXBfD5Kt1Iz3M8xykVgdB0iSCIXvF70IqWXmQhX8Psswhrp8eZ+3r0mAD0Jh/2gFA3QaA==
+
+expo-image-loader@~57.0.1:
+  version "57.0.1"
+  resolved "https://registry.yarnpkg.com/expo-image-loader/-/expo-image-loader-57.0.1.tgz#b031dc3e62ac09004f3e436d7081487236791f53"
+  integrity sha512-uhrZKLT/cTl2mXyR28kPpVkS5O+PK9N1QA/07IFM4f5T4g0lTW1JHT3NEWwEEsGFldPmVX4j7LwUVVZxE+woug==
+
+expo-image-picker@~57.0.11:
+  version "57.0.11"
+  resolved "https://registry.yarnpkg.com/expo-image-picker/-/expo-image-picker-57.0.11.tgz#4c9eab85bae9d73a6070350451d27899f38e2739"
+  integrity sha512-CyeQuGeA2Jei8zQb8S2fxmK6OIvdvUOYpxXegy8Dyc2WsI0GfWcgH8f+6uZmBaMlxakMPP4cfNvT1LeSMbB0PA==
+  dependencies:
+    expo-image-loader "~57.0.1"
 
 expo-keep-awake@~57.0.1:
   version "57.0.1"

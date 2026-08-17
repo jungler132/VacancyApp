@@ -73,8 +73,8 @@ function asRegion(value: unknown): RegionId {
 
 function asCategories(value: unknown): CategoryId[] {
   if (!Array.isArray(value)) return ['all'];
-  const next = value.filter((id): id is CategoryId => typeof id === 'string' && (CATEGORIES as string[]).includes(id));
-  return next.length ? next : ['all'];
+  const next = value.filter((id): id is CategoryId => typeof id === 'string' && (CATEGORIES as string[]).includes(id) && id !== 'all');
+  return next[0] ? [next[0]] : ['all'];
 }
 
 function asExtra(value: unknown): ExtraFilters {

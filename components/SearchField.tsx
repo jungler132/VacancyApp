@@ -8,9 +8,11 @@ import { colors, radius } from '@/lib/theme';
 export const SearchField = memo(function SearchField({
   value = '',
   onSearch,
+  placeholder = 'Должность или компания',
 }: {
   value?: string;
   onSearch: (value: string) => void;
+  placeholder?: string;
 }) {
   const [text, setText] = useState(value);
   const scale = useFontScale();
@@ -29,7 +31,7 @@ export const SearchField = memo(function SearchField({
     <Searchbar
       value={text}
       onChangeText={setText}
-      placeholder="Должность или компания"
+      placeholder={placeholder}
       autoCorrect={false}
       autoCapitalize="none"
       returnKeyType="search"

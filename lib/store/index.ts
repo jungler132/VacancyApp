@@ -23,6 +23,14 @@ import localJobsReducer, {
 } from './localJobsSlice';
 import premiumReducer, { hydratePremium } from './premiumSlice';
 import appearanceReducer, { hydrateAppearance, persistFontSize, setFontSize } from './appearanceSlice';
+import freelanceReducer, {
+  hydrateFreelance,
+  persistFreelance,
+  removeOffer,
+  saveProfile,
+  upsertOffer,
+} from './freelanceSlice';
+import servicesCatalogReducer from './servicesCatalogSlice';
 import filtersReducer, {
   applySearch,
   hydrateFilters,
@@ -134,6 +142,15 @@ listener.startListening({
   },
 });
 
+listener.startListening({
+  matcher: isAnyOf(saveProfile, upsertOffer, removeOffer, hydrateFreelance.fulfilled),
+  effect: async (action, listenerApi) => {
+    if (!saveProfile.match(action) && !upsertOffer.match(action) && !removeOffer.match(action)) return;
+    const freelance = (listenerApi.getState() as RootState).freelance;
+    await persistFreelance(freelance.profile, freelance.offers);
+  },
+});
+
 export const store = configureStore({
   reducer: {
     jobs: jobsReducer,
@@ -145,6 +162,8 @@ export const store = configureStore({
     localJobs: localJobsReducer,
     premium: premiumReducer,
     appearance: appearanceReducer,
+    freelance: freelanceReducer,
+    servicesCatalog: servicesCatalogReducer,
   },
   middleware: (getDefault) =>
     getDefault({
@@ -162,6 +181,7 @@ store.dispatch(hydrateAlerts());
 store.dispatch(hydrateLocalJobs());
 store.dispatch(hydratePremium());
 store.dispatch(hydrateAppearance());
+store.dispatch(hydrateFreelance());
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

@@ -167,11 +167,8 @@ export function jobMatchesAnyLang(haystack: string, query: string, category: Cat
 export function toggleCategory(selected: CategoryId[], id: CategoryId): CategoryId[] {
   if (id === 'all') return ['all'];
   const current = selected.filter((item) => item !== 'all');
-  if (current.includes(id)) {
-    const next = current.filter((item) => item !== id);
-    return next.length ? next : ['all'];
-  }
-  return [...current, id];
+  if (current.length === 1 && current[0] === id) return ['all'];
+  return [id];
 }
 
 export function apiCategory(selected: CategoryId[]): CategoryId {

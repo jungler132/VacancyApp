@@ -14,6 +14,7 @@ import { jobTier } from '@/lib/tiers';
 import { useTabBarLayout } from '@/lib/layout';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectSourceErrorMap } from '@/lib/store/selectors';
+import { SERVICE_ME_HREF, STATS_HREF } from '@/lib/services/catalog';
 import { jobHref } from '@/lib/jobRoute';
 import { pinViewedJob } from '@/lib/store/jobsSlice';
 import { setFontSize } from '@/lib/store/appearanceSlice';
@@ -118,6 +119,31 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.rowBetween}>
+          <Text style={styles.section}>Самозанятость</Text>
+          <Pressable onPress={() => router.push(SERVICE_ME_HREF)} hitSlop={8}>
+            <Text style={styles.link}>Страница</Text>
+          </Pressable>
+        </View>
+        <Pressable
+          onPress={() => router.push(SERVICE_ME_HREF)}
+          style={({ pressed }) => [styles.jobRow, pressed && styles.pressed]}>
+          <View style={styles.jobBody}>
+            <Text style={styles.jobTitle}>Моя страница услуг</Text>
+            <Text style={styles.jobMeta}>Профиль, виды работ и цены</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push(STATS_HREF)}
+          style={({ pressed }) => [styles.jobRow, pressed && styles.pressed]}>
+          <View style={styles.jobBody}>
+            <Text style={styles.jobTitle}>Сводка ленты</Text>
+            <Text style={styles.jobMeta}>Источники и сферы по текущим фильтрам</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+
+        <View style={styles.rowBetween}>
           <Text style={styles.section}>Мои вакансии</Text>
           <Pressable onPress={() => router.push('/job/create')} hitSlop={8}>
             <Text style={styles.link}>Создать</Text>
@@ -172,7 +198,9 @@ export default function SettingsScreen() {
                   {canToggle ? (
                     <Switch
                       value={on}
-                      onValueChange={() => dispatch(toggleSource(source.id))}
+                      onValueChange={() => {
+                        dispatch(toggleSource(source.id));
+                      }}
                       style={styles.switch}
                     />
                   ) : null}

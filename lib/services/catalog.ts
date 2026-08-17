@@ -1,0 +1,56 @@
+import type { Href } from 'expo-router';
+
+import { composeSalary } from '@/lib/format';
+import { serviceKindLabel } from './kinds';
+import type { ServiceKindId, ServiceMaster, ServiceOffer, ServiceProfile } from './types';
+
+export function toServiceMaster(profile: ServiceProfile, offers: ServiceOffer[], mine = false): ServiceMaster {
+  return { ...profile, offers, mine };
+}
+
+export function masterHaystack(master: ServiceMaster): string {
+  const kinds = master.kinds.map(serviceKindLabel).join(' ');
+  const offers = master.offers.map((item) => `${item.title} ${item.description}`).join(' ');
+  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${kinds} ${offers}`.toLowerCase();
+}
+
+export function filterServiceMasters(
+  masters: ServiceMaster[],
+  query: string,
+  kind: ServiceKindId | 'all',
+): ServiceMaster[] {
+  const needle = query.trim().toLowerCase();
+  const out: ServiceMaster[] = [];
+  for (const master of masters) {
+    const offers =
+      kind === 'all' ? master.offers : master.offers.filter((item) => item.kind === kind);
+    const kindsMatch = kind === 'all' || master.kinds.includes(kind) || offers.length > 0;
+    if (!kindsMatch) continue;
+    const next = kind === 'all' ? master : { ...master, offers };
+    if (needle && !masterHaystack(next).includes(needle)) continue;
+    out.push(next);
+  }
+  return out;
+}
+
+export function offerContact(offer: ServiceOffer, profile: ServiceProfile): { phone: string; address: string } {
+  return {
+    phone: offer.phone?.trim() || profile.phone,
+    address: offer.address?.trim() || profile.address || '',
+  };
+}
+
+export function offerPriceLabel(offer: Pick<ServiceOffer, 'price' | 'currency'>): string {
+  return composeSalary(offer.price, offer.currency) ?? 'Цена по договорённости';
+}
+
+export function masterHref(id: string): Href {
+  return { pathname: '/service/[id]', params: { id } } as unknown as Href;
+}
+
+export function offerEditorHref(id: string): Href {
+  return { pathname: '/service/offer/[id]', params: { id } } as unknown as Href;
+}
+
+export const SERVICE_ME_HREF = '/service/me' as unknown as Href;
+export const STATS_HREF = '/stats' as unknown as Href;

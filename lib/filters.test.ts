@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { DEFAULT_EXTRA_FILTERS, filterFeedIds, jobMatchesExtra, type ExtraFilters } from './filters';
+import { toggleCategory } from './catalog';
 import type { Job } from './types';
 
 const now = new Date().toISOString();
@@ -77,5 +78,14 @@ describe('jobMatchesExtra', () => {
     });
     assert.equal(jobMatchesExtra(stale, extra({ maxAgeDays: 7 })), false);
     assert.equal(jobMatchesExtra(stale, extra({ maxAgeDays: 30 })), true);
+  });
+});
+
+describe('toggleCategory', () => {
+  it('не даёт выбрать две сферы сразу', () => {
+    assert.deepEqual(toggleCategory(['all'], 'it'), ['it']);
+    assert.deepEqual(toggleCategory(['it'], 'home'), ['home']);
+    assert.deepEqual(toggleCategory(['it'], 'it'), ['all']);
+    assert.deepEqual(toggleCategory(['it', 'home'], 'sales'), ['sales']);
   });
 });

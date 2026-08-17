@@ -1,4 +1,4 @@
-import { memo, type ComponentProps, type ReactNode } from 'react';
+import { memo, useCallback, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
@@ -23,10 +23,11 @@ export const SelectChip = memo(function SelectChip({
   onChange: (id: string | number) => void;
 }) {
   const tint = selected ? colors.accent : colors.muted;
+  const press = useCallback(() => onChange(id), [id, onChange]);
 
   return (
     <Pressable
-      onPress={() => onChange(id)}
+      onPress={press}
       style={[styles.chip, compact && styles.chipSm, selected && styles.selected]}>
       {icon ? (
         <MaterialDesignIcons

@@ -6,6 +6,8 @@ import { extraFiltersActive } from '@/lib/filters';
 import { computeJobStats } from '@/lib/stats';
 import { mergeVisibleIds } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
+import { toServiceMaster } from '@/lib/services/catalog';
+import { OWN_PROFILE_ID } from './freelanceSlice';
 import { resolveCatalogItem } from './savedCatalogSlice';
 import type { RootState } from './index';
 import { makeFeedKey, type FeedCache } from './jobsSlice';
@@ -154,6 +156,27 @@ export const selectSourceErrorMap = createSelector([(state: RootState) => state.
   }
   return Object.keys(map).length ? map : EMPTY_ERROR_MAP;
 });
+
+export const selectOwnMaster = createSelector(
+  [(state: RootState) => state.freelance.profile, (state: RootState) => state.freelance.offers],
+  (profile, offers) => (profile ? toServiceMaster(profile, offers, true) : undefined),
+);
+
+export const selectCatalogMasters = createSelector(
+  [selectOwnMaster, (state: RootState) => state.servicesCatalog.items],
+  (own, remote) => {
+    if (own?.displayName.trim()) return [own, ...remote];
+    return remote;
+  },
+);
+
+export function selectMasterById(state: RootState, id: string) {
+  if (!id) return undefined;
+  if (id === OWN_PROFILE_ID) return selectOwnMaster(state);
+  const own = selectOwnMaster(state);
+  if (own?.id === id) return own;
+  return state.servicesCatalog.items.find((item) => item.id === id);
+}
 
 export const selectRecentErrors = createSelector([(state: RootState) => state.jobs.feeds], (feeds) => {
   const seen = new Set<string>();
