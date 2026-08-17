@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { AppHeader, FiltersButton } from '@/components/AppHeader';
@@ -13,10 +13,11 @@ import type { ServiceKindId, ServiceMaster } from '@/lib/services/types';
 import { useTabBarLayout } from '@/lib/layout';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectCatalogMasters, selectOwnMaster } from '@/lib/store/selectors';
-import { colors, fonts } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { useT } from '@/lib/i18n/useT';
 
 const Separator = memo(function Separator() {
+  const styles = useThemedStyles(servicesStyles);
   return <View style={styles.sep} />;
 });
 
@@ -29,6 +30,7 @@ const CreatePageBanner = memo(function CreatePageBanner({
   meta: string;
   onPress: () => void;
 }) {
+  const styles = useThemedStyles(servicesStyles);
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.create, pressed && styles.pressed]}>
       <Text style={styles.createTitle}>{title}</Text>
@@ -40,6 +42,7 @@ const CreatePageBanner = memo(function CreatePageBanner({
 export default function ServicesScreen() {
   const t = useT();
   const router = useRouter();
+  const styles = useThemedStyles(servicesStyles);
   const tabBar = useTabBarLayout();
   const own = useAppSelector(selectOwnMaster);
   const masters = useAppSelector(selectCatalogMasters);
@@ -51,7 +54,7 @@ export default function ServicesScreen() {
   const filtersActive = kind !== 'all';
   const listPadding = useMemo(
     () => [styles.content, { paddingBottom: tabBar.listPaddingBottom }],
-    [tabBar.listPaddingBottom],
+    [styles.content, tabBar.listPaddingBottom],
   );
 
   const openSheet = useCallback(() => {
@@ -74,7 +77,9 @@ export default function ServicesScreen() {
         title={t('tab.services')}
         subtitle={t('services.subtitle', { count: visible.length })}
         right={<FiltersButton active={filtersActive} onPress={openSheet} />}>
-        <SearchField value={query} onSearch={setQuery} placeholder={t('search.services')} />
+        <View style={styles.search}>
+          <SearchField value={query} onSearch={setQuery} placeholder={t('search.services')} />
+        </View>
       </AppHeader>
       <FlatList
         data={visible}
@@ -119,20 +124,23 @@ export default function ServicesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: 16 },
-  sep: { height: 8 },
-  create: {
-    backgroundColor: colors.accentDim,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 12,
-    gap: 4,
-  },
-  createTitle: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 16 },
-  createMeta: { color: colors.muted, fontFamily: fonts.medium, fontSize: 13, lineHeight: 18 },
-  pressed: { opacity: 0.86 },
-});
+function servicesStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    screen: { flex: 1, backgroundColor: 'transparent' },
+    search: { marginTop: 12 },
+    content: { padding: 20 },
+    sep: { height: 12 },
+    create: {
+      backgroundColor: colors.accentDim,
+      borderWidth: 1,
+      borderColor: colors.accentDim,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginBottom: 12,
+      gap: 4,
+    },
+    createTitle: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 16 },
+    createMeta: { color: colors.muted, fontFamily: fonts.medium, fontSize: 13, lineHeight: 18 },
+    pressed: { opacity: 0.86 },
+  };
+}

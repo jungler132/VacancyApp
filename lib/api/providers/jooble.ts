@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
-import { annotateSalary, excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { annotateSalary, excerptOf, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type JoobleJob = {
@@ -69,6 +69,6 @@ export async function searchJooble(params: SearchParams): Promise<Job[]> {
     publishedAt: toPublishedAt(job.updated),
     url: job.link ?? 'https://jooble.org',
     excerpt: excerptOf(job.snippet || job.title || ''),
-    description: stripHtml(job.snippet),
+    description: htmlToText(job.snippet),
   }));
 }

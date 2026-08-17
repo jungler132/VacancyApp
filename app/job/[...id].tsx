@@ -1,18 +1,22 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
 import { AppChip } from '@/components/AppChip';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
 import { EmptyState } from '@/components/EmptyState';
 import { SelectChip } from '@/components/FilterChips';
+import { CompanyLogo } from '@/components/CompanyLogo';
 import { requestInterstitial } from '@/lib/ads';
 import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
-import { displayName, formatDate, formatPlace, joinMeta, jobFacts, stripHtml } from '@/lib/format';
+import { displayName, formatDate, formatPlace, htmlToText, joinMeta, jobFacts } from '@/lib/format';
 import { Text as AppText } from '@/components/AppText';
+import { JobBody } from '@/components/JobBody';
 import { keyOf, tokenLabel } from '@/lib/i18n';
+import { logoFromApplyUrl } from '@/lib/logo';
 import { useLocale, useT } from '@/lib/i18n/useT';
 import { detectTextLocale, translateJobTexts, type JobTextBundle } from '@/lib/translate';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
@@ -23,7 +27,7 @@ import { matchRouteJobId, parseJobIdParam } from '@/lib/jobRoute';
 import { selectIsSaved, selectJobById, selectViewedJob } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
 import { isLocalJob, jobTier } from '@/lib/tiers';
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function JobDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
@@ -32,6 +36,9 @@ export default function JobDetailsScreen() {
   const dispatch = useAppDispatch();
   const t = useT();
   const locale = useLocale();
+  const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = useThemedStyles(jobDetailsStyles);
   const viewed = useAppSelector(selectViewedJob);
   const byId = useAppSelector((state) => state.jobs.byId);
   const lookupId = matchRouteJobId(decoded, Object.keys(byId), viewed?.id);
@@ -77,8 +84,8 @@ export default function JobDetailsScreen() {
     [applyStatus, dispatch, job],
   );
 
-  const body = useMemo(() => stripHtml(job?.description || job?.excerpt || ''), [job?.description, job?.excerpt]);
-  const snippetOnly = Boolean(body) && (body.length < 480 || /(?:\.{3}|…)\s*$/.test(body) || (body.match(/\.{3}|…/g)?.length ?? 0) >= 2);
+  const body = useMemo(() => htmlToText(job?.description || job?.excerpt || ''), [job?.description, job?.excerpt]);
+  const snippetOnly = Boolean(body) && (body.replace(/\s+/g, ' ').length < 480 || /(?:\.{3}|…)\s*$/.test(body) || (body.match(/\.{3}|…/g)?.length ?? 0) >= 2);
 
   const meta = useMemo(() => {
     if (!job) return '';
@@ -151,126 +158,143 @@ export default function JobDetailsScreen() {
   const text = showTranslated && translated ? translated.body : body;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text variant="labelMedium" style={styles.company}>
-        {company}
-      </Text>
-      <Text variant="headlineSmall">{title}</Text>
-      {meta ? (
-        <Text variant="bodyMedium" style={styles.meta}>
-          {meta}
-        </Text>
-      ) : null}
-      {job.salary ? (
-        <Text variant="titleMedium" style={styles.salary}>
-          {job.salary}
-        </Text>
-      ) : null}
-      {facts.length ? (
-        <View style={styles.facts}>
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={[styles.content, job.url && styles.contentCta]}>
+        <View style={styles.hero}>
+          <View style={styles.logo}>
+            <CompanyLogo uri={job.companyLogo || logoFromApplyUrl(job.url)} name={company} size={80} />
+          </View>
+          <Text variant="headlineSmall" style={styles.headline}>
+            {title}
+          </Text>
+          <Text variant="bodyMedium" style={styles.company}>
+            {company}
+          </Text>
+        </View>
+
+        <View style={styles.chips}>
+          {job.salary ? <AppChip label={job.salary} selected /> : null}
+          {meta ? <AppChip label={meta} /> : null}
           {facts.map((fact) => (
-            <View key={fact.id} style={styles.fact}>
-              <Text variant="labelSmall" style={styles.factLabel}>
-                {t(keyOf('job.fact', fact.id))}
-              </Text>
-              <Text variant="bodyMedium" style={styles.factValue}>
-                {tokenLabel(locale, fact.value)}
-              </Text>
-            </View>
+            <AppChip key={fact.id} label={tokenLabel(locale, fact.value)} />
+          ))}
+          <AppChip label={jobTier(job) === 1 ? t('common.premium') : job.sourceName} selected />
+        </View>
+
+        {job.contact ? (
+          <Text variant="bodyMedium" style={styles.meta}>
+            {t('job.contact', { value: job.contact })}
+          </Text>
+        ) : null}
+
+        <View style={styles.companyCard}>
+          <Text variant="titleSmall">{company}</Text>
+          <Text variant="bodySmall" style={styles.companyNote}>
+            {job.sourceName}
+          </Text>
+        </View>
+
+        <Text variant="labelSmall" style={styles.statusTitle}>
+          {t('job.status')}
+        </Text>
+        <View style={styles.statusRow}>
+          {APPLY_STATUSES.map((item) => (
+            <SelectChip
+              key={item.id}
+              id={item.id}
+              label={t(keyOf('apply', item.id))}
+              compact
+              selected={applyStatus === item.id}
+              onChange={onStatus}
+            />
           ))}
         </View>
-      ) : null}
-      <View style={styles.tag}>
-        <AppChip label={jobTier(job) === 1 ? t('common.premium') : job.sourceName} selected />
-      </View>
-      {job.contact ? (
-        <Text variant="bodyMedium" style={styles.meta}>
-          {t('job.contact', { value: job.contact })}
-        </Text>
-      ) : null}
-      <Text variant="labelSmall" style={styles.statusTitle}>
-        {t('job.status')}
-      </Text>
-      <View style={styles.statusRow}>
-        {APPLY_STATUSES.map((item) => (
-          <SelectChip
-            key={item.id}
-            id={item.id}
-            label={t(keyOf('apply', item.id))}
-            compact
-            selected={applyStatus === item.id}
-            onChange={onStatus}
-          />
-        ))}
-      </View>
 
-      {!job.description && isHhJobId(job.id) ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
+        {!job.description && isHhJobId(job.id) ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
 
-      {text ? (
-        <AppText style={styles.body} selectable>
-          {text}
-        </AppText>
-      ) : null}
-      {snippetOnly && !showTranslated ? (
-        <AppText style={styles.snippetHint}>{t('job.snippet')}</AppText>
-      ) : null}
-      {translateError ? <AppText style={styles.snippetHint}>{translateError}</AppText> : null}
-      {alreadyLocale && !showTranslated ? (
-        <AppText style={styles.snippetHint}>{t('job.alreadyLocale')}</AppText>
-      ) : null}
-      {((!alreadyLocale && Boolean(sourceText.trim())) || showTranslated || translating) ? (
-        <Button mode="outlined" onPress={onTranslate} disabled={translating} style={styles.secondary}>
-          {translating ? t('job.translating') : showTranslated ? t('job.translateHide') : t('job.translate')}
+        {text ? <JobBody text={text} /> : null}
+        {snippetOnly && !showTranslated ? (
+          <AppText style={styles.snippetHint}>{t('job.snippet')}</AppText>
+        ) : null}
+        {translateError ? <AppText style={styles.snippetHint}>{translateError}</AppText> : null}
+        {alreadyLocale && !showTranslated ? (
+          <AppText style={styles.snippetHint}>{t('job.alreadyLocale')}</AppText>
+        ) : null}
+        {((!alreadyLocale && Boolean(sourceText.trim())) || showTranslated || translating) ? (
+          <Button mode="outlined" onPress={onTranslate} disabled={translating} style={styles.secondary}>
+            {translating ? t('job.translating') : showTranslated ? t('job.translateHide') : t('job.translate')}
+          </Button>
+        ) : null}
+
+        {job.url ? <CopyLinkButton url={job.url} /> : null}
+        <Button mode="outlined" onPress={toggle} icon={saved ? 'star' : 'star-outline'} style={styles.secondary}>
+          {saved ? t('common.unsave') : t('common.save')}
         </Button>
-      ) : null}
-
+        {isLocalJob(job) ? (
+          <Button mode="text" onPress={onDelete} textColor={colors.danger} style={styles.secondary}>
+            {t('job.delete')}
+          </Button>
+        ) : null}
+      </ScrollView>
       {job.url ? (
-        <Button mode="contained" onPress={open} style={styles.primary}>
-          {t('job.apply')}
-        </Button>
+        <View style={[styles.ctaBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <Pressable onPress={open} style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}>
+            <AppText style={styles.ctaText}>{t('job.apply')}</AppText>
+          </Pressable>
+        </View>
       ) : null}
-      {job.url ? <CopyLinkButton url={job.url} /> : null}
-      <Button mode="outlined" onPress={toggle} icon={saved ? 'star' : 'star-outline'} style={styles.secondary}>
-        {saved ? t('common.unsave') : t('common.save')}
-      </Button>
-      {isLocalJob(job) ? (
-        <Button mode="text" onPress={onDelete} textColor={colors.danger} style={styles.secondary}>
-          {t('job.delete')}
-        </Button>
-      ) : null}
-    </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 20, paddingBottom: 48 },
-  center: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 },
-  company: { marginBottom: 8, opacity: 0.8 },
-  meta: { marginTop: 12, opacity: 0.85 },
-  salary: { color: colors.salary, marginTop: 14 },
-  facts: { marginTop: 16, gap: 8 },
-  fact: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  factLabel: { opacity: 0.55 },
-  factValue: { flexShrink: 1, textAlign: 'right' },
-  tag: { alignSelf: 'flex-start', marginTop: 14, marginBottom: 8 },
-  statusTitle: { marginTop: 8, marginBottom: 8, opacity: 0.7 },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  body: {
-    marginTop: 8,
-    marginBottom: 12,
-    color: colors.text,
-    fontFamily: fonts.regular,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  snippetHint: {
-    color: colors.faint,
-    fontFamily: fonts.medium,
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 8,
-  },
-  primary: { marginTop: 20, borderRadius: radius.md },
-  secondary: { marginTop: 10, borderRadius: radius.md },
-});
+function jobDetailsStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+  return {
+    screen: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: 20, paddingBottom: 48 },
+    contentCta: { paddingBottom: 24 },
+    center: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center' as const, padding: 24 },
+    hero: { alignItems: 'center' as const, marginBottom: 16 },
+    logo: { marginBottom: 16 },
+    headline: { textAlign: 'center' as const },
+    company: { marginTop: 6, opacity: 0.75, textAlign: 'center' as const },
+    chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, justifyContent: 'center' as const, marginBottom: 16 },
+    meta: { marginTop: 8, opacity: 0.85 },
+    companyCard: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginTop: 8,
+      marginBottom: 16,
+      gap: 4,
+      ...shadowsFor(scheme).card,
+    },
+    companyNote: { opacity: 0.65 },
+    statusTitle: { marginTop: 8, marginBottom: 8, opacity: 0.7 },
+    statusRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, marginBottom: 12 },
+    snippetHint: {
+      color: colors.faint,
+      fontFamily: fonts.medium,
+      fontSize: 13,
+      lineHeight: 18,
+      marginBottom: 8,
+    },
+    secondary: { marginTop: 10, borderRadius: radius.full },
+    ctaBar: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      backgroundColor: colors.glass,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.cardBorder,
+    },
+    cta: {
+      backgroundColor: colors.accent,
+      borderRadius: radius.full,
+      paddingVertical: 16,
+      alignItems: 'center' as const,
+    },
+    ctaPressed: { opacity: 0.9 },
+    ctaText: { color: colors.accentText, fontFamily: fonts.bold, fontSize: 16 },
+  };
+}

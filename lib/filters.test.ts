@@ -41,12 +41,12 @@ describe('filterFeedIds', () => {
     assert.deepEqual(filterFeedIds(['r', 'o'], byId, ['all'], extra({ format: 'office' })), ['o']);
   });
 
-  it('фильтрует по минимальной зарплате', () => {
+  it('не режет ленту по числу зарплаты', () => {
     const byId = {
       low: job({ id: 'low', salary: '80 000 ₽' }),
-      high: job({ id: 'high', salary: '200 000 ₽' }),
+      usd: job({ id: 'usd', salary: '$4,000' }),
     };
-    assert.deepEqual(filterFeedIds(['low', 'high'], byId, ['all'], extra({ salaryMin: 120_000 })), ['high']);
+    assert.deepEqual(filterFeedIds(['low', 'usd'], byId, ['all']), ['low', 'usd']);
   });
 
   it('при нескольких категориях оставляет подходящие', () => {

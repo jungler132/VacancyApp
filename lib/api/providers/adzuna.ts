@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
-import { excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, formatSalary, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type AdzunaJob = {
@@ -73,6 +73,6 @@ export async function searchAdzuna(params: SearchParams): Promise<Job[]> {
     publishedAt: toPublishedAt(job.created),
     url: job.redirect_url ?? 'https://www.adzuna.com',
     excerpt: excerptOf(job.description || job.title || ''),
-    description: stripHtml(job.description),
+    description: htmlToText(job.description),
   }));
 }

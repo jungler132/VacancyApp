@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { FilterSheetFrame, FilterSheetSection } from '@/components/FilterSheetFrame';
 import { SelectChip } from '@/components/FilterChips';
@@ -8,14 +8,13 @@ import { CATEGORIES, REGIONS } from '@/lib/catalog';
 import {
   AGE_PRESETS,
   DEFAULT_EXTRA_FILTERS,
-  SALARY_PRESETS,
   extraFiltersActive,
   type ExtraFilters,
   type EmploymentFilter,
   type WorkFormat,
 } from '@/lib/filters';
 import type { CategoryId, RegionId } from '@/lib/types';
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 
@@ -58,6 +57,7 @@ export const FiltersSheet = memo(function FiltersSheet({
   onReset: () => void;
 }) {
   const t = useT();
+  const styles = useThemedStyles(filtersSheetStyles);
   const current = extra ?? DEFAULT_EXTRA_FILTERS;
   const dirty =
     extraFiltersActive(current) || categories.length > 1 || categories[0] !== 'all' || region !== 'all';
@@ -65,13 +65,6 @@ export const FiltersSheet = memo(function FiltersSheet({
 
   const onAge = useCallback(
     (id: string | number) => onChangeExtra({ ...current, maxAgeDays: id as ExtraFilters['maxAgeDays'] }),
-    [current, onChangeExtra],
-  );
-  const onSalary = useCallback(
-    (id: string | number) => {
-      const next = SALARY_PRESETS.find((item) => item.id === id);
-      if (next) onChangeExtra({ ...current, salaryMin: next.value });
-    },
     [current, onChangeExtra],
   );
   const onFormat = useCallback(
@@ -142,27 +135,23 @@ export const FiltersSheet = memo(function FiltersSheet({
         ))}
       </FilterSheetSection>
       <FilterSheetSection title={t('filters.age')}>
-        {AGE_PRESETS.map((item) => (
-          <SelectChip key={item.id} id={item.id} label={t(keyOf('filters.age', item.id))} selected={current.maxAgeDays === item.id} onChange={onAge} />
-        ))}
-      </FilterSheetSection>
-      <FilterSheetSection title={t('filters.salary')}>
-        {SALARY_PRESETS.map((item) => (
-          <SelectChip
-            key={item.id}
-            id={item.id}
-            label={
-              item.value == null ? t('filters.salary.any') : t('filters.salary.from', { amount: String(item.value) })
-            }
-            selected={current.salaryMin === item.value}
-            onChange={onSalary}
-          />
+        {AGE_PRESETS.map((id) => (
+          <SelectChip key={id} id={id} label={t(keyOf('filters.age', id))} selected={current.maxAgeDays === id} onChange={onAge} />
         ))}
       </FilterSheetSection>
       <FilterSheetSection title={t('filters.format')}>
-        {FORMATS.map((id) => (
-          <SelectChip key={id} id={id} label={t(keyOf('filters.format', id))} selected={current.format === id} onChange={onFormat} />
-        ))}
+        <View style={styles.tiles}>
+          {FORMATS.map((id) => (
+            <Pressable
+              key={id}
+              onPress={() => onFormat(id)}
+              style={[styles.tile, current.format === id && styles.tileOn]}>
+              <Text style={[styles.tileText, current.format === id && styles.tileTextOn]}>
+                {t(keyOf('filters.format', id))}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </FilterSheetSection>
       <FilterSheetSection title={t('filters.employment')}>
         {EMPLOYMENT.map((id) => (
@@ -195,6 +184,7 @@ const WatchRow = memo(function WatchRow({
   onRemove?: (id: string) => void;
 }) {
   const t = useT();
+  const styles = useThemedStyles(filtersSheetStyles);
   const open = useCallback(() => onOpen?.(id), [id, onOpen]);
   const toggle = useCallback(() => onToggle?.(id), [id, onToggle]);
   const remove = useCallback(() => onRemove?.(id), [id, onRemove]);
@@ -217,23 +207,38 @@ const WatchRow = memo(function WatchRow({
   );
 });
 
-const styles = StyleSheet.create({
-  watch: {
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    borderRadius: radius.md,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  watchOn: { backgroundColor: colors.accentDim, borderColor: colors.accent },
-  watchText: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 14 },
-  watchTextOn: { color: colors.accent },
-  watchList: { marginTop: 12, gap: 8 },
-  watchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  watchBody: { flex: 1, minWidth: 0 },
-  watchLabel: { color: colors.text, fontFamily: fonts.medium, fontSize: 13 },
-  watchMeta: { color: colors.faint, fontSize: 11, marginTop: 2 },
-  watchAction: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 12 },
-  watchRemove: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 12 },
-});
+function filtersSheetStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    tiles: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, width: '100%' as const, alignSelf: 'stretch' as const },
+    tile: {
+      width: '47%' as const,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.chip,
+      borderRadius: radius.md,
+      paddingVertical: 14,
+      alignItems: 'center' as const,
+    },
+    tileOn: { backgroundColor: colors.accentDim, borderColor: colors.accent },
+    tileText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
+    tileTextOn: { color: colors.accent },
+    watch: {
+      marginTop: 14,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      borderRadius: radius.full,
+      paddingVertical: 12,
+      alignItems: 'center' as const,
+    },
+    watchOn: { backgroundColor: colors.accentDim, borderColor: colors.accent },
+    watchText: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 14 },
+    watchTextOn: { color: colors.accent },
+    watchList: { marginTop: 12, gap: 8 },
+    watchRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
+    watchBody: { flex: 1, minWidth: 0 },
+    watchLabel: { color: colors.text, fontFamily: fonts.medium, fontSize: 13 },
+    watchMeta: { color: colors.faint, fontSize: 11, marginTop: 2 },
+    watchAction: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 12 },
+    watchRemove: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 12 },
+  };
+}

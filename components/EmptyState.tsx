@@ -38,5 +38,5 @@ const styles = StyleSheet.create({
   box: { paddingVertical: 48, alignItems: 'center', gap: 8, paddingHorizontal: 24 },
   title: { textAlign: 'center' },
   sub: { textAlign: 'center', opacity: 0.75 },
-  action: { marginTop: 8, borderRadius: radius.md },
+  action: { marginTop: 8, borderRadius: radius.full },
 });

@@ -1,8 +1,8 @@
 import { memo, useCallback, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
-import { colors, radius } from '@/lib/theme';
+import { fonts, radius, useColors, useThemedStyles, type ThemeColors } from '@/lib/theme';
 import { Text } from '@/components/AppText';
 
 type Item<T extends string | number> = { id: T; label: string; icon?: string };
@@ -22,7 +22,9 @@ export const SelectChip = memo(function SelectChip({
   icon?: string;
   onChange: (id: string | number) => void;
 }) {
-  const tint = selected ? colors.accent : colors.muted;
+  const colors = useColors();
+  const styles = useThemedStyles(chipStyles);
+  const tint = selected ? colors.onPrimaryContainer : colors.muted;
   const press = useCallback(() => onChange(id), [id, onChange]);
 
   return (
@@ -58,6 +60,7 @@ function FilterChipsInner<T extends string | number>({
   trailing?: ReactNode;
   compact?: boolean;
 }) {
+  const styles = useThemedStyles(chipStyles);
   const selected = values ?? (value != null ? [value] : []);
   const press = (onToggle ?? onChange) as ((id: string | number) => void) | undefined;
 
@@ -83,22 +86,33 @@ const noop = () => undefined;
 
 export const FilterChips = memo(FilterChipsInner) as typeof FilterChipsInner;
 
-const styles = StyleSheet.create({
-  row: { gap: 6, paddingRight: 8, alignItems: 'center' },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    backgroundColor: colors.chip,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  chipSm: { paddingHorizontal: 10, paddingVertical: 5 },
-  selected: { backgroundColor: colors.accentDim, borderColor: colors.accent },
-  label: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  labelSm: { fontSize: 12 },
-  labelOn: { color: colors.accent },
-});
+function chipStyles(colors: ThemeColors) {
+  return {
+    row: { gap: 8, paddingRight: 8 },
+    chip: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 6,
+      flexGrow: 0,
+      flexShrink: 0,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.chip,
+      borderRadius: radius.full,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    chipSm: { paddingHorizontal: 12, paddingVertical: 7 },
+    selected: { backgroundColor: colors.primaryContainer, borderColor: colors.primaryContainer },
+    label: {
+      color: colors.text,
+      fontSize: 12,
+      lineHeight: 16,
+      fontFamily: fonts.medium,
+      flexShrink: 0,
+      includeFontPadding: false,
+    },
+    labelSm: { fontSize: 12 },
+    labelOn: { color: colors.onPrimaryContainer },
+  };
+}

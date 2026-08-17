@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, formatSalary, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type RemoteOkJob = {
@@ -42,6 +42,6 @@ export async function searchRemoteOK(params: SearchParams): Promise<Job[]> {
       publishedAt: toPublishedAt(job.date),
       url: job.url ?? 'https://remoteok.com',
       excerpt: excerptOf(job.description || job.position || ''),
-      description: stripHtml(job.description),
+      description: htmlToText(job.description),
     }));
 }

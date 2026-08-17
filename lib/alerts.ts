@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { enabledSourceIds, searchJobs } from '@/lib/api/aggregator';
 import { apiCategory } from '@/lib/catalog';
-import { DEFAULT_EXTRA_FILTERS, filterFeedIds, type ExtraFilters } from '@/lib/filters';
+import { DEFAULT_EXTRA_FILTERS, filterFeedIds, parseExtraFilters, type ExtraFilters } from '@/lib/filters';
 import { keyOf, t } from '@/lib/i18n';
 import { DEFAULT_LOCALE, type AppLocale } from '@/lib/i18n/locale';
 import { notifyNewJobs } from '@/lib/notifications';
@@ -42,7 +42,6 @@ export function makeAlertKey(search: SearchSnapshot): string {
     search.region,
     [...search.categories].sort().join(','),
     search.query.trim().toLowerCase(),
-    extra.salaryMin ?? 'any',
     extra.format,
     extra.employment,
     extra.maxAgeDays,
@@ -59,7 +58,6 @@ export function alertLabel(search: SearchSnapshot, locale: AppLocale = DEFAULT_L
   if (cats.length) {
     parts.push(cats.map((id) => t(locale, keyOf('category', id))).join(', '));
   }
-  if (extra.salaryMin != null) parts.push(t(locale, 'alerts.salaryK', { amount: Math.round(extra.salaryMin / 1000) }));
   if (extra.maxAgeDays !== 90) {
     parts.push(t(locale, keyOf('filters.age', extra.maxAgeDays)));
   }
@@ -80,7 +78,7 @@ export function normalizeAlerts(raw: unknown): SavedSearch[] {
       query: typeof row.query === 'string' ? row.query : '',
       region: row.region as RegionId,
       categories: Array.isArray(row.categories) ? (row.categories as CategoryId[]) : ['all'],
-      extra: { ...DEFAULT_EXTRA_FILTERS, ...(row.extra ?? {}) },
+      extra: parseExtraFilters(row.extra),
       enabled: row.enabled !== false,
       lastSeenIds: Array.isArray(row.lastSeenIds) ? row.lastSeenIds.filter((id) => typeof id === 'string') : [],
       lastCheckedAt: typeof row.lastCheckedAt === 'number' ? row.lastCheckedAt : 0,

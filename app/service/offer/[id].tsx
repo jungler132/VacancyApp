@@ -1,9 +1,9 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { SelectChip } from '@/components/FilterChips';
-import { FormField, formStyles } from '@/components/FormField';
+import { FormField, useFormStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
@@ -20,11 +20,12 @@ import {
   upsertOffer,
 } from '@/lib/store/freelanceSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { SALARY_CURRENCIES } from '@/lib/format';
 
 export default function ServiceOfferEditor() {
   const ready = useAppSelector((state) => state.freelance.ready);
+  const formStyles = useFormStyles();
   if (!ready) return <View style={formStyles.screen} />;
   return <OfferForm />;
 }
@@ -33,6 +34,8 @@ function OfferForm() {
   const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const formStyles = useFormStyles();
+  const styles = useThemedStyles(offerEditorStyles);
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const offerId = Array.isArray(id) ? id[0] : String(id ?? 'new');
   const isNew = offerId === 'new';
@@ -190,6 +193,7 @@ function OfferForm() {
 }
 
 const PhotoThumb = memo(function PhotoThumb({ uri, onRemove }: { uri: string; onRemove: (uri: string) => void }) {
+  const styles = useThemedStyles(offerEditorStyles);
   const press = useCallback(() => onRemove(uri), [onRemove, uri]);
   return (
     <Pressable onPress={press}>
@@ -198,20 +202,22 @@ const PhotoThumb = memo(function PhotoThumb({ uri, onRemove }: { uri: string; on
   );
 });
 
-const styles = StyleSheet.create({
-  photos: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  photo: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: colors.chip },
-  addPhoto: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-  },
-  addPhotoText: { color: colors.accent, fontSize: 28, lineHeight: 32 },
-  danger: { height: 48, alignItems: 'center', justifyContent: 'center' },
-  dangerText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 16 },
-});
+function offerEditorStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    photos: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
+    photo: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: colors.chip },
+    addPhoto: {
+      width: 72,
+      height: 72,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      backgroundColor: colors.card,
+    },
+    addPhotoText: { color: colors.accent, fontSize: 28, lineHeight: 32 },
+    danger: { height: 48, alignItems: 'center' as const, justifyContent: 'center' as const },
+    dangerText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 16 },
+  };
+}

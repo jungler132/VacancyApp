@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useIsFocused } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 import { FiltersButton } from '@/components/AppHeader';
@@ -11,10 +11,11 @@ import { useT } from '@/lib/i18n/useT';
 import { useJobsFeed } from '@/lib/hooks/useJobsFeed';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectJobStats } from '@/lib/store/selectors';
-import { colors, radius } from '@/lib/theme';
+import { radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function StatsScreen() {
   const t = useT();
+  const styles = useThemedStyles(statsScreenStyles);
   const focused = useIsFocused();
   const [chartsReady, setChartsReady] = useState(false);
   const feed = useJobsFeed();
@@ -73,23 +74,25 @@ export default function StatsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  note: { flex: 1, color: colors.faint, fontSize: 13 },
-  content: { padding: 16, paddingBottom: 40 },
-  kpis: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  kpi: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: 12,
-  },
-});
+function statsScreenStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    screen: { flex: 1, backgroundColor: colors.bg },
+    toolbar: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 4,
+    },
+    note: { flex: 1, color: colors.faint, fontSize: 13 },
+    content: { padding: 16, paddingBottom: 40 },
+    kpis: { flexDirection: 'row' as const, gap: 8, marginBottom: 12 },
+    kpi: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      padding: 12,
+    },
+  };
+}

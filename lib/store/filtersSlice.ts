@@ -2,13 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { toggleCategory } from '@/lib/catalog';
-import {
-  DEFAULT_EXTRA_FILTERS,
-  type AgeFilter,
-  type EmploymentFilter,
-  type ExtraFilters,
-  type WorkFormat,
-} from '@/lib/filters';
+import { DEFAULT_EXTRA_FILTERS, parseExtraFilters, type AgeFilter, type ExtraFilters } from '@/lib/filters';
 import type { TierFilter } from '@/lib/tiers';
 import type { CategoryId, RegionId } from '@/lib/types';
 import type { SearchSnapshot } from '@/lib/alerts';
@@ -36,10 +30,6 @@ const CATEGORIES: CategoryId[] = [
   'hr',
   'home',
 ];
-const AGES: AgeFilter[] = [3, 7, 14, 30, 90];
-const FORMATS: WorkFormat[] = ['any', 'remote', 'office'];
-const EMPLOYMENTS: EmploymentFilter[] = ['any', 'full', 'part', 'shift'];
-
 export type FiltersState = {
   query: string;
   region: RegionId;
@@ -78,17 +68,7 @@ function asCategories(value: unknown): CategoryId[] {
 }
 
 function asExtra(value: unknown): ExtraFilters {
-  const row = value && typeof value === 'object' ? (value as Partial<ExtraFilters>) : {};
-  const salaryMin =
-    typeof row.salaryMin === 'number' && Number.isFinite(row.salaryMin) && row.salaryMin > 0 ? row.salaryMin : null;
-  return {
-    salaryMin,
-    format: FORMATS.includes(row.format as WorkFormat) ? (row.format as WorkFormat) : 'any',
-    employment: EMPLOYMENTS.includes(row.employment as EmploymentFilter)
-      ? (row.employment as EmploymentFilter)
-      : 'any',
-    maxAgeDays: AGES.includes(row.maxAgeDays as AgeFilter) ? (row.maxAgeDays as AgeFilter) : DEFAULT_EXTRA_FILTERS.maxAgeDays,
-  };
+  return parseExtraFilters(value);
 }
 
 export function parsePersistedFilters(raw: unknown): PersistedFilters {
@@ -162,7 +142,7 @@ const filtersSlice = createSlice({
       state.query = action.payload.query;
       state.region = action.payload.region;
       state.categories = action.payload.categories.length ? action.payload.categories : ['all'];
-      state.extra = action.payload.extra ?? DEFAULT_EXTRA_FILTERS;
+      state.extra = parseExtraFilters(action.payload.extra);
       state.sheetOpen = false;
     },
   },

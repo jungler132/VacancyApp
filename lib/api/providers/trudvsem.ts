@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
-import { annotateSalary, excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { annotateSalary, excerptOf, formatSalary, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type TrudVacancy = {
@@ -42,7 +42,7 @@ export async function searchTrudvsem(params: SearchParams): Promise<Job[]> {
     .map((v, index) => {
       const min = Number(v.salary_min) || undefined;
       const max = Number(v.salary_max) || undefined;
-      const duty = stripHtml(v.duty);
+      const duty = htmlToText(v.duty);
       return {
         id: `trudvsem:${v.id ?? `${v['job-name']}-${index}`}`,
         sourceId: 'trudvsem',
@@ -57,7 +57,7 @@ export async function searchTrudvsem(params: SearchParams): Promise<Job[]> {
         publishedAt: toPublishedAt(v['creation-date']),
         url: v.vac_url ?? 'https://trudvsem.ru',
         excerpt: excerptOf(duty || v.requirement || v['job-name'] || ''),
-        description: duty || stripHtml(v.requirement),
+        description: duty || htmlToText(v.requirement),
       };
     });
 }

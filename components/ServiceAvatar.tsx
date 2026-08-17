@@ -1,9 +1,9 @@
 import { memo } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, View } from 'react-native';
 
 import { Text } from '@/components/AppText';
 import { initialsOf } from '@/lib/services/kinds';
-import { colors, fonts } from '@/lib/theme';
+import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export const ServiceAvatar = memo(function ServiceAvatar({
   uri,
@@ -14,6 +14,7 @@ export const ServiceAvatar = memo(function ServiceAvatar({
   name: string;
   size: number;
 }) {
+  const styles = useThemedStyles(serviceAvatarStyles);
   const radius = size / 2;
   const box = { width: size, height: size, borderRadius: radius };
 
@@ -26,12 +27,14 @@ export const ServiceAvatar = memo(function ServiceAvatar({
   );
 });
 
-const styles = StyleSheet.create({
-  image: { backgroundColor: colors.chip },
-  fallback: {
-    backgroundColor: colors.accentDim,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initials: { color: colors.accent, fontFamily: fonts.bold },
-});
+function serviceAvatarStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    image: { backgroundColor: colors.chip },
+    fallback: {
+      backgroundColor: colors.accentDim,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    initials: { color: colors.accent, fontFamily: fonts.bold },
+  };
+}

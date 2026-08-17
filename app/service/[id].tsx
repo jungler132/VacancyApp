@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { EmptyState } from '@/components/EmptyState';
-import { formStyles } from '@/components/FormField';
+import { useFormStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { ServiceOfferCard } from '@/components/ServiceOfferCard';
 import { Text } from '@/components/AppText';
@@ -14,11 +14,13 @@ import { formatServiceHours } from '@/lib/services/kinds';
 import { OFFERS_LIMIT } from '@/lib/store/freelanceSlice';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectMasterById } from '@/lib/store/selectors';
-import { colors, fonts } from '@/lib/theme';
+import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function ServicePublicScreen() {
   const t = useT();
   const router = useRouter();
+  const formStyles = useFormStyles();
+  const styles = useThemedStyles(servicePublicStyles);
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const profileId = Array.isArray(id) ? id.join('/') : String(id ?? '');
   const master = useAppSelector((state) => selectMasterById(state, profileId));
@@ -105,21 +107,23 @@ export default function ServicePublicScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  head: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  headBody: { flex: 1, minWidth: 0 },
-  name: { color: colors.text, fontFamily: fonts.bold, fontSize: 22 },
-  meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginTop: 2 },
-  mine: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 12, marginTop: 6 },
-  bio: { color: colors.text, fontFamily: fonts.regular, fontSize: 16, lineHeight: 24, marginTop: 8 },
-  link: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 15 },
-  actions: { gap: 8, marginTop: 8 },
-  section: {
-    color: colors.muted,
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    marginTop: 12,
-  },
-  empty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13 },
-});
+function servicePublicStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    head: { flexDirection: 'row' as const, gap: 14, alignItems: 'center' as const },
+    headBody: { flex: 1, minWidth: 0 },
+    name: { color: colors.text, fontFamily: fonts.bold, fontSize: 22 },
+    meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginTop: 2 },
+    mine: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 12, marginTop: 6 },
+    bio: { color: colors.text, fontFamily: fonts.regular, fontSize: 16, lineHeight: 24, marginTop: 8 },
+    link: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 15 },
+    actions: { gap: 8, marginTop: 8 },
+    section: {
+      color: colors.muted,
+      fontFamily: fonts.semibold,
+      fontSize: 12,
+      textTransform: 'uppercase' as const,
+      marginTop: 12,
+    },
+    empty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13 },
+  };
+}

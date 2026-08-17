@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { SelectChip } from '@/components/FilterChips';
-import { FormField, formStyles } from '@/components/FormField';
+import { FormField, useFormStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
 import { CATEGORIES } from '@/lib/catalog';
 import { SALARY_CURRENCIES } from '@/lib/format';
@@ -16,7 +16,7 @@ import { pinViewedJob } from '@/lib/store/jobsSlice';
 import { openPaywall } from '@/lib/store/premiumSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import type { CategoryId, JobTier } from '@/lib/types';
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 const FORM_CATEGORIES = CATEGORIES.filter((item) => item.id !== 'all');
 
@@ -24,6 +24,8 @@ export default function CreateJobScreen() {
   const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const formStyles = useFormStyles();
+  const styles = useThemedStyles(createJobStyles);
   const isPremium = useAppSelector((state) => state.premium.isPremium);
   const paywallOpen = useAppSelector((state) => state.premium.paywallOpen);
   const localCount = useAppSelector((state) => state.localJobs.items.length);
@@ -163,14 +165,16 @@ export default function CreateJobScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  premium: {
-    height: 48,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  premiumText: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 16 },
-});
+function createJobStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    premium: {
+      height: 48,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    premiumText: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 16 },
+  };
+}

@@ -60,3 +60,4 @@ export const SERVICE_ME_HREF = '/service/me' as unknown as Href;
 export const STATS_HREF = '/stats' as unknown as Href;
 export const SAVED_HREF = '/saved' as unknown as Href;
 export const SETTINGS_HREF = '/settings' as unknown as Href;
+export const PROFILE_HREF = '/profile' as unknown as Href;

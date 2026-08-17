@@ -79,6 +79,12 @@ const visitsSlice = createSlice({
       }
       state.items = rankVisits(state.items).slice(0, VISITS_LIMIT);
     },
+    removeVisit(state, action: PayloadAction<string>) {
+      state.items = state.items.filter((item) => item.id !== action.payload);
+    },
+    clearVisits(state) {
+      state.items = [];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -92,5 +98,5 @@ const visitsSlice = createSlice({
   },
 });
 
-export const { recordVisit } = visitsSlice.actions;
+export const { recordVisit, removeVisit, clearVisits } = visitsSlice.actions;
 export default visitsSlice.reducer;

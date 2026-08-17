@@ -8,29 +8,33 @@ import {
   type FontSizeId,
 } from '@/lib/fontScale';
 import { DEFAULT_LOCALE, detectLocale, parseLocale, type AppLocale } from '@/lib/i18n/locale';
+import { DEFAULT_THEME_PREF, parseThemePref, type ThemePreference } from '@/lib/theme';
 
 export const APPEARANCE_KEY = 'workly:appearance:v2';
 
 export type AppearanceState = {
   fontSize: FontSizeId;
   locale: AppLocale;
+  theme: ThemePreference;
   ready: boolean;
 };
 
 const initialState: AppearanceState = {
   fontSize: DEFAULT_FONT_SIZE,
   locale: DEFAULT_LOCALE,
+  theme: DEFAULT_THEME_PREF,
   ready: false,
 };
 
-async function readAppearance(): Promise<{ fontSize: FontSizeId; locale: AppLocale }> {
+async function readAppearance(): Promise<{ fontSize: FontSizeId; locale: AppLocale; theme: ThemePreference }> {
   const raw = await AsyncStorage.getItem(APPEARANCE_KEY);
   if (raw) {
     try {
-      const parsed = JSON.parse(raw) as { fontSize?: unknown; locale?: unknown };
+      const parsed = JSON.parse(raw) as { fontSize?: unknown; locale?: unknown; theme?: unknown };
       return {
         fontSize: parseFontSize(parsed.fontSize),
         locale: parseLocale(parsed.locale) ?? detectLocale(),
+        theme: parseThemePref(parsed.theme),
       };
     } catch {
       /* migrate below */
@@ -45,11 +49,11 @@ async function readAppearance(): Promise<{ fontSize: FontSizeId; locale: AppLoca
       fontSize = parseFontSize(legacy);
     }
   }
-  return { fontSize, locale: detectLocale() };
+  return { fontSize, locale: detectLocale(), theme: DEFAULT_THEME_PREF };
 }
 
-export async function persistAppearance(fontSize: FontSizeId, locale: AppLocale) {
-  await AsyncStorage.setItem(APPEARANCE_KEY, JSON.stringify({ fontSize, locale })).catch(() => undefined);
+export async function persistAppearance(fontSize: FontSizeId, locale: AppLocale, theme: ThemePreference) {
+  await AsyncStorage.setItem(APPEARANCE_KEY, JSON.stringify({ fontSize, locale, theme })).catch(() => undefined);
 }
 
 export async function readStoredLocale(): Promise<AppLocale> {
@@ -75,12 +79,16 @@ const appearanceSlice = createSlice({
     setLocale(state, action: PayloadAction<AppLocale>) {
       state.locale = parseLocale(action.payload) ?? DEFAULT_LOCALE;
     },
+    setTheme(state, action: PayloadAction<ThemePreference>) {
+      state.theme = parseThemePref(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(hydrateAppearance.fulfilled, (state, action) => {
         state.fontSize = action.payload.fontSize;
         state.locale = action.payload.locale;
+        state.theme = action.payload.theme;
         state.ready = true;
       })
       .addCase(hydrateAppearance.rejected, (state) => {
@@ -90,5 +98,5 @@ const appearanceSlice = createSlice({
   },
 });
 
-export const { setFontSize, setLocale } = appearanceSlice.actions;
+export const { setFontSize, setLocale, setTheme } = appearanceSlice.actions;
 export default appearanceSlice.reducer;

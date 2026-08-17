@@ -1,16 +1,16 @@
 import '@/lib/alertsTask';
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Provider } from 'react-redux';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
+  IBMPlexMono_400Regular,
+  IBMPlexMono_500Medium,
+  IBMPlexMono_600SemiBold,
+  IBMPlexMono_700Bold,
   useFonts,
-} from '@expo-google-fonts/inter';
+} from '@expo-google-fonts/ibm-plex-mono';
 import { PaperProvider } from 'react-native-paper';
 
 import { AlertsHost } from '@/components/AlertsHost';
@@ -19,33 +19,17 @@ import { PaywallHost } from '@/components/PaywallSheet';
 import { FONT_SCALE, FontScaleContext, scaleFont, useFontScale } from '@/lib/fontScale';
 import { store } from '@/lib/store';
 import { useAppSelector } from '@/lib/store/hooks';
-import { colors, fonts, makePaperTheme } from '@/lib/theme';
+import { fonts, makePaperTheme, useAppTheme } from '@/lib/theme';
+import { ThemeBridge } from '@/lib/themeContext';
 import { t } from '@/lib/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
-const navTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.bg,
-    card: colors.bg,
-    text: colors.text,
-    border: colors.cardBorder,
-    primary: colors.accent,
-  },
-  fonts: {
-    regular: { fontFamily: fonts.regular, fontWeight: 'normal' as const },
-    medium: { fontFamily: fonts.medium, fontWeight: 'normal' as const },
-    bold: { fontFamily: fonts.semibold, fontWeight: 'normal' as const },
-    heavy: { fontFamily: fonts.bold, fontWeight: 'normal' as const },
-  },
-};
-
 function AppShell({ children }: { children: ReactNode }) {
   const fontSize = useAppSelector((state) => state.appearance.fontSize);
+  const { scheme } = useAppTheme();
   const scale = FONT_SCALE[fontSize];
-  const theme = useMemo(() => makePaperTheme(scale), [scale]);
+  const theme = useMemo(() => makePaperTheme(scheme, scale), [scheme, scale]);
 
   return (
     <FontScaleContext.Provider value={scale}>
@@ -57,9 +41,31 @@ function AppShell({ children }: { children: ReactNode }) {
 function Navigation() {
   const scale = useFontScale();
   const locale = useAppSelector((state) => state.appearance.locale);
+  const { scheme, colors } = useAppTheme();
+  const navTheme = useMemo(() => {
+    const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: colors.bg,
+        card: colors.bg,
+        text: colors.text,
+        border: colors.cardBorder,
+        primary: colors.accent,
+      },
+      fonts: {
+        regular: { fontFamily: fonts.regular, fontWeight: 'normal' as const },
+        medium: { fontFamily: fonts.medium, fontWeight: 'normal' as const },
+        bold: { fontFamily: fonts.semibold, fontWeight: 'normal' as const },
+        heavy: { fontFamily: fonts.bold, fontWeight: 'normal' as const },
+      },
+    };
+  }, [scheme, colors]);
+
   return (
     <ThemeProvider value={navTheme}>
-      <StatusBar style="light" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.bg },
@@ -76,34 +82,39 @@ function Navigation() {
         <Stack.Screen name="service/offer/[id]" options={{ title: t(locale, 'nav.offer') }} />
         <Stack.Screen name="stats" options={{ title: t(locale, 'nav.stats') }} />
         <Stack.Screen name="saved" options={{ title: t(locale, 'nav.saved') }} />
-        <Stack.Screen name="settings" options={{ title: t(locale, 'nav.settings') }} />
+        <Stack.Screen name="privacy" options={{ title: t(locale, 'nav.privacy') }} />
       </Stack>
     </ThemeProvider>
   );
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+  const [loaded, error] = useFonts({
+    IBMPlexMono_400Regular,
+    IBMPlexMono_500Medium,
+    IBMPlexMono_600SemiBold,
+    IBMPlexMono_700Bold,
   });
 
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync();
-  }, [loaded]);
+    if (loaded || error) SplashScreen.hideAsync();
+  }, [loaded, error]);
 
-  if (!loaded) return null;
+  useEffect(() => {
+    const timer = setTimeout(() => SplashScreen.hideAsync(), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Provider store={store}>
-      <AppShell>
-        <AlertsHost />
-        <InterstitialHost />
-        <PaywallHost />
-        <Navigation />
-      </AppShell>
+      <ThemeBridge>
+        <AppShell>
+          <AlertsHost />
+          <InterstitialHost />
+          <PaywallHost />
+          <Navigation />
+        </AppShell>
+      </ThemeBridge>
     </Provider>
   );
 }

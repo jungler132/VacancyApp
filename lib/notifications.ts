@@ -54,7 +54,7 @@ export async function notifyNewJobs(
       title: t(locale, 'notify.title'),
       body: t(locale, 'notify.body', { count, label }),
       data: { type: 'alert', alertId },
-      color: '#00D4A1',
+      color: '#00236f',
     },
     trigger: null,
   });

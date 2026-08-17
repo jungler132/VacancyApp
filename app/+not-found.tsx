@@ -1,12 +1,13 @@
 import { Link, Stack } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
-import { colors } from '@/lib/theme';
+import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { Text } from '@/components/AppText';
 import { useT } from '@/lib/i18n/useT';
 
 export default function NotFoundScreen() {
   const t = useT();
+  const styles = useThemedStyles(notFoundStyles);
   return (
     <>
       <Stack.Screen options={{ title: t('nav.notFound') }} />
@@ -20,9 +21,11 @@ export default function NotFoundScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  title: { fontSize: 18, fontWeight: '700', color: colors.text },
-  link: { marginTop: 16 },
-  linkText: { color: colors.accent, fontWeight: '700' },
-});
+function notFoundStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center' as const, justifyContent: 'center' as const, padding: 20 },
+    title: { fontSize: 18, fontFamily: fonts.bold, color: colors.text },
+    link: { marginTop: 16 },
+    linkText: { color: colors.accent, fontFamily: fonts.bold },
+  };
+}

@@ -45,7 +45,8 @@ function sameJob(prev: Job, next: Job) {
     prev.salary === next.salary &&
     prev.publishedAt === next.publishedAt &&
     prev.url === next.url &&
-    prev.excerpt === next.excerpt
+    prev.excerpt === next.excerpt &&
+    prev.companyLogo === next.companyLogo
   );
 }
 

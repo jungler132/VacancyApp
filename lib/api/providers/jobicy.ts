@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery, jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type JobicyJob = {
@@ -48,6 +48,6 @@ export async function searchJobicy(params: SearchParams): Promise<Job[]> {
       publishedAt: toPublishedAt(job.pubDate),
       url: job.url ?? 'https://jobicy.com',
       excerpt: excerptOf(job.jobExcerpt || job.jobDescription || job.jobTitle || ''),
-      description: stripHtml(job.jobDescription || job.jobExcerpt),
+      description: htmlToText(job.jobDescription || job.jobExcerpt),
     }));
 }

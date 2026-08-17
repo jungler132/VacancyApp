@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 
 import { CatalogLinkCard } from '@/components/CatalogLinkCard';
 import { Text } from '@/components/AppText';
@@ -12,7 +12,7 @@ import { useT } from '@/lib/i18n/useT';
 import { catalogSaveKey, type SavedCatalogItem } from '@/lib/store/savedCatalogSlice';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectSavedCatalogItems } from '@/lib/store/selectors';
-import { colors, fonts } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 type SavedPage = 'jobs' | 'resources';
 type ResourceRow =
@@ -21,6 +21,7 @@ type ResourceRow =
 
 export default function SavedScreen() {
   const t = useT();
+  const styles = useThemedStyles(savedStyles);
   const saved = useAppSelector((state) => state.saved.items);
   const statuses = useAppSelector((state) => state.saved.statuses);
   const catalog = useAppSelector(selectSavedCatalogItems);
@@ -51,7 +52,7 @@ export default function SavedScreen() {
   const renderResource = useCallback(({ item }: { item: ResourceRow }) => {
     if (item.type === 'header') return <Text style={styles.groupTitle}>{item.title}</Text>;
     return <CatalogLinkCard item={item.item} telegram={item.item.kind === 'telegram'} />;
-  }, []);
+  }, [styles.groupTitle]);
   const keyExtractor = useCallback((item: string) => item, []);
   const resourceKey = useCallback((item: ResourceRow) => item.id, []);
   const onStatusAll = useCallback(() => setStatus('all'), []);
@@ -61,11 +62,14 @@ export default function SavedScreen() {
     <View style={styles.screen}>
       <View style={styles.tabs}>
         {(['jobs', 'resources'] as const).map((id) => (
-          <Pressable key={id} onPress={() => setPage(id)} style={styles.tab} android_ripple={null}>
+          <Pressable
+            key={id}
+            onPress={() => setPage(id)}
+            style={[styles.tab, page === id && styles.tabOn]}
+            android_ripple={null}>
             <Text style={[styles.tabLabel, page === id && styles.tabLabelOn]}>
               {id === 'jobs' ? t('saved.jobs') : t('saved.resources')}
             </Text>
-            <View style={[styles.tabLine, page === id && styles.tabLineOn]} />
           </Pressable>
         ))}
       </View>
@@ -116,15 +120,23 @@ export default function SavedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: 'transparent' },
-  tabs: { flexDirection: 'row', paddingHorizontal: 12, paddingTop: 8 },
-  tab: { flex: 1, alignItems: 'center', gap: 8 },
-  tabLabel: { color: colors.faint, fontSize: 14, fontFamily: fonts.semibold },
-  tabLabelOn: { color: colors.text },
-  tabLine: { height: 2, alignSelf: 'stretch', borderRadius: 1, backgroundColor: 'transparent' },
-  tabLineOn: { backgroundColor: colors.accent },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingTop: 10 },
-  list: { padding: 16, paddingBottom: 40 },
-  groupTitle: { color: colors.faint, fontSize: 13, fontFamily: fonts.semibold, marginTop: 6, marginBottom: 2 },
-});
+function savedStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    screen: { flex: 1, backgroundColor: 'transparent' },
+    tabs: { flexDirection: 'row' as const, gap: 8, paddingHorizontal: 20, paddingTop: 12 },
+    tab: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: radius.full,
+      backgroundColor: colors.chip,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+    },
+    tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+    tabLabel: { color: colors.text, fontSize: 12, fontFamily: fonts.medium, letterSpacing: 0.4 },
+    tabLabelOn: { color: colors.accentText },
+    filters: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, paddingHorizontal: 20, paddingTop: 12 },
+    list: { padding: 20, paddingBottom: 40 },
+    groupTitle: { color: colors.faint, fontSize: 13, fontFamily: fonts.semibold, marginTop: 6, marginBottom: 2 },
+  };
+}

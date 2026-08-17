@@ -1,11 +1,11 @@
 import { memo, useCallback } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { Text } from '@/components/AppText';
 import { formatServiceHours } from '@/lib/services/kinds';
 import type { ServiceMaster } from '@/lib/services/types';
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 
@@ -17,6 +17,7 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   onPress: (id: string) => void;
 }) {
   const t = useT();
+  const styles = useThemedStyles(serviceMasterCardStyles);
   const kinds = master.kinds.map((id) => t(keyOf('kind', id))).join(' · ');
   const hours = formatServiceHours(master.hours.open, master.hours.close);
   const count = master.offers.length;
@@ -46,31 +47,34 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   );
 });
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: radius.lg,
-    padding: 12,
-    gap: 12,
-  },
-  body: { flex: 1, minWidth: 0 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  name: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 16 },
-  mine: {
-    color: colors.accentText,
-    backgroundColor: colors.accent,
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-  },
-  meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
-  chevron: { color: colors.faint, fontSize: 22, lineHeight: 24 },
-  pressed: { opacity: 0.86 },
-});
+function serviceMasterCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+  return {
+    card: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: radius.lg,
+      padding: 14,
+      gap: 12,
+      ...shadowsFor(scheme).card,
+    },
+    body: { flex: 1, minWidth: 0 },
+    titleRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
+    name: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 16 },
+    mine: {
+      color: colors.accentText,
+      backgroundColor: colors.accent,
+      fontFamily: fonts.semibold,
+      fontSize: 11,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radius.full,
+      overflow: 'hidden' as const,
+    },
+    meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
+    chevron: { color: colors.faint, fontSize: 22, lineHeight: 24 },
+    pressed: { opacity: 0.86 },
+  };
+}

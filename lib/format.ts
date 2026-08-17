@@ -3,20 +3,65 @@ import type { AppLocale } from './i18n/locale';
 
 const DATE_LOCALE: Record<AppLocale, string> = { ru: 'ru-RU', en: 'en-GB', az: 'az-AZ' };
 
-export function stripHtml(value?: string | null): string {
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  apos: "'",
+  quot: '"',
+  lt: '<',
+  gt: '>',
+  nbsp: ' ',
+  mdash: '—',
+  ndash: '–',
+  bull: '•',
+  hellip: '…',
+  rsquo: "'",
+  lsquo: "'",
+  rdquo: '"',
+  ldquo: '"',
+};
+
+function decodeEntities(value: string): string {
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (full, ent: string) => {
+    const token = ent.toLowerCase();
+    if (token.startsWith('#x')) {
+      const code = Number.parseInt(token.slice(2), 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : full;
+    }
+    if (token.startsWith('#')) {
+      const code = Number(token.slice(1));
+      return Number.isFinite(code) ? String.fromCodePoint(code) : full;
+    }
+    return ENTITIES[token] ?? full;
+  });
+}
+
+/** Keeps headings, paragraphs and list markers. Use for vacancy bodies. */
+export function htmlToText(value?: string | null): string {
   if (!value) return '';
-  return value
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/\s+/g, ' ')
-    .trim();
+  let html = value.replace(/\u00a0/g, ' ');
+  if (/<[a-z][\s\S]*>/i.test(html)) {
+    html = html.replace(/<script[\s\S]*?<\/script>/gi, ' ');
+    html = html.replace(/<style[\s\S]*?<\/style>/gi, ' ');
+    html = html.replace(/<\/h[1-6]>/gi, '\n\n');
+    html = html.replace(/<h[1-6][^>]*>/gi, '\n\n');
+    html = html.replace(/<\/(p|div|section|article|blockquote|tr)>/gi, '\n\n');
+    html = html.replace(/<(br|hr)\s*\/?>/gi, '\n');
+    html = html.replace(/<\/li>/gi, '\n');
+    html = html.replace(/<li[^>]*>/gi, '• ');
+    html = html.replace(/<\/?(ul|ol)[^>]*>/gi, '\n');
+    html = html.replace(/<\/td>/gi, ' ');
+    html = html.replace(/<[^>]+>/g, ' ');
+  }
+  html = decodeEntities(html);
+  html = html.replace(/\r\n?/g, '\n');
+  html = html.replace(/[^\S\n]+/g, ' ');
+  html = html.replace(/ *\n */g, '\n');
+  html = html.replace(/\n{3,}/g, '\n\n');
+  return html.trim();
+}
+
+export function stripHtml(value?: string | null): string {
+  return htmlToText(value).replace(/\s+/g, ' ').trim();
 }
 
 export function excerptOf(text: string, max = 180): string {

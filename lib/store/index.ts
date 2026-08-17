@@ -27,8 +27,9 @@ import appearanceReducer, {
   persistAppearance,
   setFontSize,
   setLocale,
+  setTheme,
 } from './appearanceSlice';
-import visitsReducer, { hydrateVisits, persistVisits, recordVisit } from './visitsSlice';
+import visitsReducer, { clearVisits, hydrateVisits, persistVisits, recordVisit, removeVisit } from './visitsSlice';
 import freelanceReducer, {
   hydrateFreelance,
   persistFreelance,
@@ -142,15 +143,15 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(setFontSize, setLocale, hydrateAppearance.fulfilled),
+  matcher: isAnyOf(setFontSize, setLocale, setTheme, hydrateAppearance.fulfilled),
   effect: async (_action, listenerApi) => {
     const appearance = (listenerApi.getState() as RootState).appearance;
-    await persistAppearance(appearance.fontSize, appearance.locale);
+    await persistAppearance(appearance.fontSize, appearance.locale, appearance.theme);
   },
 });
 
 listener.startListening({
-  actionCreator: recordVisit,
+  matcher: isAnyOf(recordVisit, removeVisit, clearVisits),
   effect: async (_action, listenerApi) => {
     await persistVisits((listenerApi.getState() as RootState).visits.items);
   },

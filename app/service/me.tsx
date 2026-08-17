@@ -1,9 +1,9 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { SelectChip } from '@/components/FilterChips';
-import { FormField, formStyles } from '@/components/FormField';
+import { FormField, useFormStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
@@ -15,10 +15,11 @@ import type { ServiceKindId } from '@/lib/services/types';
 import { OWN_PROFILE_ID, emptyProfile, OFFERS_LIMIT, saveProfile } from '@/lib/store/freelanceSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectOwnMaster } from '@/lib/store/selectors';
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function ServiceProfileEditor() {
   const ready = useAppSelector((state) => state.freelance.ready);
+  const formStyles = useFormStyles();
   if (!ready) return <View style={formStyles.screen} />;
   return <ProfileForm />;
 }
@@ -27,6 +28,8 @@ function ProfileForm() {
   const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const formStyles = useFormStyles();
+  const styles = useThemedStyles(serviceMeStyles);
   const own = useAppSelector(selectOwnMaster);
   const seed = useMemo(() => own ?? emptyProfile(), [own]);
   const [displayName, setDisplayName] = useState(seed.displayName);
@@ -179,6 +182,8 @@ const OwnOfferRow = memo(function OwnOfferRow({
   price: string;
   onPress: (id: string) => void;
 }) {
+  const formStyles = useFormStyles();
+  const styles = useThemedStyles(serviceMeStyles);
   const press = useCallback(() => onPress(id), [id, onPress]);
   return (
     <Pressable onPress={press} style={({ pressed }) => [styles.offerRow, pressed && formStyles.pressed]}>
@@ -191,26 +196,28 @@ const OwnOfferRow = memo(function OwnOfferRow({
   );
 });
 
-const styles = StyleSheet.create({
-  avatarWrap: { alignItems: 'center', gap: 8, marginVertical: 4 },
-  avatarHint: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13 },
-  hoursPreview: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13 },
-  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  section: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 12, textTransform: 'uppercase' },
-  link: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 14 },
-  offerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: radius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  offerBody: { flex: 1, minWidth: 0 },
-  offerTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
-  offerMeta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
-  chevron: { color: colors.faint, fontSize: 22 },
-  empty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13 },
-});
+function serviceMeStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    avatarWrap: { alignItems: 'center' as const, gap: 8, marginVertical: 4 },
+    avatarHint: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13 },
+    hoursPreview: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13 },
+    rowBetween: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, marginTop: 12 },
+    section: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 12, textTransform: 'uppercase' as const },
+    link: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 14 },
+    offerRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: radius.lg,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    offerBody: { flex: 1, minWidth: 0 },
+    offerTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
+    offerMeta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
+    chevron: { color: colors.faint, fontSize: 22 },
+    empty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13 },
+  };
+}

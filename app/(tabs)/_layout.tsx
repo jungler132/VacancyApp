@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import type { BottomTabBarButtonProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
@@ -14,7 +14,7 @@ import { applySearch } from '@/lib/store/filtersSlice';
 import { removeSearch, saveSearch, toggleSearch } from '@/lib/store/alertsSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectActiveFeed, selectVisibleCount, selectVisibleIds } from '@/lib/store/selectors';
-import { colors, fonts } from '@/lib/theme';
+import { fonts, shadowsFor, useAppTheme, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { useT } from '@/lib/i18n/useT';
 
 const TabBarButton = memo(function TabBarButton({
@@ -47,16 +47,20 @@ const TabIcon = memo(function TabIcon({
   color,
   focused,
 }: {
-  name: 'magnify' | 'briefcase-account' | 'account' | 'book-open-variant';
+  name: 'magnify' | 'briefcase-account' | 'account' | 'cog' | 'book-open-variant';
   color: string;
   focused: boolean;
 }) {
   const icon =
-    name === 'account'
+    name === 'cog'
       ? focused
-        ? 'account'
-        : 'account-outline'
-      : name === 'briefcase-account'
+        ? 'cog'
+        : 'cog-outline'
+      : name === 'account'
+        ? focused
+          ? 'account'
+          : 'account-outline'
+        : name === 'briefcase-account'
         ? focused
           ? 'briefcase-account'
           : 'briefcase-account-outline'
@@ -65,10 +69,12 @@ const TabIcon = memo(function TabIcon({
             ? 'book-open-variant'
             : 'book-open-outline'
           : name;
+  const colors = useAppTheme().colors;
+  const styles = useThemedStyles(tabStyles);
   return (
     <View style={styles.iconWrap}>
-      {focused ? <View style={styles.indicator} /> : <View style={styles.indicatorSpacer} />}
-      <MaterialDesignIcons name={icon} color={color} size={22} />
+      {focused ? <View pointerEvents="none" style={styles.iconPill} /> : null}
+      <MaterialDesignIcons name={icon} color={focused ? colors.onPrimaryContainer : color} size={22} />
     </View>
   );
 });
@@ -138,8 +144,6 @@ const FilterSheetHost = memo(function FilterSheetHost() {
   );
 });
 
-const TAB_LABEL_WIDTH = Math.floor(Dimensions.get('window').width / 4) - 6;
-
 const TabLabel = memo(function TabLabel({
   children,
   color,
@@ -147,13 +151,14 @@ const TabLabel = memo(function TabLabel({
   children: string;
   color: string;
 }) {
+  const styles = useThemedStyles(tabStyles);
   return (
     <Text
       numberOfLines={1}
       adjustsFontSizeToFit
-      minimumFontScale={0.72}
+      minimumFontScale={0.55}
       allowFontScaling={false}
-      style={[styles.label, { color, maxWidth: TAB_LABEL_WIDTH }]}>
+      style={[styles.label, { color }]}>
       {children}
     </Text>
   );
@@ -163,6 +168,9 @@ export default function TabLayout() {
   useJobsQuery();
   const tabBar = useTabBarLayout();
   const t = useT();
+  const { colors, scheme } = useAppTheme();
+  const styles = useThemedStyles(tabStyles);
+  const tabShadows = shadowsFor(scheme);
 
   return (
     <View style={styles.root}>
@@ -175,7 +183,7 @@ export default function TabLayout() {
           lazy: true,
           animation: 'none',
           tabBarButton: (props) => <TabBarButton {...props} />,
-          tabBarItemStyle: { paddingHorizontal: 0 },
+          tabBarItemStyle: { paddingHorizontal: 0, minWidth: 0 },
           tabBarAllowFontScaling: false,
           headerStyle: { backgroundColor: colors.bg },
           headerTintColor: colors.text,
@@ -183,13 +191,13 @@ export default function TabLayout() {
           headerTitleStyle: { fontFamily: fonts.bold, fontSize: 18 },
           tabBarStyle: {
             position: 'absolute',
-            backgroundColor: 'rgba(8, 12, 20, 0.92)',
-            borderTopColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: colors.card,
+            borderTopColor: colors.cardBorder,
             borderTopWidth: StyleSheet.hairlineWidth,
-            elevation: 0,
             height: tabBar.height,
-            paddingTop: 4,
+            paddingTop: 6,
             paddingBottom: tabBar.paddingBottom,
+            ...tabShadows.tabBar,
           },
           tabBarLabel: ({ children, color }) => <TabLabel color={String(color)}>{String(children)}</TabLabel>,
           tabBarActiveTintColor: colors.accent,
@@ -225,28 +233,44 @@ export default function TabLayout() {
             tabBarIcon: ({ color, focused }) => <TabIcon name="account" color={String(color)} focused={focused} />,
           }}
         />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: t('tab.settings'),
+            tabBarIcon: ({ color, focused }) => <TabIcon name="cog" color={String(color)} focused={focused} />,
+          }}
+        />
       </Tabs>
       <FilterSheetHost />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  iconWrap: { alignItems: 'center', minWidth: 28 },
-  label: {
-    fontSize: 11,
-    fontFamily: fonts.semibold,
-    textAlign: 'center',
-    marginTop: 2,
-    paddingHorizontal: 1,
-  },
-  indicator: {
-    width: 16,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.accent,
-    marginBottom: 4,
-  },
-  indicatorSpacer: { width: 16, height: 3, marginBottom: 4 },
-});
+function tabStyles(colors: ThemeColors) {
+  return {
+    root: { flex: 1, backgroundColor: colors.bg },
+    iconWrap: {
+      width: 44,
+      height: 32,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      overflow: 'visible' as const,
+    },
+    iconPill: {
+      position: 'absolute' as const,
+      width: 44,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primaryContainer,
+    },
+    label: {
+      fontSize: 10,
+      lineHeight: 12,
+      fontFamily: fonts.semibold,
+      textAlign: 'center' as const,
+      marginTop: 2,
+      width: '100%' as const,
+      includeFontPadding: false,
+    },
+  };
+}
