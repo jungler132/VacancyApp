@@ -106,6 +106,23 @@ export function currencyLabel(currency?: string | null): string {
   return CURRENCY_LABEL[code] ?? code;
 }
 
+export const SALARY_CURRENCIES: { id: string; label: string }[] = [
+  { id: 'RUB', label: '₽' },
+  { id: 'AZN', label: '₼' },
+  { id: 'KZT', label: '₸' },
+  { id: 'USD', label: '$' },
+  { id: 'EUR', label: '€' },
+  { id: 'UAH', label: '₴' },
+];
+
+export function composeSalary(raw?: string | null, currency?: string | null): string | undefined {
+  const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) return undefined;
+  const amount = salaryAmount(text);
+  if (amount != null) return formatSalary(amount, null, currency) ?? annotateSalary(text, currency);
+  return annotateSalary(text, currency);
+}
+
 export function formatSalary(
   from?: number | null,
   to?: number | null,

@@ -39,6 +39,7 @@ async function openCatalogLink(item: CatalogLink) {
 }
 
 const LinkCard = memo(function LinkCard({ item, telegram }: { item: CatalogLink; telegram: boolean }) {
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const country = countryMeta(item.country);
@@ -56,7 +57,9 @@ const LinkCard = memo(function LinkCard({ item, telegram }: { item: CatalogLink;
   }, [item.url]);
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      onPress={() => setOpen((value) => !value)}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.cardHead}>
         <Text style={styles.cardTitle}>{item.title}</Text>
         <View style={[styles.countryBadge, { borderColor: tint }]}>
@@ -65,17 +68,30 @@ const LinkCard = memo(function LinkCard({ item, telegram }: { item: CatalogLink;
       </View>
       {telegram && item.handle ? <Text style={styles.handle}>@{item.handle}</Text> : null}
       {item.note ? <Text style={styles.note}>{item.note}</Text> : null}
-      <View style={styles.actions}>
-        <Pressable onPress={onOpen} style={({ pressed }) => [styles.openBtn, pressed && styles.pressed]}>
-          <MaterialDesignIcons name={telegram ? 'send' : 'open-in-new'} size={16} color={colors.accentText} />
-          <Text style={styles.openLabel}>Открыть</Text>
-        </Pressable>
-        <Pressable onPress={onCopy} style={({ pressed }) => [styles.copyBtn, pressed && styles.pressed]}>
-          <MaterialDesignIcons name={copied ? 'check' : 'content-copy'} size={16} color={copied ? colors.accent : colors.muted} />
-          <Text style={[styles.copyLabel, copied && styles.copyDone]}>{copied ? 'Скопировано' : 'Ссылка'}</Text>
-        </Pressable>
-      </View>
-    </View>
+      {open ? (
+        <View style={styles.details}>
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              onCopy();
+            }}
+            hitSlop={6}>
+            <Text style={styles.url} numberOfLines={2}>
+              {copied ? 'Скопировано' : item.url}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              onOpen();
+            }}
+            style={({ pressed }) => [styles.openBtn, pressed && styles.pressed]}>
+            <MaterialDesignIcons name={telegram ? 'send' : 'open-in-new'} size={16} color={colors.accentText} />
+            <Text style={styles.openLabel}>Открыть</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </Pressable>
   );
 });
 
@@ -199,9 +215,9 @@ const styles = StyleSheet.create({
   countryLabel: { fontSize: 11, fontFamily: fonts.semibold },
   handle: { color: colors.faint, fontSize: 13, fontFamily: fonts.medium, marginTop: 4 },
   note: { color: colors.muted, fontSize: 13, marginTop: 6, lineHeight: 18 },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  details: { marginTop: 12, gap: 10 },
+  url: { color: colors.accent, fontSize: 13, fontFamily: fonts.medium, lineHeight: 18 },
   openBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -211,19 +227,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   openLabel: { color: colors.accentText, fontSize: 14, fontFamily: fonts.semibold },
-  copyBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 40,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    backgroundColor: colors.chip,
-  },
-  copyLabel: { color: colors.muted, fontSize: 14, fontFamily: fonts.semibold },
-  copyDone: { color: colors.accent },
   pressed: { opacity: 0.82 },
 });

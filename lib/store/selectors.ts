@@ -2,8 +2,9 @@ import { createSelector } from '@reduxjs/toolkit';
 
 import { enabledSourceIds } from '@/lib/api/aggregator';
 import { apiCategory } from '@/lib/catalog';
-import { extraFiltersActive, filterFeedIds } from '@/lib/filters';
+import { extraFiltersActive } from '@/lib/filters';
 import { computeJobStats } from '@/lib/stats';
+import { mergeVisibleIds } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
 import type { RootState } from './index';
 import { makeFeedKey, type FeedCache } from './jobsSlice';
@@ -42,23 +43,40 @@ export const selectActiveFeed = createSelector(
   (key, feeds) => feeds[key] ?? emptyFeed,
 );
 
+export const selectLocalJobMap = createSelector([(state: RootState) => state.localJobs.items], (items) => {
+  const map: Record<string, Job> = Object.create(null);
+  for (const item of items) map[item.id] = item;
+  return map;
+});
+
 export const selectVisibleIds = createSelector(
   [
     selectActiveFeed,
     (state: RootState) => state.jobs.byId,
+    (state: RootState) => state.filters.query,
+    (state: RootState) => state.filters.region,
     (state: RootState) => state.filters.categories,
     (state: RootState) => state.filters.extra,
+    (state: RootState) => state.filters.tierFilter,
+    (state: RootState) => state.localJobs.items,
   ],
-  (feed, byId, categories, extra) => filterFeedIds(feed.ids.length ? feed.ids : EMPTY_IDS, byId, categories, extra),
+  (feed, byId, query, region, categories, extra, tierFilter, localJobs) =>
+    mergeVisibleIds(feed.ids.length ? feed.ids : EMPTY_IDS, localJobs, byId, {
+      query,
+      region,
+      categories,
+      extra,
+      tierFilter,
+    }),
 );
 
 export const selectVisibleCount = createSelector([selectVisibleIds], (ids) => ids.length);
 
 export const selectVisibleJobs = createSelector(
-  [selectVisibleIds, (state: RootState) => state.jobs.byId],
-  (ids, byId) => {
+  [selectVisibleIds, (state: RootState) => state.jobs.byId, selectLocalJobMap],
+  (ids, byId, localMap) => {
     if (!ids.length) return EMPTY_JOBS;
-    return ids.map((id) => byId[id]).filter(Boolean);
+    return ids.map((id) => byId[id] ?? localMap[id]).filter(Boolean);
   },
 );
 
@@ -70,7 +88,7 @@ export const selectFiltersActive = createSelector([(state: RootState) => state.f
     extraFiltersActive(filters.extra) ||
     filters.categories.length > 1 ||
     filters.categories[0] !== 'all' ||
-    filters.region !== 'cis'
+    filters.region !== 'all'
   );
 });
 
@@ -99,13 +117,25 @@ export const selectSavedJobMap = createSelector(
 );
 
 export const selectJobById = (id: string) => (state: RootState) =>
-  state.jobs.byId[id] ?? selectSavedJobMap(state)[id];
+  state.jobs.byId[id] ?? selectSavedJobMap(state)[id] ?? selectLocalJobMap(state)[id];
 
 export const selectIsSaved = (id: string) => (state: RootState) => Boolean(selectSavedJobMap(state)[id]);
 
 export const selectSavedIdSet = createSelector([selectSavedJobMap], (map) => new Set(Object.keys(map)));
 
 const EMPTY_ERRORS: SourceError[] = [];
+const EMPTY_ERROR_MAP: Record<string, string> = Object.create(null);
+
+export const selectSourceErrorMap = createSelector([(state: RootState) => state.jobs.feeds], (feeds) => {
+  const map: Record<string, string> = Object.create(null);
+  for (const feed of Object.values(feeds)) {
+    for (const error of feed?.errors ?? []) {
+      if (!error?.sourceId || !error?.message) continue;
+      if (!map[error.sourceId]) map[error.sourceId] = error.message;
+    }
+  }
+  return Object.keys(map).length ? map : EMPTY_ERROR_MAP;
+});
 
 export const selectRecentErrors = createSelector([(state: RootState) => state.jobs.feeds], (feeds) => {
   const seen = new Set<string>();

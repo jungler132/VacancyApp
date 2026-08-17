@@ -9,7 +9,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "apk": "node scripts/build-apk.cjs",
-    "test": "tsx --test lib/api/aggregator.test.ts lib/filters.test.ts lib/feedKey.test.ts lib/telegramGroups.test.ts lib/format.test.ts"
+    "test": "tsx --test lib/api/aggregator.test.ts lib/filters.test.ts lib/feedKey.test.ts lib/telegramGroups.test.ts lib/format.test.ts lib/ads.test.ts lib/tiers.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

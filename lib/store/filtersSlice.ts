@@ -9,10 +9,11 @@ import {
   type ExtraFilters,
   type WorkFormat,
 } from '@/lib/filters';
+import type { TierFilter } from '@/lib/tiers';
 import type { CategoryId, RegionId } from '@/lib/types';
 import type { SearchSnapshot } from '@/lib/alerts';
 
-export const FILTERS_KEY = 'workly:filters';
+export const FILTERS_KEY = 'workly:filters:v2';
 
 const REGIONS: RegionId[] = ['all', 'cis', 'az', 'europe', 'west', 'asia', 'remote'];
 const CATEGORIES: CategoryId[] = [
@@ -44,6 +45,7 @@ export type FiltersState = {
   region: RegionId;
   categories: CategoryId[];
   extra: ExtraFilters;
+  tierFilter: TierFilter;
   sheetOpen: boolean;
   ready: boolean;
 };
@@ -57,15 +59,16 @@ type PersistedFilters = {
 
 const initialState: FiltersState = {
   query: '',
-  region: 'cis',
+  region: 'all',
   categories: ['all'],
   extra: DEFAULT_EXTRA_FILTERS,
+  tierFilter: 'all',
   sheetOpen: false,
   ready: false,
 };
 
 function asRegion(value: unknown): RegionId {
-  return typeof value === 'string' && (REGIONS as string[]).includes(value) ? (value as RegionId) : 'cis';
+  return typeof value === 'string' && (REGIONS as string[]).includes(value) ? (value as RegionId) : 'all';
 }
 
 function asCategories(value: unknown): CategoryId[] {
@@ -137,6 +140,10 @@ const filtersSlice = createSlice({
       if (state.extra.maxAgeDays === action.payload) return;
       state.extra.maxAgeDays = action.payload;
     },
+    setTierFilter(state, action: PayloadAction<TierFilter>) {
+      if (state.tierFilter === action.payload) return;
+      state.tierFilter = action.payload;
+    },
     toggleFilterCategory(state, action: PayloadAction<CategoryId>) {
       state.categories = toggleCategory(state.categories, action.payload);
     },
@@ -149,7 +156,7 @@ const filtersSlice = createSlice({
     resetFilters(state) {
       state.categories = ['all'];
       state.extra = DEFAULT_EXTRA_FILTERS;
-      state.region = 'cis';
+      state.region = 'all';
     },
     applySearch(state, action: PayloadAction<SearchSnapshot>) {
       state.query = action.payload.query;
@@ -179,6 +186,7 @@ export const {
   setRegion,
   setExtra,
   setMaxAgeDays,
+  setTierFilter,
   toggleFilterCategory,
   openFilters,
   closeFilters,

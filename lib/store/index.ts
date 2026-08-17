@@ -10,6 +10,13 @@ import jobsReducer, {
 } from './jobsSlice';
 import savedReducer, { hydrateSaved, persistSaved, setApplyStatus, toggleSaved } from './savedSlice';
 import sourcesReducer, { hydrateSources, persistDisabledSources, toggleSource } from './sourcesSlice';
+import localJobsReducer, {
+  hydrateLocalJobs,
+  persistLocalJobs,
+  removeLocalJob,
+  upsertLocalJob,
+} from './localJobsSlice';
+import premiumReducer, { hydratePremium } from './premiumSlice';
 import filtersReducer, {
   applySearch,
   hydrateFilters,
@@ -63,10 +70,23 @@ listener.startListening({
 });
 
 listener.startListening({
+  matcher: isAnyOf(upsertLocalJob, removeLocalJob, hydrateLocalJobs.fulfilled),
+  effect: async (action, listenerApi) => {
+    const items = (listenerApi.getState() as RootState).localJobs.items;
+    listenerApi.dispatch(rememberJobs(items));
+    if (upsertLocalJob.match(action) || removeLocalJob.match(action)) {
+      await persistLocalJobs(items);
+    }
+  },
+});
+
+listener.startListening({
   matcher: isAnyOf(fetchFeed.pending, fetchFeed.fulfilled, fetchFeed.rejected, clearJobsCache),
   effect: (_action, listenerApi) => {
-    const savedIds = (listenerApi.getState() as RootState).saved.items.map((item) => item.id);
-    listenerApi.dispatch(pruneUnreferencedJobs(savedIds));
+    const state = listenerApi.getState() as RootState;
+    const savedIds = state.saved.items.map((item) => item.id);
+    const localIds = state.localJobs.items.map((item) => item.id);
+    listenerApi.dispatch(pruneUnreferencedJobs([...savedIds, ...localIds]));
   },
 });
 
@@ -98,6 +118,8 @@ export const store = configureStore({
     sources: sourcesReducer,
     filters: filtersReducer,
     alerts: alertsReducer,
+    localJobs: localJobsReducer,
+    premium: premiumReducer,
   },
   middleware: (getDefault) =>
     getDefault({
@@ -111,6 +133,8 @@ store.dispatch(hydrateSaved());
 store.dispatch(hydrateSources());
 store.dispatch(hydrateFilters());
 store.dispatch(hydrateAlerts());
+store.dispatch(hydrateLocalJobs());
+store.dispatch(hydratePremium());
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

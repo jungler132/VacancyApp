@@ -20,6 +20,8 @@ export type CategoryId =
   | 'hr'
   | 'home';
 
+export type JobTier = 1 | 2 | 3;
+
 export type Job = {
   id: string;
   sourceId: string;
@@ -36,6 +38,8 @@ export type Job = {
   url: string;
   excerpt: string;
   description?: string;
+  tier?: JobTier;
+  contact?: string;
 };
 
 export type SearchParams = {

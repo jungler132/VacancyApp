@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 12,
     paddingBottom: 8,
-    backgroundColor: colors.glass,
+    backgroundColor: colors.bg,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.cardBorder,
   },

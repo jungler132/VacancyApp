@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { annotateSalary, currencyLabel, formatSalary, salaryAmount } from './format';
+import { annotateSalary, composeSalary, currencyLabel, formatSalary, salaryAmount } from './format';
 
 describe('formatSalary', () => {
   it('всегда пишет валюту рядом с суммой', () => {
@@ -28,5 +28,12 @@ describe('formatSalary', () => {
   it('salaryAmount всё ещё читает число', () => {
     assert.equal(salaryAmount('150 000 ₽'), 150000);
     assert.equal(salaryAmount('300 000 – 450 000 ₸'), 450000);
+  });
+
+  it('composeSalary добавляет валюту к числу с формы', () => {
+    assert.equal(composeSalary('150000', 'RUB'), '150 000 ₽');
+    assert.equal(composeSalary('150 000', 'AZN'), '150 000 ₼');
+    assert.equal(composeSalary('150 000 ₽', 'RUB'), '150 000 ₽');
+    assert.equal(composeSalary('', 'RUB'), undefined);
   });
 });

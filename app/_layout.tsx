@@ -14,6 +14,8 @@ import {
 import { PaperProvider } from 'react-native-paper';
 
 import { AlertsHost } from '@/components/AlertsHost';
+import { InterstitialHost } from '@/components/InterstitialOverlay';
+import { PaywallHost } from '@/components/PaywallSheet';
 import { store } from '@/lib/store';
 import { colors, fonts, paperTheme } from '@/lib/theme';
 
@@ -54,6 +56,8 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <AlertsHost />
+      <InterstitialHost />
+      <PaywallHost />
       <PaperProvider theme={paperTheme}>
         <ThemeProvider value={navTheme}>
           <StatusBar style="light" />
@@ -66,6 +70,7 @@ export default function RootLayout() {
               contentStyle: { backgroundColor: colors.bg },
             }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="job/create" options={{ title: 'Новая вакансия' }} />
             <Stack.Screen name="job/[id]" options={{ title: 'Вакансия' }} />
           </Stack>
         </ThemeProvider>

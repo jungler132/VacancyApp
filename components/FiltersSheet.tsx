@@ -73,7 +73,7 @@ export const FiltersSheet = memo(function FiltersSheet({
   const progress = useSharedValue(0);
   const current = extra ?? DEFAULT_EXTRA_FILTERS;
   const dirty =
-    extraFiltersActive(current) || categories.length > 1 || categories[0] !== 'all' || region !== 'cis';
+    extraFiltersActive(current) || categories.length > 1 || categories[0] !== 'all' || region !== 'all';
   const doneLabel = resultCount == null ? 'Показать' : `Показать ${resultCount} вакансий`;
 
   useEffect(() => {

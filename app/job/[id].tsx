@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -8,22 +8,31 @@ import { AppChip } from '@/components/AppChip';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
 import { EmptyState } from '@/components/EmptyState';
 import { SelectChip } from '@/components/FilterChips';
+import { requestInterstitial } from '@/lib/ads';
 import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
 import { displayName, formatDate, formatEmployment, formatPlace, joinMeta, splitParagraphs } from '@/lib/format';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { isHhJobId } from '@/lib/api/providers/hh';
 import { hydrateJob } from '@/lib/store/jobsSlice';
+import { removeLocalJob } from '@/lib/store/localJobsSlice';
 import { selectIsSaved, selectJobById } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
+import { isLocalJob, jobTier } from '@/lib/tiers';
 import { colors, radius } from '@/lib/theme';
 
 export default function JobDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const decoded = decodeURIComponent(Array.isArray(id) ? id[0] : (id ?? ''));
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const job = useAppSelector(selectJobById(decoded));
   const saved = useAppSelector(selectIsSaved(decoded));
   const applyStatus = useAppSelector((state) => state.saved.statuses[decoded]);
+
+  useEffect(() => {
+    if (!decoded || decoded.startsWith('workly:')) return;
+    requestInterstitial();
+  }, [decoded]);
 
   useEffect(() => {
     if (!isHhJobId(decoded) || job?.description) return;
@@ -40,6 +49,12 @@ export default function JobDetailsScreen() {
   const toggle = useCallback(() => {
     if (job) dispatch(toggleSaved(job));
   }, [dispatch, job]);
+
+  const onDelete = useCallback(() => {
+    if (!job || !isLocalJob(job)) return;
+    dispatch(removeLocalJob(job.id));
+    router.back();
+  }, [dispatch, job, router]);
 
   const onStatus = useCallback(
     (id: string | number) => {
@@ -85,8 +100,13 @@ export default function JobDetailsScreen() {
         </Text>
       ) : null}
       <View style={styles.tag}>
-        <AppChip label={job.sourceName} selected />
+        <AppChip label={jobTier(job) === 1 ? 'Премиум' : job.sourceName} selected />
       </View>
+      {job.contact ? (
+        <Text variant="bodyMedium" style={styles.meta}>
+          Контакт: {job.contact}
+        </Text>
+      ) : null}
       <Text variant="labelSmall" style={styles.statusTitle}>
         Статус отклика
       </Text>
@@ -111,13 +131,20 @@ export default function JobDetailsScreen() {
         </Text>
       ))}
 
-      <Button mode="contained" onPress={open} style={styles.primary}>
-        Откликнуться
-      </Button>
-      <CopyLinkButton url={job.url} />
+      {job.url ? (
+        <Button mode="contained" onPress={open} style={styles.primary}>
+          Откликнуться
+        </Button>
+      ) : null}
+      {job.url ? <CopyLinkButton url={job.url} /> : null}
       <Button mode="outlined" onPress={toggle} icon={saved ? 'star' : 'star-outline'} style={styles.secondary}>
         {saved ? 'Убрать из избранного' : 'Сохранить'}
       </Button>
+      {isLocalJob(job) ? (
+        <Button mode="text" onPress={onDelete} textColor={colors.danger} style={styles.secondary}>
+          Удалить вакансию
+        </Button>
+      ) : null}
     </ScrollView>
   );
 }

@@ -8,6 +8,7 @@ import { displayName, formatDate, formatPlace } from '@/lib/format';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectIsSaved, selectJobById } from '@/lib/store/selectors';
 import { toggleSaved } from '@/lib/store/savedSlice';
+import { jobTier } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
 import { colors, fonts, radius } from '@/lib/theme';
 
@@ -31,6 +32,7 @@ const JobCardView = memo(function JobCardView({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const company = displayName(job.company);
+  const tier = jobTier(job);
 
   const open = useCallback(() => {
     router.push(`/job/${encodeURIComponent(job.id)}`);
@@ -41,7 +43,9 @@ const JobCardView = memo(function JobCardView({
   }, [dispatch, job]);
 
   return (
-    <Pressable onPress={open} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable
+      onPress={open}
+      style={({ pressed }) => [styles.card, tier === 1 && styles.premium, pressed && styles.pressed]}>
       <View style={styles.top}>
         <View style={styles.avatar}>
           <Text style={styles.letter}>{(company[0] ?? '•').toUpperCase()}</Text>
@@ -49,6 +53,8 @@ const JobCardView = memo(function JobCardView({
         <Text style={styles.company} numberOfLines={1}>
           {company}
         </Text>
+        {tier === 1 ? <Text style={styles.badgePrem}>Премиум</Text> : null}
+        {tier === 2 ? <Text style={styles.badgeLocal}>Workly</Text> : null}
         <Pressable
           onPress={(event) => {
             event.stopPropagation();
@@ -86,6 +92,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   pressed: { opacity: 0.92 },
+  premium: {
+    borderColor: colors.accent,
+    backgroundColor: '#15241F',
+  },
+  badgePrem: {
+    color: colors.accent,
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+  },
+  badgeLocal: {
+    color: colors.muted,
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+  },
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: {
     width: 36,

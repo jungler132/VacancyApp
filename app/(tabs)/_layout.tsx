@@ -46,7 +46,7 @@ const TabIcon = memo(function TabIcon({
   color,
   focused,
 }: {
-  name: 'magnify' | 'chart-donut' | 'star' | 'earth' | 'book-open-variant';
+  name: 'magnify' | 'chart-donut' | 'star' | 'cog' | 'book-open-variant';
   color: string;
   focused: boolean;
 }) {
@@ -63,7 +63,11 @@ const TabIcon = memo(function TabIcon({
           ? focused
             ? 'book-open-variant'
             : 'book-open-outline'
-          : name;
+          : name === 'cog'
+            ? focused
+              ? 'cog'
+              : 'cog-outline'
+            : name;
   return (
     <View style={styles.iconWrap}>
       {focused ? <View style={styles.indicator} /> : <View style={styles.indicatorSpacer} />}
@@ -199,10 +203,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="sources"
+          name="settings"
           options={{
-            title: 'Источники',
-            tabBarIcon: ({ color, focused }) => <TabIcon name="earth" color={String(color)} focused={focused} />,
+            title: 'Настройки',
+            tabBarIcon: ({ color, focused }) => <TabIcon name="cog" color={String(color)} focused={focused} />,
           }}
         />
       </Tabs>
