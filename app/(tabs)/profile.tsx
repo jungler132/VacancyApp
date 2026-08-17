@@ -89,7 +89,7 @@ export default function ProfileScreen() {
             <NavRow
               key={job.id}
               title={job.title}
-              meta={`${job.company}${jobTier(job) === 1 ? ` · ${t('profile.jobPremium')}` : ' · Workly'}`}
+              meta={`${job.company}${jobTier(job) === 1 ? ` · ${t('profile.jobPremium')}` : ` · ${t('common.workly')}`}`}
               onPress={() => {
                 dispatch(pinViewedJob(job));
                 router.push(jobHref(job.id));

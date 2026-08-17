@@ -44,7 +44,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Workly нужен доступ к фото, чтобы поставить аватар и картинки услуг.",
+          "photosPermission": "Workly needs photos for avatars and services / фото для аватара и услуг / avatar və xidmət şəkilləri.",
           "cameraPermission": false,
           "microphonePermission": false
         }

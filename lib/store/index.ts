@@ -142,7 +142,7 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(setFontSize, setLocale),
+  matcher: isAnyOf(setFontSize, setLocale, hydrateAppearance.fulfilled),
   effect: async (_action, listenerApi) => {
     const appearance = (listenerApi.getState() as RootState).appearance;
     await persistAppearance(appearance.fontSize, appearance.locale);

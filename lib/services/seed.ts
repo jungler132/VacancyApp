@@ -1,4 +1,6 @@
-import type { ServiceMaster } from './types';
+import { hasMsg, t } from '@/lib/i18n';
+import { APP_LOCALES, type AppLocale } from '@/lib/i18n/locale';
+import type { ServiceMaster, ServiceOffer } from './types';
 
 export const SEED_MASTERS: ServiceMaster[] = [
   {
@@ -96,3 +98,37 @@ export const SEED_MASTERS: ServiceMaster[] = [
     ],
   },
 ];
+
+function seedMsg(id: string, locale: AppLocale, fallback: string): string {
+  return hasMsg(id) ? t(locale, id) : fallback;
+}
+
+function localizeOffer(slug: string, offer: ServiceOffer, locale: AppLocale): ServiceOffer {
+  const prefix = `seed:${slug}:`;
+  if (!offer.id.startsWith(prefix)) return offer;
+  const offerSlug = offer.id.slice(prefix.length);
+  return {
+    ...offer,
+    title: seedMsg(`seed.${slug}.${offerSlug}.title`, locale, offer.title),
+    description: seedMsg(`seed.${slug}.${offerSlug}.desc`, locale, offer.description),
+  };
+}
+
+export function localizeMaster(master: ServiceMaster, locale: AppLocale): ServiceMaster {
+  if (!master.id.startsWith('seed:')) return master;
+  const slug = master.id.slice(5);
+  return {
+    ...master,
+    bio: seedMsg(`seed.${slug}.bio`, locale, master.bio),
+    address: master.address ? seedMsg(`seed.${slug}.address`, locale, master.address) : master.address,
+    offers: master.offers.map((offer) => localizeOffer(slug, offer, locale)),
+  };
+}
+
+export function seedSearchText(master: ServiceMaster): string {
+  if (!master.id.startsWith('seed:')) return '';
+  return APP_LOCALES.map((locale) => {
+    const loc = localizeMaster(master, locale);
+    return `${loc.bio} ${loc.address ?? ''} ${loc.offers.map((item) => `${item.title} ${item.description}`).join(' ')}`;
+  }).join(' ');
+}

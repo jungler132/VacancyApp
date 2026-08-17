@@ -1,7 +1,9 @@
 import type { Href } from 'expo-router';
 
 import { composeSalary } from '@/lib/format';
-import { serviceKindLabel } from './kinds';
+import { APP_LOCALES } from '@/lib/i18n/locale';
+import { keyOf, t } from '@/lib/i18n';
+import { seedSearchText } from './seed';
 import type { ServiceKindId, ServiceMaster, ServiceOffer, ServiceProfile } from './types';
 
 export function toServiceMaster(profile: ServiceProfile, offers: ServiceOffer[], mine = false): ServiceMaster {
@@ -9,9 +11,11 @@ export function toServiceMaster(profile: ServiceProfile, offers: ServiceOffer[],
 }
 
 export function masterHaystack(master: ServiceMaster): string {
-  const kinds = master.kinds.map(serviceKindLabel).join(' ');
+  const kinds = master.kinds
+    .flatMap((id) => APP_LOCALES.map((locale) => t(locale, keyOf('kind', id))))
+    .join(' ');
   const offers = master.offers.map((item) => `${item.title} ${item.description}`).join(' ');
-  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${kinds} ${offers}`.toLowerCase();
+  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${kinds} ${offers} ${seedSearchText(master)}`.toLowerCase();
 }
 
 export function filterServiceMasters(

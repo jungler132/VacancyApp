@@ -52,6 +52,17 @@ export async function persistAppearance(fontSize: FontSizeId, locale: AppLocale)
   await AsyncStorage.setItem(APPEARANCE_KEY, JSON.stringify({ fontSize, locale })).catch(() => undefined);
 }
 
+export async function readStoredLocale(): Promise<AppLocale> {
+  try {
+    const raw = await AsyncStorage.getItem(APPEARANCE_KEY);
+    if (!raw) return detectLocale();
+    const parsed = JSON.parse(raw) as { locale?: unknown };
+    return parseLocale(parsed.locale) ?? detectLocale();
+  } catch {
+    return detectLocale();
+  }
+}
+
 export const hydrateAppearance = createAsyncThunk('appearance/hydrate', () => readAppearance());
 
 const appearanceSlice = createSlice({

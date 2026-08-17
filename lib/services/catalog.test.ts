@@ -25,5 +25,9 @@ describe('services catalog', () => {
     assert.equal(byName[0]?.id, 'seed:leyla');
     const byOffer = filterServiceMasters(SEED_MASTERS, 'люстр', 'all');
     assert.equal(byOffer[0]?.id, 'seed:igor');
+    const byKindEn = filterServiceMasters(SEED_MASTERS, 'beauty', 'all');
+    assert.equal(byKindEn[0]?.id, 'seed:anna');
+    const byOfferEn = filterServiceMasters(SEED_MASTERS, 'chandelier', 'all');
+    assert.equal(byOfferEn[0]?.id, 'seed:igor');
   });
 });

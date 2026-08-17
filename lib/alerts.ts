@@ -6,6 +6,7 @@ import { DEFAULT_EXTRA_FILTERS, filterFeedIds, type ExtraFilters } from '@/lib/f
 import { keyOf, t } from '@/lib/i18n';
 import { DEFAULT_LOCALE, type AppLocale } from '@/lib/i18n/locale';
 import { notifyNewJobs } from '@/lib/notifications';
+import { readStoredLocale } from '@/lib/store/appearanceSlice';
 import { DISABLED_SOURCES_KEY } from '@/lib/store/sourcesSlice';
 import type { CategoryId, Job, RegionId } from '@/lib/types';
 
@@ -130,6 +131,7 @@ export async function checkSavedSearches(options?: {
   if (!enabled.length) return alerts;
 
   const sources = enabledSourceIds(await loadDisabledSources());
+  const locale = await readStoredLocale();
   const now = Date.now();
   let changed = false;
 
@@ -168,7 +170,7 @@ export async function checkSavedSearches(options?: {
       if (!notify || skip || cooled || fresh.length === 0) continue;
 
       alert.lastNotifiedAt = now;
-      await notifyNewJobs(fresh.length, alertLabel(alert), alert.id);
+      await notifyNewJobs(fresh.length, alertLabel(alert, locale), alert.id, locale);
     } catch {
       alert.lastCheckedAt = now;
       changed = true;

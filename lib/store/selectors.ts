@@ -7,6 +7,7 @@ import { computeJobStats } from '@/lib/stats';
 import { mergeVisibleIds } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
 import { toServiceMaster } from '@/lib/services/catalog';
+import { localizeMaster } from '@/lib/services/seed';
 import { OWN_PROFILE_ID } from './freelanceSlice';
 import { resolveCatalogItem } from './savedCatalogSlice';
 import type { RootState } from './index';
@@ -163,20 +164,32 @@ export const selectOwnMaster = createSelector(
 );
 
 export const selectCatalogMasters = createSelector(
-  [selectOwnMaster, (state: RootState) => state.servicesCatalog.items],
-  (own, remote) => {
-    if (own?.displayName.trim()) return [own, ...remote];
-    return remote;
+  [
+    (state: RootState) => state.servicesCatalog.items,
+    (state: RootState) => state.appearance.locale,
+    selectOwnMaster,
+  ],
+  function selectCatalogMastersResult(remote, locale, own) {
+    const items = remote.map((item) => localizeMaster(item, locale));
+    if (own?.displayName.trim()) return [own, ...items];
+    return items;
   },
 );
 
-export function selectMasterById(state: RootState, id: string) {
-  if (!id) return undefined;
-  if (id === OWN_PROFILE_ID) return selectOwnMaster(state);
-  const own = selectOwnMaster(state);
-  if (own?.id === id) return own;
-  return state.servicesCatalog.items.find((item) => item.id === id);
-}
+export const selectMasterById = createSelector(
+  [
+    (state: RootState) => state.servicesCatalog.items,
+    (state: RootState) => state.appearance.locale,
+    selectOwnMaster,
+    (_state: RootState, id: string) => id,
+  ],
+  function selectMasterByIdResult(items, locale, own, id) {
+    if (!id) return undefined;
+    if (id === OWN_PROFILE_ID || own?.id === id) return own;
+    const master = items.find((item) => item.id === id);
+    return master ? localizeMaster(master, locale) : undefined;
+  },
+);
 
 export const selectRecentErrors = createSelector([(state: RootState) => state.jobs.feeds], (feeds) => {
   const seen = new Set<string>();

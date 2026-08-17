@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
@@ -90,12 +90,17 @@ export default function JobDetailsScreen() {
   const [showTranslated, setShowTranslated] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
+  const translateAbort = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    translateAbort.current?.abort();
+    translateAbort.current = null;
     setTranslated(null);
     setShowTranslated(false);
     setTranslateError(null);
   }, [job?.id, locale]);
+
+  useEffect(() => () => translateAbort.current?.abort(), []);
 
   const facts = useMemo(() => (job ? jobFacts(job) : []), [job]);
   const sourceText = `${job?.title ?? ''} ${job?.company ?? ''} ${body}`;
@@ -111,19 +116,25 @@ export default function JobDetailsScreen() {
       setShowTranslated(true);
       return;
     }
+    translateAbort.current?.abort();
+    const ac = new AbortController();
+    translateAbort.current = ac;
     setTranslating(true);
     setTranslateError(null);
     try {
       const next = await translateJobTexts(
         { title: job.title, company: displayName(job.company), body },
         locale,
+        ac.signal,
       );
+      if (ac.signal.aborted) return;
       setTranslated(next);
       setShowTranslated(true);
-    } catch {
+    } catch (error) {
+      if (ac.signal.aborted || (error instanceof Error && error.name === 'AbortError')) return;
       setTranslateError(t('job.translateFail'));
     } finally {
-      setTranslating(false);
+      if (translateAbort.current === ac) setTranslating(false);
     }
   }, [body, job, locale, showTranslated, t, translated]);
 
@@ -207,9 +218,11 @@ export default function JobDetailsScreen() {
       {alreadyLocale && !showTranslated ? (
         <AppText style={styles.snippetHint}>{t('job.alreadyLocale')}</AppText>
       ) : null}
-      <Button mode="outlined" onPress={onTranslate} disabled={translating} style={styles.secondary}>
-        {translating ? t('job.translating') : showTranslated ? t('job.translateHide') : t('job.translate')}
-      </Button>
+      {((!alreadyLocale && Boolean(sourceText.trim())) || showTranslated || translating) ? (
+        <Button mode="outlined" onPress={onTranslate} disabled={translating} style={styles.secondary}>
+          {translating ? t('job.translating') : showTranslated ? t('job.translateHide') : t('job.translate')}
+        </Button>
+      ) : null}
 
       {job.url ? (
         <Button mode="contained" onPress={open} style={styles.primary}>
