@@ -1,9 +1,10 @@
 import { memo, useCallback, useEffect } from 'react';
-import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { SelectChip } from '@/components/FilterChips';
+import { Text } from '@/components/AppText';
 import {
   CATALOG_REGION_FILTERS,
   catalogFiltersActive,

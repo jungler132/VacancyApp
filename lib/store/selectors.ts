@@ -6,6 +6,7 @@ import { extraFiltersActive } from '@/lib/filters';
 import { computeJobStats } from '@/lib/stats';
 import { mergeVisibleIds } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
+import { resolveCatalogItem } from './savedCatalogSlice';
 import type { RootState } from './index';
 import { makeFeedKey, type FeedCache } from './jobsSlice';
 import type { CategoryId, RegionId, SourceError } from '@/lib/types';
@@ -117,11 +118,28 @@ export const selectSavedJobMap = createSelector(
 );
 
 export const selectJobById = (id: string) => (state: RootState) =>
-  state.jobs.byId[id] ?? selectSavedJobMap(state)[id] ?? selectLocalJobMap(state)[id];
+  (id ? state.jobs.byId[id] : undefined) ?? selectSavedJobMap(state)[id] ?? selectLocalJobMap(state)[id];
+
+export const selectViewedJob = (state: RootState) =>
+  state.jobs.viewedId ? state.jobs.byId[state.jobs.viewedId] : undefined;
 
 export const selectIsSaved = (id: string) => (state: RootState) => Boolean(selectSavedJobMap(state)[id]);
 
 export const selectSavedIdSet = createSelector([selectSavedJobMap], (map) => new Set(Object.keys(map)));
+
+export const selectSavedCatalogItems = createSelector(
+  [(state: RootState) => state.savedCatalog.items],
+  (items) => items.map(resolveCatalogItem),
+);
+
+export const selectSavedCatalogMap = createSelector([selectSavedCatalogItems], (items) => {
+  const map: Record<string, true> = Object.create(null);
+  for (const item of items) map[`${item.kind}:${item.id}`] = true;
+  return map;
+});
+
+export const selectIsCatalogSaved = (kind: 'telegram' | 'site', id: string) => (state: RootState) =>
+  Boolean(selectSavedCatalogMap(state)[`${kind}:${id}`]);
 
 const EMPTY_ERRORS: SourceError[] = [];
 const EMPTY_ERROR_MAP: Record<string, string> = Object.create(null);

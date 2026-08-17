@@ -1,6 +1,6 @@
 import { jobMatchesCategories } from './catalog';
 import { salaryAmount } from './format';
-import { compareJobsByDate, MAX_JOB_AGE_DAYS, isFreshJob } from './freshness';
+import { MAX_JOB_AGE_DAYS, isFreshJob } from './freshness';
 import type { CategoryId, Job } from './types';
 
 export type WorkFormat = 'any' | 'remote' | 'office';
@@ -84,6 +84,5 @@ export function filterFeedIds(
     }
     matched.push(job);
   }
-  matched.sort(compareJobsByDate);
   return matched.map((job) => job.id);
 }

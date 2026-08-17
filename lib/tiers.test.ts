@@ -81,4 +81,19 @@ describe('mergeVisibleIds', () => {
     });
     assert.deepEqual(ids, ['workly:new']);
   });
+
+  it('не вставляет новые площадки в середину уже показанной ленты', () => {
+    const older = new Date(Date.now() - 48 * 3600_000).toISOString();
+    const newer = new Date().toISOString();
+    const first = job({ id: 'first', title: 'Старая', publishedAt: older });
+    const next = job({ id: 'next', title: 'Свежая', publishedAt: newer });
+    const ids = mergeVisibleIds(['first', 'next'], [], { first, next }, {
+      query: '',
+      region: 'cis',
+      categories: ['all'],
+      extra: DEFAULT_EXTRA_FILTERS,
+      tierFilter: 'all',
+    });
+    assert.deepEqual(ids, ['first', 'next']);
+  });
 });

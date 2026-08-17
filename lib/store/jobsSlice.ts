@@ -27,6 +27,7 @@ export type JobsState = {
   byId: Record<string, Job>;
   feeds: Record<string, FeedCache>;
   lru: string[];
+  viewedId?: string;
 };
 
 const initialState: JobsState = {
@@ -48,9 +49,10 @@ function sameJob(prev: Job, next: Job) {
   );
 }
 
-function upsertJobs(state: JobsState, jobs: Job[]) {
+function upsertJobs(state: JobsState, jobs: Job[], keepExisting = false) {
   for (const job of jobs) {
     const prev = state.byId[job.id];
+    if (prev && keepExisting) continue;
     if (prev && sameJob(prev, job)) continue;
     state.byId[job.id] = prev ? { ...prev, ...job } : job;
   }
@@ -66,6 +68,7 @@ function touchLru(state: JobsState, key: string) {
 
 function pruneById(state: JobsState, extraKeep: string[] = []) {
   const keep = new Set(extraKeep);
+  if (state.viewedId) keep.add(state.viewedId);
   for (const feed of Object.values(state.feeds)) {
     for (const id of feed.ids) keep.add(id);
   }
@@ -154,6 +157,10 @@ const jobsSlice = createSlice({
     rememberJobs(state, action: PayloadAction<Job[]>) {
       upsertJobs(state, action.payload);
     },
+    pinViewedJob(state, action: PayloadAction<Job>) {
+      upsertJobs(state, [action.payload]);
+      state.viewedId = action.payload.id;
+    },
     pruneUnreferencedJobs(state, action: PayloadAction<string[]>) {
       pruneById(state, action.payload);
     },
@@ -186,7 +193,7 @@ const jobsSlice = createSlice({
       })
       .addCase(fetchFeed.fulfilled, (state, action) => {
         const { key, jobs, errors, hasMore, exhaustedSources, page, mode } = action.payload;
-        upsertJobs(state, jobs);
+        upsertJobs(state, jobs, mode === 'append');
         const current = state.feeds[key];
         const prevIds = mode === 'append' ? (current?.ids ?? []) : [];
         const seen = new Set(prevIds);
@@ -236,5 +243,6 @@ const jobsSlice = createSlice({
   },
 });
 
-export const { rememberJobs, pruneUnreferencedJobs, clearJobsCache, dismissFeedErrors } = jobsSlice.actions;
+export const { rememberJobs, pinViewedJob, pruneUnreferencedJobs, clearJobsCache, dismissFeedErrors } =
+  jobsSlice.actions;
 export default jobsSlice.reducer;

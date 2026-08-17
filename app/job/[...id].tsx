@@ -10,24 +10,30 @@ import { EmptyState } from '@/components/EmptyState';
 import { SelectChip } from '@/components/FilterChips';
 import { requestInterstitial } from '@/lib/ads';
 import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
-import { displayName, formatDate, formatEmployment, formatPlace, joinMeta, splitParagraphs } from '@/lib/format';
+import { displayName, formatDate, formatPlace, joinMeta, jobFacts, stripHtml } from '@/lib/format';
+import { Text as AppText } from '@/components/AppText';
+import { colors, fonts, radius } from '@/lib/theme';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { isHhJobId } from '@/lib/api/providers/hh';
 import { hydrateJob } from '@/lib/store/jobsSlice';
 import { removeLocalJob } from '@/lib/store/localJobsSlice';
-import { selectIsSaved, selectJobById } from '@/lib/store/selectors';
+import { matchRouteJobId, parseJobIdParam } from '@/lib/jobRoute';
+import { selectIsSaved, selectJobById, selectViewedJob } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
 import { isLocalJob, jobTier } from '@/lib/tiers';
-import { colors, radius } from '@/lib/theme';
 
 export default function JobDetailsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const decoded = decodeURIComponent(Array.isArray(id) ? id[0] : (id ?? ''));
+  const { id } = useLocalSearchParams<{ id: string | string[] }>();
+  const decoded = parseJobIdParam(id);
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const job = useAppSelector(selectJobById(decoded));
-  const saved = useAppSelector(selectIsSaved(decoded));
-  const applyStatus = useAppSelector((state) => state.saved.statuses[decoded]);
+  const viewed = useAppSelector(selectViewedJob);
+  const byId = useAppSelector((state) => state.jobs.byId);
+  const lookupId = matchRouteJobId(decoded, Object.keys(byId), viewed?.id);
+  const jobFromId = useAppSelector(selectJobById(lookupId));
+  const job = jobFromId ?? viewed;
+  const saved = useAppSelector(selectIsSaved(job?.id ?? lookupId));
+  const applyStatus = useAppSelector((state) => state.saved.statuses[job?.id ?? lookupId]);
 
   useEffect(() => {
     if (!decoded || decoded.startsWith('workly:')) return;
@@ -35,10 +41,11 @@ export default function JobDetailsScreen() {
   }, [decoded]);
 
   useEffect(() => {
-    if (!isHhJobId(decoded) || job?.description) return;
-    const action = dispatch(hydrateJob(decoded));
+    const jobId = job?.id ?? lookupId;
+    if (!isHhJobId(jobId) || job?.description) return;
+    const action = dispatch(hydrateJob(jobId));
     return () => action.abort();
-  }, [decoded, dispatch, job?.description]);
+  }, [dispatch, job?.description, job?.id, lookupId]);
 
   const open = useCallback(() => {
     if (!job) return;
@@ -65,15 +72,15 @@ export default function JobDetailsScreen() {
     [applyStatus, dispatch, job],
   );
 
-  const paragraphs = useMemo(
-    () => splitParagraphs(job?.description || job?.excerpt || ''),
-    [job?.description, job?.excerpt],
-  );
+  const body = useMemo(() => stripHtml(job?.description || job?.excerpt || ''), [job?.description, job?.excerpt]);
+  const snippetOnly = Boolean(body) && (body.length < 480 || /(?:\.{3}|…)\s*$/.test(body) || (body.match(/\.{3}|…/g)?.length ?? 0) >= 2);
 
   const meta = useMemo(() => {
     if (!job) return '';
-    return joinMeta([formatPlace(job.location, job.remote), formatEmployment(job.employment), formatDate(job.publishedAt)]);
+    return joinMeta([formatPlace(job.location, job.remote), formatDate(job.publishedAt)]);
   }, [job]);
+
+  const facts = useMemo(() => (job ? jobFacts(job) : []), [job]);
 
   if (!job) {
     return (
@@ -99,6 +106,20 @@ export default function JobDetailsScreen() {
           {job.salary}
         </Text>
       ) : null}
+      {facts.length ? (
+        <View style={styles.facts}>
+          {facts.map((fact) => (
+            <View key={fact.label} style={styles.fact}>
+              <Text variant="labelSmall" style={styles.factLabel}>
+                {fact.label}
+              </Text>
+              <Text variant="bodyMedium" style={styles.factValue}>
+                {fact.value}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
       <View style={styles.tag}>
         <AppChip label={jobTier(job) === 1 ? 'Премиум' : job.sourceName} selected />
       </View>
@@ -123,13 +144,16 @@ export default function JobDetailsScreen() {
         ))}
       </View>
 
-      {!job.description && isHhJobId(decoded) ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
+      {!job.description && isHhJobId(job.id) ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
 
-      {paragraphs.map((paragraph, index) => (
-        <Text key={`${index}-${paragraph.slice(0, 24)}`} variant="bodyLarge" style={styles.body}>
-          {paragraph}
-        </Text>
-      ))}
+      {body ? (
+        <AppText style={styles.body} selectable>
+          {body}
+        </AppText>
+      ) : null}
+      {snippetOnly ? (
+        <AppText style={styles.snippetHint}>Полное описание откроется на сайте источника.</AppText>
+      ) : null}
 
       {job.url ? (
         <Button mode="contained" onPress={open} style={styles.primary}>
@@ -156,10 +180,28 @@ const styles = StyleSheet.create({
   company: { marginBottom: 8, opacity: 0.8 },
   meta: { marginTop: 12, opacity: 0.85 },
   salary: { color: colors.salary, marginTop: 14 },
+  facts: { marginTop: 16, gap: 8 },
+  fact: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  factLabel: { opacity: 0.55 },
+  factValue: { flexShrink: 1, textAlign: 'right' },
   tag: { alignSelf: 'flex-start', marginTop: 14, marginBottom: 8 },
   statusTitle: { marginTop: 8, marginBottom: 8, opacity: 0.7 },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  body: { marginBottom: 12, lineHeight: 23 },
+  body: {
+    marginTop: 8,
+    marginBottom: 12,
+    color: colors.text,
+    fontFamily: fonts.regular,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  snippetHint: {
+    color: colors.faint,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
   primary: { marginTop: 20, borderRadius: radius.md },
   secondary: { marginTop: 10, borderRadius: radius.md },
 });

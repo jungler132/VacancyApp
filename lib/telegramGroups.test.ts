@@ -12,6 +12,7 @@ import {
   filterCatalog,
   filterCatalogBySelection,
   groupCatalogByCountry,
+  inferCatalogMeta,
 } from './telegramGroups';
 
 describe('catalog resources', () => {
@@ -52,5 +53,20 @@ describe('catalog resources', () => {
     const groups = groupCatalogByCountry(cis);
     assert.ok(groups.some((group) => group.id === 'ru'));
     assert.ok(groups.some((group) => group.id === 'az'));
+  });
+
+  it('выводит тип охвата и доступ без сети', () => {
+    const hh = JOB_SITES.find((item) => item.id === 'hhru');
+    const djinni = JOB_SITES.find((item) => item.id === 'djinni');
+    const olx = JOB_SITES.find((item) => item.id === 'olx-az');
+    const flex = JOB_SITES.find((item) => item.id === 'flexjobs');
+    const junior = TELEGRAM_GROUPS.find((item) => item.id === 'young_june');
+    assert.ok(hh && djinni && olx && flex && junior);
+    assert.equal(inferCatalogMeta(hh).focus, 'all');
+    assert.equal(inferCatalogMeta(hh).langs, 'RU');
+    assert.equal(inferCatalogMeta(djinni).focus, 'it');
+    assert.equal(inferCatalogMeta(olx).focus, 'classifieds');
+    assert.equal(inferCatalogMeta(flex).access, 'paid');
+    assert.equal(inferCatalogMeta(junior).focus, 'junior');
   });
 });

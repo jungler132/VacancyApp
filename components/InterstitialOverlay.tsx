@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   INTERSTITIAL_SKIP_AFTER_SEC,
@@ -7,6 +7,7 @@ import {
   subscribeInterstitial,
 } from '@/lib/ads';
 import { colors, fonts, radius } from '@/lib/theme';
+import { Text } from '@/components/AppText';
 
 export const InterstitialHost = memo(function InterstitialHost() {
   const [open, setOpen] = useState(false);

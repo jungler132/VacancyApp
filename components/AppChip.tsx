@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { StyleSheet } from 'react-native';
 import { Chip } from 'react-native-paper';
 
+import { scaleFont, useFontScale } from '@/lib/fontScale';
 import { colors, radius } from '@/lib/theme';
 
 export const AppChip = memo(function AppChip({
@@ -11,12 +12,13 @@ export const AppChip = memo(function AppChip({
   label: string;
   selected?: boolean;
 }) {
+  const scale = useFontScale();
   return (
     <Chip
       compact
       mode="flat"
       style={[styles.chip, selected ? styles.selected : null]}
-      textStyle={[styles.text, selected ? styles.textOn : null]}>
+      textStyle={[styles.text, { fontSize: scaleFont(13, scale) }, selected ? styles.textOn : null]}>
       {label}
     </Chip>
   );

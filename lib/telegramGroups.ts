@@ -51,6 +51,8 @@ export type CatalogCountryId =
 
 export type CatalogRegionId = 'cis' | 'europe' | 'west' | 'asia' | 'remote' | 'intl';
 export type CatalogFilterId = 'all' | CatalogRegionId | CatalogCountryId;
+export type CatalogFocus = 'all' | 'it' | 'junior' | 'gov' | 'remote' | 'classifieds' | 'startup';
+export type CatalogAccess = 'free' | 'account' | 'paid';
 
 export type CatalogLink = {
   id: string;
@@ -59,6 +61,9 @@ export type CatalogLink = {
   url: string;
   handle?: string;
   country: CatalogCountryId;
+  focus?: CatalogFocus;
+  access?: CatalogAccess;
+  langs?: string;
 };
 
 export const CATALOG_COUNTRIES: { id: CatalogCountryId; label: string; region: CatalogRegionId }[] = [
@@ -197,6 +202,132 @@ export function groupCatalogByCountry(items: CatalogLink[]): { id: CatalogCountr
     const group = buckets.get(country.id);
     return group?.length ? [{ id: country.id, label: country.label, items: group }] : [];
   });
+}
+
+const COUNTRY_LANG: Record<CatalogCountryId, string> = {
+  az: 'AZ / RU',
+  ru: 'RU',
+  ua: 'UK / RU',
+  by: 'RU / BE',
+  kz: 'KK / RU',
+  uz: 'UZ / RU',
+  am: 'HY / EN',
+  ge: 'KA / EN',
+  kg: 'KY / RU',
+  md: 'RO / RU',
+  tj: 'TG / RU',
+  eu: 'EN',
+  de: 'DE / EN',
+  pl: 'PL / EN',
+  uk: 'EN',
+  fr: 'FR',
+  es: 'ES',
+  it: 'IT',
+  nl: 'NL / EN',
+  cz: 'CS / EN',
+  at: 'DE',
+  ch: 'DE / FR',
+  se: 'SV',
+  ie: 'EN',
+  pt: 'PT',
+  ro: 'RO',
+  hu: 'HU',
+  be: 'NL / FR',
+  dk: 'DA',
+  fi: 'FI',
+  no: 'NO',
+  lt: 'LT',
+  lv: 'LV',
+  ee: 'ET',
+  bg: 'BG',
+  rs: 'SR',
+  hr: 'HR',
+  sk: 'SK',
+  us: 'EN',
+  ca: 'EN / FR',
+  au: 'EN',
+  nz: 'EN',
+  tr: 'TR',
+  ae: 'EN / AR',
+  in: 'EN / HI',
+  sg: 'EN',
+  jp: 'JA / EN',
+  remote: 'EN',
+  intl: 'EN',
+};
+
+const REGION_LABEL: Record<CatalogRegionId, string> = {
+  cis: 'СНГ',
+  europe: 'Европа',
+  west: 'Запад',
+  asia: 'Азия',
+  remote: 'Удалёнка',
+  intl: 'Мир',
+};
+
+const FOCUS_LABEL: Record<CatalogFocus, string> = {
+  all: 'Все профессии',
+  it: 'IT и digital',
+  junior: 'Junior и стажировки',
+  gov: 'Госпортал',
+  remote: 'Удалёнка',
+  classifieds: 'Доска объявлений',
+  startup: 'Стартапы',
+};
+
+const ACCESS_LABEL: Record<CatalogAccess, string> = {
+  free: 'Бесплатный просмотр',
+  account: 'Нужен аккаунт',
+  paid: 'Платный доступ',
+};
+
+export function inferCatalogMeta(item: CatalogLink): {
+  focus: CatalogFocus;
+  access: CatalogAccess;
+  langs: string;
+} {
+  const hay = `${item.id} ${item.title} ${item.note ?? ''} ${item.handle ?? ''} ${item.url}`.toLowerCase();
+  let focus: CatalogFocus = 'all';
+  if (/olx|lalafo|list\.am|999\.md|somon|avito|subito|trademe/.test(hay)) focus = 'classifieds';
+  else if (/junior|стаж|intern|young|авоськ/.test(hay)) focus = 'junior';
+  else if (/flexjobs|we work remotely|remoteok|remotive|himalayas|jobicy|workingnomads|arbeitnow|удалён/.test(hay)) {
+    focus = 'remote';
+  } else if (
+    /trudvsem|enbek|usajobs|gov\.uk|arbeitsagentur|francetravail|jobbank|mycareersfuture|arbetsformedlingen|werk\.nl|vdab/.test(
+      hay,
+    )
+  ) {
+    focus = 'gov';
+  }   else if (/startupjobs|wellfound/.test(hay)) focus = 'startup';
+  else if (
+    /habr|geek|djinni|dou|devby|justjoin|nofluff|dice|getmatch|tproger|devit|green-japan|cwjobs|jobitt|it.?jobs|it.?digital|it-ваканси|it & digital/.test(
+      hay,
+    )
+  ) {
+    focus = 'it';
+  }
+
+  let access: CatalogAccess = 'free';
+  if (/flexjobs/.test(hay)) access = 'paid';
+  else if (/linkedin|xing|glassdoor/.test(hay)) access = 'account';
+
+  return {
+    focus: item.focus ?? focus,
+    access: item.access ?? access,
+    langs: item.langs ?? COUNTRY_LANG[item.country] ?? 'EN',
+  };
+}
+
+export function catalogFacts(item: CatalogLink, telegram: boolean): { label: string; value: string }[] {
+  const meta = inferCatalogMeta(item);
+  const country = countryMeta(item.country);
+  return [
+    { label: 'Тип', value: telegram ? 'Telegram-канал' : 'Сайт вакансий' },
+    { label: 'Регион', value: REGION_LABEL[country.region] },
+    { label: 'Охват', value: FOCUS_LABEL[meta.focus] },
+    { label: 'Язык', value: meta.langs },
+    { label: 'Доступ', value: ACCESS_LABEL[meta.access] },
+  ];
 }
 
 function tg(country: CatalogCountryId, handle: string, title: string, note: string): CatalogLink {

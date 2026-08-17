@@ -1,8 +1,9 @@
 import { memo, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { colors, radius } from '@/lib/theme';
+import { Text } from '@/components/AppText';
 
 type Item<T extends string | number> = { id: T; label: string; icon?: string };
 

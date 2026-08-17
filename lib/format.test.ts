@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { annotateSalary, composeSalary, currencyLabel, formatSalary, salaryAmount } from './format';
+import { annotateSalary, composeSalary, currencyLabel, formatSalary, jobFacts, jobTags, salaryAmount } from './format';
 
 describe('formatSalary', () => {
   it('всегда пишет валюту рядом с суммой', () => {
@@ -35,5 +35,42 @@ describe('formatSalary', () => {
     assert.equal(composeSalary('150 000', 'AZN'), '150 000 ₼');
     assert.equal(composeSalary('150 000 ₽', 'RUB'), '150 000 ₽');
     assert.equal(composeSalary('', 'RUB'), undefined);
+  });
+});
+
+describe('jobFacts', () => {
+  it('берёт опыт и график из полей источника', () => {
+    const facts = jobFacts({
+      sourceName: 'HeadHunter',
+      title: 'Курьер',
+      location: 'Баку',
+      remote: false,
+      employment: 'Полная занятость',
+      experience: 'Нет опыта',
+      schedule: 'Полный день',
+      excerpt: 'Доставка по городу',
+    });
+    const map = Object.fromEntries(facts.map((item) => [item.label, item.value]));
+    assert.equal(map['Источник'], 'HeadHunter');
+    assert.equal(map['Формат'], 'Офис');
+    assert.equal(map['Занятость'], 'Полная занятость');
+    assert.equal(map['График'], 'Полный день');
+    assert.equal(map['Опыт'], 'Без опыта');
+    assert.equal(map['Язык'], 'RU');
+  });
+
+  it('угадывает junior и удалёнку из текста, если API молчит', () => {
+    const facts = jobFacts({
+      sourceName: 'RemoteOK',
+      title: 'Junior React developer',
+      location: 'Worldwide',
+      remote: true,
+      excerpt: 'Remote role for a junior engineer',
+    });
+    const map = Object.fromEntries(facts.map((item) => [item.label, item.value]));
+    assert.equal(map['Формат'], 'Удалённо');
+    assert.equal(map['Опыт'], 'Junior / без опыта');
+    assert.equal(map['Язык'], 'EN');
+    assert.deepEqual(jobTags({ title: 'Junior React developer', remote: true }), ['Удалённо', 'Junior / без опыта']);
   });
 });

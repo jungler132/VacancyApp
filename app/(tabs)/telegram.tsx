@@ -1,11 +1,10 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
-import * as WebBrowser from 'expo-web-browser';
-import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppHeader, FiltersButton } from '@/components/AppHeader';
 import { CatalogFiltersSheet } from '@/components/CatalogFiltersSheet';
+import { CatalogLinkCard } from '@/components/CatalogLinkCard';
+import { Text } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
 import { useTabBarLayout } from '@/lib/layout';
 import {
@@ -13,13 +12,12 @@ import {
   JOB_SITES,
   TELEGRAM_GROUPS,
   catalogFiltersActive,
-  countryMeta,
   filterCatalogBySelection,
   groupCatalogByCountry,
   type CatalogFilters,
   type CatalogLink,
 } from '@/lib/telegramGroups';
-import { colors, fonts, radius, regionColor } from '@/lib/theme';
+import { colors, fonts } from '@/lib/theme';
 
 const SECTIONS = [
   { id: 'telegram', label: 'Telegram', items: TELEGRAM_GROUPS, telegram: true },
@@ -29,71 +27,6 @@ const SECTIONS = [
 type CatalogRow =
   | { type: 'header'; id: string; title: string }
   | { type: 'card'; id: string; item: CatalogLink; telegram: boolean };
-
-async function openCatalogLink(item: CatalogLink) {
-  if (item.handle) {
-    await Linking.openURL(item.url);
-    return;
-  }
-  await WebBrowser.openBrowserAsync(item.url);
-}
-
-const LinkCard = memo(function LinkCard({ item, telegram }: { item: CatalogLink; telegram: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const country = countryMeta(item.country);
-  const tint = regionColor[country.region] ?? colors.muted;
-
-  const onOpen = useCallback(() => {
-    openCatalogLink(item).catch(() => undefined);
-  }, [item]);
-
-  const onCopy = useCallback(async () => {
-    await Clipboard.setStringAsync(item.url);
-    setCopied(true);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setCopied(false), 1600);
-  }, [item.url]);
-
-  return (
-    <Pressable
-      onPress={() => setOpen((value) => !value)}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <View style={styles.cardHead}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
-        <View style={[styles.countryBadge, { borderColor: tint }]}>
-          <Text style={[styles.countryLabel, { color: tint }]}>{country.label}</Text>
-        </View>
-      </View>
-      {telegram && item.handle ? <Text style={styles.handle}>@{item.handle}</Text> : null}
-      {item.note ? <Text style={styles.note}>{item.note}</Text> : null}
-      {open ? (
-        <View style={styles.details}>
-          <Pressable
-            onPress={(event) => {
-              event.stopPropagation();
-              onCopy();
-            }}
-            hitSlop={6}>
-            <Text style={styles.url} numberOfLines={2}>
-              {copied ? 'Скопировано' : item.url}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={(event) => {
-              event.stopPropagation();
-              onOpen();
-            }}
-            style={({ pressed }) => [styles.openBtn, pressed && styles.pressed]}>
-            <MaterialDesignIcons name={telegram ? 'send' : 'open-in-new'} size={16} color={colors.accentText} />
-            <Text style={styles.openLabel}>Открыть</Text>
-          </Pressable>
-        </View>
-      ) : null}
-    </Pressable>
-  );
-});
 
 function toRows(items: CatalogLink[], telegram: boolean): CatalogRow[] {
   const groups = groupCatalogByCountry(items);
@@ -130,7 +63,7 @@ export default function ResourcesScreen() {
 
   const renderItem = useCallback(({ item }: { item: CatalogRow }) => {
     if (item.type === 'header') return <Text style={styles.groupTitle}>{item.title}</Text>;
-    return <LinkCard item={item.item} telegram={item.telegram} />;
+    return <CatalogLinkCard item={item.item} telegram={item.telegram} />;
   }, []);
 
   const keyExtractor = useCallback((item: CatalogRow) => item.id, []);
@@ -195,37 +128,4 @@ const styles = StyleSheet.create({
   tabLineOn: { backgroundColor: colors.accent },
   content: { padding: 16 },
   groupTitle: { color: colors.faint, fontSize: 13, fontFamily: fonts.semibold, marginTop: 6, marginBottom: 2 },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: 14,
-    marginBottom: 10,
-  },
-  cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  cardTitle: { color: colors.text, fontSize: 16, fontFamily: fonts.semibold, flex: 1 },
-  countryBadge: {
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    maxWidth: 140,
-  },
-  countryLabel: { fontSize: 11, fontFamily: fonts.semibold },
-  handle: { color: colors.faint, fontSize: 13, fontFamily: fonts.medium, marginTop: 4 },
-  note: { color: colors.muted, fontSize: 13, marginTop: 6, lineHeight: 18 },
-  details: { marginTop: 12, gap: 10 },
-  url: { color: colors.accent, fontSize: 13, fontFamily: fonts.medium, lineHeight: 18 },
-  openBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-  },
-  openLabel: { color: colors.accentText, fontSize: 14, fontFamily: fonts.semibold },
-  pressed: { opacity: 0.82 },
 });

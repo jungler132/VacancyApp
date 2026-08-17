@@ -74,6 +74,8 @@ async function searchHh(params: SearchParams, board: HhBoard): Promise<Job[]> {
       remote: /удал|remote|distant/i.test(item.schedule?.name ?? ''),
       salary: formatSalary(item.salary?.from, item.salary?.to, item.salary?.currency),
       employment: item.employment?.name,
+      experience: item.experience?.name,
+      schedule: item.schedule?.name,
       publishedAt: toPublishedAt(item.published_at),
       url: alternate ?? `https://${board.site}/vacancy/${item.id}`,
       excerpt: excerptOf(snippet || item.name),
@@ -114,6 +116,7 @@ export async function fetchHeadHunterDetails(vacancyId: string, signal?: AbortSi
     alternate_url?: string;
     schedule?: { name?: string };
     employment?: { name?: string };
+    experience?: { name?: string };
   }>(`https://api.hh.ru/vacancies/${vacancyId}`, {
     signal,
     headers: HH_HEADERS,
@@ -127,5 +130,7 @@ export async function fetchHeadHunterDetails(vacancyId: string, signal?: AbortSi
     url: data.alternate_url,
     remote: /удал|remote|distant/i.test(data.schedule?.name ?? ''),
     employment: data.employment?.name,
+    experience: data.experience?.name,
+    schedule: data.schedule?.name,
   };
 }

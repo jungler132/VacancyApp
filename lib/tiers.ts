@@ -71,25 +71,23 @@ export function mergeVisibleIds(
     tierFilter: TierFilter;
   },
 ): string[] {
-  const locals = filterLocalJobs(localJobs, opts);
+  const locals = filterLocalJobs(localJobs, opts).sort(compareJobsByTierThenDate);
   const feedIdsFiltered =
     opts.tierFilter === 1 || opts.tierFilter === 2
       ? []
       : filterFeedIds(feedIds, byId, opts.categories, opts.extra);
   const seen = new Set<string>();
-  const merged: Job[] = [];
+  const ids: string[] = [];
   for (const job of locals) {
     if (seen.has(job.id)) continue;
     seen.add(job.id);
-    merged.push(job);
+    ids.push(job.id);
   }
   for (const id of feedIdsFiltered) {
     if (seen.has(id)) continue;
-    const job = byId[id];
-    if (!job) continue;
+    if (!byId[id]) continue;
     seen.add(id);
-    merged.push(job);
+    ids.push(id);
   }
-  merged.sort(compareJobsByTierThenDate);
-  return merged.map((job) => job.id);
+  return ids;
 }

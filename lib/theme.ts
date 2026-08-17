@@ -115,3 +115,39 @@ export const paperTheme = {
   },
 };
 
+const PAPER_SIZES = {
+  displaySmall: 36,
+  headlineSmall: 24,
+  titleLarge: 22,
+  titleMedium: 16,
+  titleSmall: 14,
+  bodyLarge: 16,
+  bodyMedium: 14,
+  bodySmall: 12,
+  labelLarge: 14,
+  labelMedium: 12,
+  labelSmall: 11,
+} as const;
+
+export function makePaperTheme(scale = 1) {
+  const size = (n: number) => Math.round(n * scale * 2) / 2;
+  return {
+    ...paperTheme,
+    fonts: configureFonts({
+      config: {
+        displaySmall: { fontFamily: fonts.bold, fontSize: size(PAPER_SIZES.displaySmall), lineHeight: size(44) },
+        headlineSmall: { fontFamily: fonts.bold, fontSize: size(PAPER_SIZES.headlineSmall), lineHeight: size(32) },
+        titleLarge: { fontFamily: fonts.bold, fontSize: size(PAPER_SIZES.titleLarge), lineHeight: size(28) },
+        titleMedium: { fontFamily: fonts.semibold, fontSize: size(PAPER_SIZES.titleMedium), lineHeight: size(24) },
+        titleSmall: { fontFamily: fonts.semibold, fontSize: size(PAPER_SIZES.titleSmall), lineHeight: size(20) },
+        bodyLarge: { fontFamily: fonts.regular, fontSize: size(PAPER_SIZES.bodyLarge), lineHeight: size(24) },
+        bodyMedium: { fontFamily: fonts.regular, fontSize: size(PAPER_SIZES.bodyMedium), lineHeight: size(20) },
+        bodySmall: { fontFamily: fonts.regular, fontSize: size(PAPER_SIZES.bodySmall), lineHeight: size(16) },
+        labelLarge: { fontFamily: fonts.semibold, fontSize: size(PAPER_SIZES.labelLarge), lineHeight: size(20) },
+        labelMedium: { fontFamily: fonts.medium, fontSize: size(PAPER_SIZES.labelMedium), lineHeight: size(16) },
+        labelSmall: { fontFamily: fonts.medium, fontSize: size(PAPER_SIZES.labelSmall), lineHeight: size(16) },
+      },
+    }),
+  };
+}
+

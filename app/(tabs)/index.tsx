@@ -14,12 +14,8 @@ export default function JobsScreen() {
   const headerHRef = useRef(88);
   const [headerH, setHeaderH] = useState(88);
   const endGuard = useRef(false);
-  const visibleCount = useRef(0);
   const feed = useJobsFeed();
   const tabBar = useTabBarLayout();
-
-  if (feed.visibleIds.length > visibleCount.current) endGuard.current = false;
-  visibleCount.current = feed.visibleIds.length;
 
   const renderItem = useCallback(({ item }: { item: string }) => <JobCard jobId={item} />, []);
   const keyExtractor = useCallback((item: string) => item, []);
@@ -35,7 +31,7 @@ export default function JobsScreen() {
     feed.loadMore();
   }, [feed]);
 
-  const onScrollBeginDrag = useCallback(() => {
+  const unlockEnd = useCallback(() => {
     endGuard.current = false;
   }, []);
 
@@ -54,13 +50,14 @@ export default function JobsScreen() {
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="none"
         initialNumToRender={8}
-        maxToRenderPerBatch={8}
-        windowSize={7}
-        updateCellsBatchingPeriod={50}
+        maxToRenderPerBatch={6}
+        windowSize={9}
+        updateCellsBatchingPeriod={80}
         removeClippedSubviews={false}
-        onEndReachedThreshold={0.15}
+        onEndReachedThreshold={0.2}
         onEndReached={onEndReached}
-        onScrollBeginDrag={onScrollBeginDrag}
+        onScrollBeginDrag={unlockEnd}
+        onMomentumScrollEnd={unlockEnd}
         refreshControl={
           <RefreshControl
             refreshing={feed.refreshing}

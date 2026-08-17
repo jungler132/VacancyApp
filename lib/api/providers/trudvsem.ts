@@ -53,6 +53,7 @@ export async function searchTrudvsem(params: SearchParams): Promise<Job[]> {
         remote: /удал/i.test(String(v.schedule ?? '')),
         salary: formatSalary(min, max, v.currency) ?? annotateSalary(v.salary ? String(v.salary) : undefined, v.currency || 'RUB'),
         employment: typeof v.employment === 'string' ? v.employment : undefined,
+        schedule: typeof v.schedule === 'string' ? v.schedule : v.schedule?.name,
         publishedAt: toPublishedAt(v['creation-date']),
         url: v.vac_url ?? 'https://trudvsem.ru',
         excerpt: excerptOf(duty || v.requirement || v['job-name'] || ''),

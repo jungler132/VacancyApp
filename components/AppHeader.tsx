@@ -1,9 +1,10 @@
 import { memo, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fonts, radius } from '@/lib/theme';
+import { Text } from '@/components/AppText';
 
 export const FiltersButton = memo(function FiltersButton({
   active,

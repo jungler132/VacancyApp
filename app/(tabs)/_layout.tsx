@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import type { BottomTabBarButtonProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
@@ -140,6 +140,27 @@ const FilterSheetHost = memo(function FilterSheetHost() {
   );
 });
 
+const TAB_LABEL_WIDTH = Math.floor(Dimensions.get('window').width / 5) - 6;
+
+const TabLabel = memo(function TabLabel({
+  children,
+  color,
+}: {
+  children: string;
+  color: string;
+}) {
+  return (
+    <Text
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.72}
+      allowFontScaling={false}
+      style={[styles.label, { color, maxWidth: TAB_LABEL_WIDTH }]}>
+      {children}
+    </Text>
+  );
+});
+
 export default function TabLayout() {
   useJobsQuery();
   const tabBar = useTabBarLayout();
@@ -155,7 +176,8 @@ export default function TabLayout() {
           lazy: true,
           animation: 'none',
           tabBarButton: (props) => <TabBarButton {...props} />,
-          tabBarItemStyle: { overflow: 'hidden' },
+          tabBarItemStyle: { paddingHorizontal: 0 },
+          tabBarAllowFontScaling: false,
           headerStyle: { backgroundColor: colors.bg },
           headerTintColor: colors.text,
           headerShadowVisible: false,
@@ -170,7 +192,7 @@ export default function TabLayout() {
             paddingTop: 4,
             paddingBottom: tabBar.paddingBottom,
           },
-          tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.semibold },
+          tabBarLabel: ({ children, color }) => <TabLabel color={String(color)}>{String(children)}</TabLabel>,
           tabBarActiveTintColor: colors.accent,
           tabBarInactiveTintColor: colors.faint,
         }}>
@@ -218,6 +240,13 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   iconWrap: { alignItems: 'center', minWidth: 28 },
+  label: {
+    fontSize: 11,
+    fontFamily: fonts.semibold,
+    textAlign: 'center',
+    marginTop: 2,
+    paddingHorizontal: 1,
+  },
   indicator: {
     width: 16,
     height: 3,

@@ -6,17 +6,18 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { SelectChip } from '@/components/FilterChips';
+import { Text, TextInput } from '@/components/AppText';
 import { CATEGORIES } from '@/lib/catalog';
 import { SALARY_CURRENCIES } from '@/lib/format';
 import { LOCAL_JOBS_LIMIT } from '@/lib/tiers';
 import { buildLocalJob, upsertLocalJob } from '@/lib/store/localJobsSlice';
+import { jobHref } from '@/lib/jobRoute';
+import { pinViewedJob } from '@/lib/store/jobsSlice';
 import { openPaywall } from '@/lib/store/premiumSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import type { CategoryId, JobTier } from '@/lib/types';
@@ -71,7 +72,8 @@ export default function CreateJobScreen() {
         tier,
       });
       dispatch(upsertLocalJob(job));
-      router.replace(`/job/${encodeURIComponent(job.id)}`);
+      dispatch(pinViewedJob(job));
+      router.replace(jobHref(job.id));
     },
     [dispatch, localCount, router],
   );

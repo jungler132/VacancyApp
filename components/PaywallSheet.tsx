@@ -1,9 +1,10 @@
 import { memo, useCallback, useEffect } from 'react';
-import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { closePaywall, purchasePremiumStub } from '@/lib/store/premiumSlice';
+import { Text } from '@/components/AppText';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { colors, fonts, radius } from '@/lib/theme';
 

@@ -9,6 +9,11 @@ import jobsReducer, {
   rememberJobs,
 } from './jobsSlice';
 import savedReducer, { hydrateSaved, persistSaved, setApplyStatus, toggleSaved } from './savedSlice';
+import savedCatalogReducer, {
+  hydrateSavedCatalog,
+  persistSavedCatalog,
+  toggleSavedCatalog,
+} from './savedCatalogSlice';
 import sourcesReducer, { hydrateSources, persistDisabledSources, toggleSource } from './sourcesSlice';
 import localJobsReducer, {
   hydrateLocalJobs,
@@ -17,6 +22,7 @@ import localJobsReducer, {
   upsertLocalJob,
 } from './localJobsSlice';
 import premiumReducer, { hydratePremium } from './premiumSlice';
+import appearanceReducer, { hydrateAppearance, persistFontSize, setFontSize } from './appearanceSlice';
 import filtersReducer, {
   applySearch,
   hydrateFilters,
@@ -32,6 +38,16 @@ import alertsReducer, { hydrateAlerts, rememberSeen, removeSearch, saveSearch, t
 import { persistAlerts } from '@/lib/alerts';
 
 const listener = createListenerMiddleware();
+
+listener.startListening({
+  matcher: isAnyOf(toggleSavedCatalog, hydrateSavedCatalog.fulfilled),
+  effect: async (action, listenerApi) => {
+    const items = (listenerApi.getState() as RootState).savedCatalog.items;
+    if (toggleSavedCatalog.match(action)) {
+      await persistSavedCatalog(items);
+    }
+  },
+});
 
 listener.startListening({
   matcher: isAnyOf(toggleSaved, setApplyStatus, hydrateSaved.fulfilled),
@@ -111,15 +127,24 @@ listener.startListening({
   },
 });
 
+listener.startListening({
+  actionCreator: setFontSize,
+  effect: async (action) => {
+    await persistFontSize(action.payload);
+  },
+});
+
 export const store = configureStore({
   reducer: {
     jobs: jobsReducer,
     saved: savedReducer,
+    savedCatalog: savedCatalogReducer,
     sources: sourcesReducer,
     filters: filtersReducer,
     alerts: alertsReducer,
     localJobs: localJobsReducer,
     premium: premiumReducer,
+    appearance: appearanceReducer,
   },
   middleware: (getDefault) =>
     getDefault({
@@ -130,11 +155,13 @@ export const store = configureStore({
 });
 
 store.dispatch(hydrateSaved());
+store.dispatch(hydrateSavedCatalog());
 store.dispatch(hydrateSources());
 store.dispatch(hydrateFilters());
 store.dispatch(hydrateAlerts());
 store.dispatch(hydrateLocalJobs());
 store.dispatch(hydratePremium());
+store.dispatch(hydrateAppearance());
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

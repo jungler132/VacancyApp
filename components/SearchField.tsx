@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Searchbar } from 'react-native-paper';
 
+import { scaleFont, useFontScale } from '@/lib/fontScale';
 import { colors, radius } from '@/lib/theme';
 
 export const SearchField = memo(function SearchField({
@@ -12,6 +13,7 @@ export const SearchField = memo(function SearchField({
   onSearch: (value: string) => void;
 }) {
   const [text, setText] = useState(value);
+  const scale = useFontScale();
 
   useEffect(() => {
     setText(value);
@@ -33,7 +35,7 @@ export const SearchField = memo(function SearchField({
       returnKeyType="search"
       elevation={0}
       style={styles.bar}
-      inputStyle={styles.input}
+      inputStyle={[styles.input, { fontSize: scaleFont(15, scale) }]}
       iconColor={colors.placeholder}
       placeholderTextColor={colors.placeholder}
     />

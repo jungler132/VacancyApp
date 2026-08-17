@@ -236,7 +236,7 @@ export function splitParagraphs(text: string): string[] {
     .split(/\n{2,}/)
     .map((part) => part.trim())
     .filter(Boolean);
-  if (byBreak.length > 1) return byBreak.slice(0, 12);
+  if (byBreak.length > 1) return byBreak;
 
   const sentences: string[] = [];
   let rest = clean;
@@ -260,7 +260,7 @@ export function splitParagraphs(text: string): string[] {
     }
   }
   if (buffer) chunks.push(buffer);
-  return chunks.slice(0, 12);
+  return chunks.length ? chunks : [clean];
 }
 
 export function formatPlace(location?: string, remote?: boolean): string {
@@ -275,10 +275,99 @@ export function formatEmployment(value?: string): string {
   if (!value) return '';
   const v = value.toLowerCase();
   if (/full[\s-]?time|полная/.test(v)) return 'Полная занятость';
-  if (/part[\s-]?time|частич/.test(v)) return 'Частичная';
+  if (/part[\s-]?time|частич|неполн/.test(v)) return 'Частичная';
   if (/contract|контракт/.test(v)) return 'Контракт';
   if (/intern|стаж/.test(v)) return 'Стажировка';
+  if (/temporary|врем/.test(v)) return 'Временная';
   return value;
+}
+
+export function formatSchedule(value?: string): string {
+  if (!value) return '';
+  const v = value.toLowerCase();
+  if (/удал|remote|distant|telework/.test(v)) return 'Удалёнка';
+  if (/гибрид|hybrid/.test(v)) return 'Гибрид';
+  if (/гибк|flex/.test(v)) return 'Гибкий график';
+  if (/вахт|rotat/.test(v)) return 'Вахта';
+  if (/смен|shift/.test(v)) return 'Сменный график';
+  if (/полн(ый)? день|full[\s-]?day/.test(v)) return 'Полный день';
+  return value;
+}
+
+export function formatExperience(value?: string): string {
+  if (!value) return '';
+  const v = value.toLowerCase();
+  if (/нет опыта|no experience|без опыта/.test(v)) return 'Без опыта';
+  if (/более 6|6\+|over 6/.test(v)) return 'От 6 лет';
+  if (/3.?6|от 3|3 to 6/.test(v)) return 'От 3 лет';
+  if (/1.?3|от 1|1 to 3|1 год/.test(v)) return 'От 1 года';
+  return value;
+}
+
+function inferExperience(job: {
+  title?: string;
+  excerpt?: string;
+  description?: string;
+  experience?: string;
+}): string {
+  const fromApi = formatExperience(job.experience);
+  if (fromApi) return fromApi;
+  const hay = `${job.title ?? ''} ${job.excerpt ?? ''}`.toLowerCase();
+  if (/intern|стажёр|стажер/.test(hay)) return 'Стажировка';
+  if (/без опыта|no experience|junior|джун/.test(hay)) return 'Junior / без опыта';
+  if (/\bmiddle\b|мидл/.test(hay)) return 'Middle';
+  if (/\bsenior\b|сеньор|тимлид|\blead\b/.test(hay)) return 'Senior';
+  return '';
+}
+
+function inferFormat(job: { remote?: boolean; location?: string; schedule?: string; title?: string; excerpt?: string }): string {
+  const hay = `${job.schedule ?? ''} ${job.title ?? ''} ${job.location ?? ''} ${job.excerpt ?? ''}`.toLowerCase();
+  if (/гибрид|hybrid/.test(hay)) return 'Гибрид';
+  if (job.remote || /удал|remote|worldwide|anywhere/.test(hay)) return 'Удалённо';
+  if ((job.location ?? '').trim()) return 'Офис';
+  return '';
+}
+
+function inferLangs(job: { title?: string; excerpt?: string; description?: string }): string {
+  const text = `${job.title ?? ''} ${job.excerpt ?? ''} ${job.description ?? ''}`.slice(0, 800);
+  const letters = text.replace(/[^a-zA-Zа-яА-ЯёЁəğıöüşçƏĞİÖÜŞÇ]/g, '');
+  if (letters.length < 8) return '';
+  const cyr = (letters.match(/[а-яА-ЯёЁ]/g) ?? []).length;
+  const az = (letters.match(/[əğıöüşçƏĞİÖÜŞÇ]/g) ?? []).length;
+  if (az >= 3) return 'AZ';
+  if (cyr / letters.length > 0.35) return 'RU';
+  return 'EN';
+}
+
+export function jobFacts(job: {
+  sourceName?: string;
+  title?: string;
+  location?: string;
+  remote?: boolean;
+  employment?: string;
+  experience?: string;
+  schedule?: string;
+  category?: string;
+  excerpt?: string;
+  description?: string;
+}): { label: string; value: string }[] {
+  const format = inferFormat(job);
+  const employment = formatEmployment(job.employment);
+  const schedule = formatSchedule(job.schedule);
+  const experience = inferExperience(job);
+  const langs = inferLangs(job);
+  const category = (job.category ?? '').trim();
+  const rows: { label: string; value: string }[] = [];
+  if (job.sourceName) rows.push({ label: 'Источник', value: job.sourceName });
+  if (format) rows.push({ label: 'Формат', value: format });
+  if (employment) rows.push({ label: 'Занятость', value: employment });
+  if (schedule && schedule !== format && schedule !== 'Удалёнка') {
+    rows.push({ label: 'График', value: schedule });
+  }
+  if (experience) rows.push({ label: 'Опыт', value: experience });
+  if (category && category.length < 42) rows.push({ label: 'Сфера', value: category });
+  if (langs) rows.push({ label: 'Язык', value: langs });
+  return rows;
 }
 
 export function joinMeta(parts: Array<string | undefined | null | false>): string {
@@ -299,14 +388,23 @@ export function salaryAmount(salary?: string): number | null {
   return Math.max(...values);
 }
 
-export function jobTags(job: { remote?: boolean; employment?: string; title?: string; excerpt?: string }): string[] {
+export function jobTags(job: {
+  remote?: boolean;
+  employment?: string;
+  experience?: string;
+  schedule?: string;
+  title?: string;
+  excerpt?: string;
+}): string[] {
   const tags: string[] = [];
-  const hay = `${job.employment ?? ''} ${job.title ?? ''} ${job.excerpt ?? ''}`.toLowerCase();
-  if (job.remote || /удал|remote/.test(hay)) tags.push('Удалёнка');
-  if (/вахт|shift|rotat/.test(hay)) tags.push('Вахта');
+  const format = inferFormat(job);
+  if (format && format !== 'Офис') tags.push(format);
+  const schedule = formatSchedule(job.schedule);
+  if (schedule && schedule !== 'Удалёнка' && schedule !== format && !tags.includes(schedule)) tags.push(schedule);
   const employment = formatEmployment(job.employment);
   if (employment && employment !== 'Полная занятость') tags.push(employment);
-  else if (/без опыта|no experience|junior/.test(hay)) tags.push('Без опыта');
+  const experience = inferExperience(job);
+  if (experience && !tags.includes(experience)) tags.push(experience);
   return tags.slice(0, 3);
 }
 

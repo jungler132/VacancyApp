@@ -1,20 +1,39 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Switch } from 'react-native-paper';
 import { useRouter } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import * as WebBrowser from 'expo-web-browser';
 
 import { AppHeader } from '@/components/AppHeader';
+import { SelectChip } from '@/components/FilterChips';
+import { Text } from '@/components/AppText';
 import { SOURCES, availableSourceIds } from '@/lib/api/aggregator';
+import { FONT_SIZE_OPTIONS, type FontSizeId } from '@/lib/fontScale';
 import { jobTier } from '@/lib/tiers';
 import { useTabBarLayout } from '@/lib/layout';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectSourceErrorMap } from '@/lib/store/selectors';
+import { jobHref } from '@/lib/jobRoute';
+import { pinViewedJob } from '@/lib/store/jobsSlice';
+import { setFontSize } from '@/lib/store/appearanceSlice';
 import { clearPremiumStub, openPaywall } from '@/lib/store/premiumSlice';
 import { toggleSource } from '@/lib/store/sourcesSlice';
 import { colors, fonts, radius } from '@/lib/theme';
 
 const PRIVACY_URL = 'https://jungler132.github.io/VacancyApp/';
+const FEEDBACK_EMAIL = 'feedback@workly.app';
+
+function openFeedbackMail(kind: 'idea' | 'report') {
+  const subject = kind === 'idea' ? 'Workly: предложение' : 'Workly: жалоба';
+  const body =
+    kind === 'idea'
+      ? 'Что можно улучшить:\n'
+      : 'На что жалоба:\n\nВакансия или источник:\n';
+  return Linking.openURL(
+    `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+  );
+}
 
 const STATUS = {
   live: { label: 'онлайн' },
@@ -30,13 +49,31 @@ export default function SettingsScreen() {
   const localJobs = useAppSelector((state) => state.localJobs.items);
   const disabled = useAppSelector((state) => state.sources.disabledIds);
   const sourceErrors = useAppSelector(selectSourceErrorMap);
+  const fontSize = useAppSelector((state) => state.appearance.fontSize);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disabledSet = useMemo(() => new Set(disabled), [disabled]);
   const available = useMemo(() => new Set(availableSourceIds()), []);
 
   const openPrivacy = useCallback(() => {
     WebBrowser.openBrowserAsync(PRIVACY_URL);
   }, []);
+
+  const copyEmail = useCallback(async () => {
+    await Clipboard.setStringAsync(FEEDBACK_EMAIL);
+    setCopied(true);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 1600);
+  }, []);
+
+  const onIdea = useCallback(() => {
+    openFeedbackMail('idea').catch(() => copyEmail());
+  }, [copyEmail]);
+
+  const onReport = useCallback(() => {
+    openFeedbackMail('report').catch(() => copyEmail());
+  }, [copyEmail]);
 
   return (
     <View style={styles.screen}>
@@ -67,6 +104,19 @@ export default function SettingsScreen() {
           )}
         </View>
 
+        <Text style={styles.section}>Размер шрифта</Text>
+        <View style={styles.wrap}>
+          {FONT_SIZE_OPTIONS.map((item) => (
+            <SelectChip
+              key={item.id}
+              id={item.id}
+              label={item.label}
+              selected={fontSize === item.id}
+              onChange={(id) => dispatch(setFontSize(id as FontSizeId))}
+            />
+          ))}
+        </View>
+
         <View style={styles.rowBetween}>
           <Text style={styles.section}>Мои вакансии</Text>
           <Pressable onPress={() => router.push('/job/create')} hitSlop={8}>
@@ -77,7 +127,10 @@ export default function SettingsScreen() {
           localJobs.map((job) => (
             <Pressable
               key={job.id}
-              onPress={() => router.push(`/job/${encodeURIComponent(job.id)}`)}
+              onPress={() => {
+                dispatch(pinViewedJob(job));
+                router.push(jobHref(job.id));
+              }}
               style={({ pressed }) => [styles.jobRow, pressed && styles.pressed]}>
               <View style={styles.jobBody}>
                 <Text style={styles.jobTitle} numberOfLines={1}>
@@ -131,6 +184,29 @@ export default function SettingsScreen() {
           <Text style={styles.empty}>{SOURCES.length} площадок. Нажмите «Показать», чтобы включить или выключить.</Text>
         )}
 
+        <Text style={styles.section}>Обратная связь</Text>
+        <Text style={styles.empty}>Предложения по приложению и жалобы на вакансии или источники.</Text>
+        <Pressable onPress={onIdea} style={({ pressed }) => [styles.jobRow, pressed && styles.pressed]}>
+          <View style={styles.jobBody}>
+            <Text style={styles.jobTitle}>Предложение</Text>
+            <Text style={styles.jobMeta}>Идея, ошибка, чего не хватает</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+        <Pressable onPress={onReport} style={({ pressed }) => [styles.jobRow, pressed && styles.pressed]}>
+          <View style={styles.jobBody}>
+            <Text style={styles.jobTitle}>Жалоба</Text>
+            <Text style={styles.jobMeta}>Вакансия, источник или контент</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+        <Pressable onPress={copyEmail} style={({ pressed }) => [styles.jobRow, pressed && styles.pressed]}>
+          <View style={styles.jobBody}>
+            <Text style={styles.jobTitle}>Почта</Text>
+            <Text style={styles.jobMeta}>{copied ? 'Скопировано' : FEEDBACK_EMAIL}</Text>
+          </View>
+        </Pressable>
+
         <Text style={styles.section}>О приложении</Text>
         <Pressable onPress={openPrivacy} style={({ pressed }) => [styles.jobRow, pressed && styles.pressed]}>
           <Text style={styles.jobTitle}>Политика конфиденциальности</Text>
@@ -155,6 +231,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   link: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 14 },
   lead: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginBottom: 4 },
   card: {

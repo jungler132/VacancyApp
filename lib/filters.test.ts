@@ -58,14 +58,14 @@ describe('filterFeedIds', () => {
     assert.ok(ids.includes('cook'));
   });
 
-  it('сортирует свежие вакансии выше', () => {
+  it('сохраняет порядок ленты и не пересортировывает при подгрузке', () => {
     const newer = new Date(Date.now() - 3600_000).toISOString();
     const older = new Date(Date.now() - 48 * 3600_000).toISOString();
     const byId = {
       old: job({ id: 'old', title: 'A', publishedAt: older }),
       fresh: job({ id: 'fresh', title: 'B', publishedAt: newer }),
     };
-    assert.deepEqual(filterFeedIds(['old', 'fresh'], byId, ['all']), ['fresh', 'old']);
+    assert.deepEqual(filterFeedIds(['old', 'fresh'], byId, ['all']), ['old', 'fresh']);
   });
 });
 

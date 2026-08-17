@@ -33,6 +33,8 @@ export type Job = {
   remote: boolean;
   salary?: string;
   employment?: string;
+  experience?: string;
+  schedule?: string;
   category?: string;
   publishedAt?: string;
   url: string;
