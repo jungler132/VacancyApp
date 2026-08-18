@@ -6,11 +6,12 @@ import { EmptyState } from '@/components/EmptyState';
 import { useFormStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { ServiceOfferCard } from '@/components/ServiceOfferCard';
+import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { offerEditorHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
-import { formatServiceHours } from '@/lib/services/kinds';
+import { formatServiceSchedule } from '@/lib/services/hours';
 import { OFFERS_LIMIT } from '@/lib/store/freelanceSlice';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectMasterById } from '@/lib/store/selectors';
@@ -24,11 +25,15 @@ export default function ServicePublicScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const profileId = Array.isArray(id) ? id.join('/') : String(id ?? '');
   const master = useAppSelector((state) => selectMasterById(state, profileId));
-  const hours = formatServiceHours(master?.hours.open, master?.hours.close);
-  const kinds = useMemo(
-    () => (master ? master.kinds.map((id) => t(keyOf('kind', id))).join(' · ') : ''),
-    [master, t],
+  const hours = formatServiceSchedule(
+    master?.hours,
+    (id) => t(keyOf('week', id)),
+    t('week.all'),
   );
+  const kinds = useMemo(() => {
+    if (!master) return '';
+    return [...master.kinds.map((id) => t(keyOf('kind', id))), ...(master.customKinds ?? [])].filter(Boolean).join(' · ');
+  }, [master, t]);
 
   const call = useCallback(() => {
     const phone = master?.phone?.trim();
@@ -67,6 +72,12 @@ export default function ServicePublicScreen() {
         </View>
       </View>
       {master.bio ? <Text style={styles.bio}>{master.bio}</Text> : null}
+      {master.photos?.length ? (
+        <>
+          <Text style={styles.section}>{t('master.gallery')}</Text>
+          <ServicePhotoGrid uris={master.photos} />
+        </>
+      ) : null}
       {master.address ? <Text style={styles.meta}>{t('master.address', { value: master.address })}</Text> : null}
       {master.phone ? (
         <Pressable onPress={call}>

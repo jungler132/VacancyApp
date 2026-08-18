@@ -1,16 +1,18 @@
-import { memo, useCallback, useMemo, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Switch } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, useFormStyles } from '@/components/FormField';
+import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { pickServiceImage } from '@/lib/services/images';
-import { SERVICE_KINDS } from '@/lib/services/kinds';
+import { isServiceKindId, SERVICE_KINDS } from '@/lib/services/kinds';
 import type { ServiceKindId } from '@/lib/services/types';
 import {
   OFFERS_LIMIT,
@@ -21,7 +23,8 @@ import {
   upsertOffer,
 } from '@/lib/store/freelanceSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { openPaywall } from '@/lib/store/premiumSlice';
+import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { SALARY_CURRENCIES } from '@/lib/format';
 
 export default function ServiceOfferEditor() {
@@ -42,6 +45,7 @@ function OfferForm() {
   const isNew = offerId === 'new';
   const offers = useAppSelector((state) => state.freelance.offers);
   const profile = useAppSelector((state) => state.freelance.profile);
+  const isPremium = useAppSelector((state) => state.premium.isPremium);
   const existing = useMemo(
     () => (isNew ? undefined : offers.find((item) => item.id === offerId)),
     [isNew, offerId, offers],
@@ -52,11 +56,35 @@ function OfferForm() {
   const [price, setPrice] = useState(existing?.price ?? '');
   const [currency, setCurrency] = useState(existing?.currency ?? 'RUB');
   const [kind, setKind] = useState<ServiceKindId>(existing?.kind ?? profile?.kinds[0] ?? 'other');
+  const [customKind, setCustomKind] = useState(existing?.customKind ?? '');
+  const [featured, setFeatured] = useState(Boolean(existing?.featured));
   const [address, setAddress] = useState(existing?.address ?? '');
   const [phone, setPhone] = useState(existing?.phone ?? '');
   const [images, setImages] = useState<string[]>(existing?.images ?? []);
 
-  const onKind = useCallback((next: string | number) => setKind(next as ServiceKindId), []);
+  const onKind = useCallback((next: string | number) => {
+    if (isServiceKindId(next)) setKind(next);
+  }, []);
+  const onCustomKindChip = useCallback((next: string | number) => {
+    const name = String(next);
+    if (customKind === name) {
+      setCustomKind('');
+      return;
+    }
+    setCustomKind(name);
+    setKind('other');
+  }, [customKind]);
+  const onFeatured = useCallback(
+    (next: boolean) => {
+      if (next && !isPremium) {
+        Alert.alert(t('common.premium'), t('offer.featuredNeedPremium'));
+        dispatch(openPaywall());
+        return;
+      }
+      setFeatured(next);
+    },
+    [dispatch, isPremium, t],
+  );
   const onCurrency = useCallback((next: string | number) => setCurrency(String(next)), []);
 
   const addPhoto = useCallback(async () => {
@@ -99,11 +127,13 @@ function OfferForm() {
         address: address.trim() || undefined,
         phone: phone.trim() || undefined,
         kind,
+        customKind: customKind.trim() || undefined,
+        featured: featured && isPremium,
         updatedAt: new Date().toISOString(),
       }),
     );
     router.back();
-  }, [address, currency, description, dispatch, existing?.id, images, isNew, kind, offers.length, phone, price, profile?.displayName, router, t, title]);
+  }, [address, currency, customKind, description, dispatch, existing?.id, featured, images, isNew, isPremium, kind, offers.length, phone, price, profile?.displayName, router, t, title]);
 
   const onDelete = useCallback(() => {
     if (!existing) return;
@@ -146,6 +176,38 @@ function OfferForm() {
             />
           ))}
         </ChipWrap>
+        {profile?.customKinds.length ? (
+          <>
+            <Text style={formStyles.label}>{t('me.customKinds')}</Text>
+            <ChipWrap>
+              {profile.customKinds.map((item) => (
+                <SelectChip
+                  key={item}
+                  id={item}
+                  label={item}
+                  compact
+                  selected={customKind.trim() === item}
+                  onChange={onCustomKindChip}
+                />
+              ))}
+            </ChipWrap>
+          </>
+        ) : null}
+        <FormField
+          label={t('offer.customKind')}
+          value={customKind}
+          onChangeText={setCustomKind}
+          placeholder={t('offer.customKindPh')}
+        />
+        <View style={styles.featureRow}>
+          <View style={styles.featureBody}>
+            <Text style={styles.featureTitle}>{t('offer.featured')}</Text>
+            <Text style={styles.featureMeta}>
+              {isPremium ? t('offer.featuredOn') : t('offer.featuredNeedPremium')}
+            </Text>
+          </View>
+          <Switch value={featured && isPremium} onValueChange={onFeatured} />
+        </View>
         <FormField
           label={t('offer.description')}
           value={description}
@@ -161,16 +223,12 @@ function OfferForm() {
           ))}
         </ChipWrap>
         <Text style={formStyles.label}>{t('offer.photos')}</Text>
-        <View style={styles.photos}>
-          {images.map((uri) => (
-            <PhotoThumb key={uri} uri={uri} onRemove={removePhoto} />
-          ))}
-          {images.length < OFFER_PHOTOS_LIMIT ? (
-            <Pressable onPress={addPhoto} style={styles.addPhoto}>
-              <Text style={styles.addPhotoText}>+</Text>
-            </Pressable>
-          ) : null}
-        </View>
+        <ServicePhotoGrid
+          uris={images}
+          canAdd={images.length < OFFER_PHOTOS_LIMIT}
+          onAdd={addPhoto}
+          onRemove={removePhoto}
+        />
         <Text style={formStyles.hint}>{t('offer.photoHint')}</Text>
         <FormField label={t('offer.address')} value={address} onChangeText={setAddress} placeholder={profile?.address || t('offer.asProfile')} />
         <FormField
@@ -193,31 +251,12 @@ function OfferForm() {
   );
 }
 
-const PhotoThumb = memo(function PhotoThumb({ uri, onRemove }: { uri: string; onRemove: (uri: string) => void }) {
-  const styles = useThemedStyles(offerEditorStyles);
-  const press = useCallback(() => onRemove(uri), [onRemove, uri]);
-  return (
-    <Pressable onPress={press}>
-      <Image source={{ uri }} style={styles.photo} />
-    </Pressable>
-  );
-});
-
 function offerEditorStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
-    photos: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
-    photo: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: colors.chip },
-    addPhoto: {
-      width: 72,
-      height: 72,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.chipBorder,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      backgroundColor: colors.card,
-    },
-    addPhotoText: { color: colors.accent, fontSize: 28, lineHeight: 32 },
+    featureRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, paddingVertical: 4 },
+    featureBody: { flex: 1, minWidth: 0 },
+    featureTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
+    featureMeta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
     danger: { height: 48, alignItems: 'center' as const, justifyContent: 'center' as const },
     dangerText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 16 },
   };

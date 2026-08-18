@@ -28,32 +28,6 @@ export function serviceKindLabel(id: ServiceKindId): string {
   return SERVICE_KINDS.find((item) => item.id === id)?.label ?? id;
 }
 
-export const HOUR_OPTIONS = [
-  '07:00',
-  '08:00',
-  '09:00',
-  '10:00',
-  '11:00',
-  '12:00',
-  '13:00',
-  '14:00',
-  '16:00',
-  '18:00',
-  '19:00',
-  '20:00',
-  '21:00',
-  '22:00',
-  '23:00',
-] as const;
-
-export function formatServiceHours(open?: string, close?: string): string {
-  const from = open?.trim();
-  const to = close?.trim();
-  if (!from && !to) return '';
-  if (from && to) return `${from}–${to}`;
-  return from || to || '';
-}
-
 export function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '?';

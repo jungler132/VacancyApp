@@ -7,15 +7,20 @@ import { seedSearchText } from './seed';
 import type { ServiceKindId, ServiceMaster, ServiceOffer, ServiceProfile } from './types';
 
 export function toServiceMaster(profile: ServiceProfile, offers: ServiceOffer[], mine = false): ServiceMaster {
-  return { ...profile, offers, mine };
+  const ranked = [...offers].sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
+  return { ...profile, offers: ranked, mine };
+}
+
+export function offerKindLabel(offer: Pick<ServiceOffer, 'kind' | 'customKind'>, labelOf: (id: string) => string): string {
+  return offer.customKind?.trim() || labelOf(offer.kind);
 }
 
 export function masterHaystack(master: ServiceMaster): string {
   const kinds = master.kinds
     .flatMap((id) => APP_LOCALES.map((locale) => t(locale, keyOf('kind', id))))
     .join(' ');
-  const offers = master.offers.map((item) => `${item.title} ${item.description}`).join(' ');
-  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${kinds} ${offers} ${seedSearchText(master)}`.toLowerCase();
+  const offers = master.offers.map((item) => `${item.title} ${item.description} ${item.customKind ?? ''}`).join(' ');
+  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${kinds} ${master.customKinds.join(' ')} ${offers} ${seedSearchText(master)}`.toLowerCase();
 }
 
 export function filterServiceMasters(
@@ -34,7 +39,9 @@ export function filterServiceMasters(
     if (needle && !masterHaystack(next).includes(needle)) continue;
     out.push(next);
   }
-  return out;
+  return out.sort(
+    (a, b) => Number(b.offers.some((item) => item.featured)) - Number(a.offers.some((item) => item.featured)),
+  );
 }
 
 export function offerContact(offer: ServiceOffer, profile: ServiceProfile): { phone: string; address: string } {

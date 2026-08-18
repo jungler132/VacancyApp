@@ -24,12 +24,24 @@ describe('freelance persist', () => {
         email: 'm@example.com',
         phone: '+7 900',
         kinds: ['cleaning'],
-        hours: { open: '10:00', close: '18:00' },
+        photos: [],
+        customKinds: [],
+        hours: { open: '10:00', close: '18:00', days: [1, 2, 3, 4, 5] },
         updatedAt: '2020-01-01T00:00:00.000Z',
       }),
     );
     assert.equal(saved.profile?.id, OWN_PROFILE_ID);
     assert.equal(saved.profile?.displayName, 'Мария');
+    assert.deepEqual(saved.profile?.hours.days, [1, 2, 3, 4, 5]);
+  });
+
+  it('для старого профиля без дней считает все дни рабочими', () => {
+    const parsed = parseFreelance({
+      profile: { displayName: 'Мария', kinds: ['cleaning'], hours: { open: '10:00', close: '18:00' } },
+      offers: [],
+    });
+    assert.deepEqual(parsed.profile?.hours.days, [1, 2, 3, 4, 5, 6, 7]);
+    assert.equal(parsed.profile?.hours.open, '10:00');
   });
 
   it('обновляет услугу по id и не плодит копии', () => {
@@ -62,5 +74,25 @@ describe('freelance persist', () => {
     assert.equal(second.offers.length, 1);
     assert.equal(second.offers[0]?.title, 'Уборка квартиры и окон');
     assert.equal(second.offers[0]?.profileId, OWN_PROFILE_ID);
+  });
+
+  it('хранит свою категорию и премиум услуги', () => {
+    const saved = reducer(
+      { profile: null, offers: [], ready: true },
+      upsertOffer({
+        id: 'offer:2',
+        profileId: 'x',
+        title: 'Сварка',
+        description: '',
+        currency: 'RUB',
+        images: [],
+        kind: 'other',
+        customKind: 'Сварка',
+        featured: true,
+        updatedAt: '2020-01-01T00:00:00.000Z',
+      }),
+    );
+    assert.equal(saved.offers[0]?.customKind, 'Сварка');
+    assert.equal(saved.offers[0]?.featured, true);
   });
 });

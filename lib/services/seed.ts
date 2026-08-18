@@ -9,9 +9,11 @@ export const SEED_MASTERS: ServiceMaster[] = [
     bio: 'Мастер маникюра и бровей. Работаю на дому и с выездом по району.',
     email: 'anna.nails@example.com',
     phone: '+7 916 000 11 22',
+    photos: [],
+    customKinds: [],
     kinds: ['beauty'],
     address: 'Москва, Сокол',
-    hours: { open: '10:00', close: '20:00' },
+    hours: { open: '10:00', close: '20:00', days: [1, 2, 3, 4, 5, 6] },
     updatedAt: '2026-08-01T10:00:00.000Z',
     offers: [
       {
@@ -44,9 +46,11 @@ export const SEED_MASTERS: ServiceMaster[] = [
     bio: 'Электрик. Розетки, свет, щитки, мелкий бытовой ремонт без срыва стен.',
     email: 'igor.electro@example.com',
     phone: '+7 903 555 44 33',
+    photos: [],
+    customKinds: [],
     kinds: ['repair'],
     address: 'Москва и ближнее МО',
-    hours: { open: '08:00', close: '19:00' },
+    hours: { open: '08:00', close: '19:00', days: [1, 2, 3, 4, 5] },
     updatedAt: '2026-08-04T08:00:00.000Z',
     offers: [
       {
@@ -79,9 +83,11 @@ export const SEED_MASTERS: ServiceMaster[] = [
     bio: 'Репетитор английского. Дети и взрослые, разговор и подготовка к экзаменам.',
     email: 'leyla.english@example.com',
     phone: '+994 50 111 22 33',
+    photos: [],
+    customKinds: [],
     kinds: ['tutoring'],
     address: 'Баку, онлайн или у ученика',
-    hours: { open: '09:00', close: '18:00' },
+    hours: { open: '09:00', close: '18:00', days: [1, 2, 3, 4, 5, 6, 7] },
     updatedAt: '2026-08-06T09:00:00.000Z',
     offers: [
       {

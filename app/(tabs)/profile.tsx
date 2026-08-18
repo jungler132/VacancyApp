@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -10,7 +10,7 @@ import { Text } from '@/components/AppText';
 import { useT } from '@/lib/i18n/useT';
 import { jobHref } from '@/lib/jobRoute';
 import { useTabBarLayout } from '@/lib/layout';
-import { SAVED_HREF, SERVICE_ME_HREF, STATS_HREF } from '@/lib/services/catalog';
+import { offerEditorHref, SAVED_HREF, SERVICE_ME_HREF, STATS_HREF } from '@/lib/services/catalog';
 import { jobTier } from '@/lib/tiers';
 import { pinViewedJob } from '@/lib/store/jobsSlice';
 import { openPaywall, clearPremiumStub } from '@/lib/store/premiumSlice';
@@ -31,8 +31,13 @@ export default function ProfileScreen() {
   const savedResources = useAppSelector((state) => state.savedCatalog.items.length);
   const localJobs = useAppSelector((state) => state.localJobs.items);
   const visits = useAppSelector((state) => state.visits.items);
+  const hasPage = Boolean(own?.displayName.trim());
   const name = own?.displayName.trim() || t('common.guest');
   const frequent = useMemo(() => visits.slice(0, 8), [visits]);
+  const role = hasPage ? t('profile.master') : t('common.guest');
+  const pageMeta = hasPage
+    ? t('profile.pageMeta', { count: own?.offers.length ?? 0 })
+    : t('profile.pageEmpty');
 
   const openVisit = useCallback(
     (item: (typeof frequent)[number]) => {
@@ -46,27 +51,59 @@ export default function ProfileScreen() {
     [dispatch],
   );
 
+  const openPage = useCallback(() => router.push(SERVICE_ME_HREF), [router]);
+  const openNewOffer = useCallback(() => {
+    router.push(hasPage ? offerEditorHref('new') : SERVICE_ME_HREF);
+  }, [hasPage, router]);
+
   return (
     <View style={styles.screen}>
       <AppHeader title={t('tab.profile')} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}>
-        <Pressable
-          onPress={() => router.push(SERVICE_ME_HREF)}
-          style={({ pressed }) => [styles.head, pressed && styles.pressed]}>
-          <ServiceAvatar uri={own?.avatarUri} name={name} size={72} />
-          <View style={styles.headBody}>
-            <Text style={styles.name}>{name}</Text>
-            <Text style={styles.meta}>{own?.bio?.trim() || t('profile.guestMeta')}</Text>
-            <Text style={styles.edit}>{t('profile.servicePage')}</Text>
-          </View>
+        <Pressable onPress={openPage} style={({ pressed }) => [styles.head, pressed && styles.pressed]}>
+          <ServiceAvatar uri={own?.avatarUri} name={name} size={80} />
+          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.role}>
+            {role}
+            {isPremium ? ` · ${t('common.premium')}` : ''}
+          </Text>
+          <Text style={styles.meta}>{own?.bio?.trim() || t('profile.guestMeta')}</Text>
+          <Text style={styles.edit}>{hasPage ? t('profile.servicePage') : t('profile.pageEmpty')}</Text>
         </Pressable>
 
-        <NavRow
-          title={t('nav.saved')}
-          meta={t('saved.subtitle', { jobs: savedJobs, resources: savedResources })}
-          onPress={() => router.push(SAVED_HREF)}
-        />
-        <NavRow title={t('nav.stats')} meta={t('profile.statsMeta')} onPress={() => router.push(STATS_HREF)} />
+        <View style={styles.grid}>
+          <Shortcut
+            title={t('nav.saved')}
+            meta={t('saved.subtitle', { jobs: savedJobs, resources: savedResources })}
+            onPress={() => router.push(SAVED_HREF)}
+          />
+          <Shortcut title={t('nav.stats')} meta={t('profile.statsMeta')} onPress={() => router.push(STATS_HREF)} />
+          <Shortcut title={t('profile.servicePage')} meta={pageMeta} onPress={openPage} />
+          <Shortcut
+            title={t('common.premium')}
+            meta={isPremium ? t('profile.accountPremium') : t('profile.accountFree')}
+            onPress={() => dispatch(isPremium ? clearPremiumStub() : openPaywall())}
+          />
+        </View>
+
+        <View style={styles.rowBetween}>
+          <Text style={styles.section}>{t('profile.work')}</Text>
+          <Pressable onPress={openNewOffer} hitSlop={8}>
+            <Text style={styles.link}>{t('profile.addService')}</Text>
+          </Pressable>
+        </View>
+        {own?.offers.length ? (
+          own.offers.map((offer) => (
+            <NavRow
+              key={offer.id}
+              title={offer.title}
+              meta={`${offer.featured ? `${t('common.premium')} · ` : ''}${offer.price ? `${offer.price} ${offer.currency}` : t('services.priceNegotiable')}`}
+              onPress={() => router.push(offerEditorHref(offer.id))}
+            />
+          ))
+        ) : (
+          <Text style={styles.empty}>{t('me.emptyOffers')}</Text>
+        )}
 
         <View style={styles.rowBetween}>
           <Text style={styles.section}>{t('profile.jobs')}</Text>
@@ -91,7 +128,7 @@ export default function ProfileScreen() {
         )}
 
         <View style={styles.rowBetween}>
-          <Text style={styles.section}>{t('profile.visits')}</Text>
+          <Text style={styles.section}>{t('profile.activity')}</Text>
           {frequent.length ? (
             <Pressable onPress={() => dispatch(clearVisits())} hitSlop={8}>
               <Text style={styles.link}>{t('profile.clearVisits')}</Text>
@@ -112,50 +149,71 @@ export default function ProfileScreen() {
         ) : (
           <Text style={styles.empty}>{t('profile.visitsEmpty')}</Text>
         )}
-
-        <Text style={styles.section}>{t('common.premium')}</Text>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{isPremium ? t('profile.accountPremium') : t('profile.accountFree')}</Text>
-          <Text style={styles.cardNote}>{isPremium ? t('profile.premiumOn') : t('profile.premiumHint')}</Text>
-          {isPremium ? (
-            <Pressable
-              onPress={() => dispatch(clearPremiumStub())}
-              style={({ pressed }) => [styles.reset, pressed && styles.pressed]}>
-              <Text style={styles.resetText}>{t('profile.resetPremium')}</Text>
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={() => dispatch(openPaywall())}
-              style={({ pressed }) => [styles.buy, pressed && styles.pressed]}>
-              <Text style={styles.buyText}>{t('profile.buy')}</Text>
-            </Pressable>
-          )}
-        </View>
       </ScrollView>
     </View>
   );
 }
+
+const Shortcut = memo(function Shortcut({
+  title,
+  meta,
+  onPress,
+}: {
+  title: string;
+  meta: string;
+  onPress: () => void;
+}) {
+  const styles = useThemedStyles(profileStyles);
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
+      <Text style={styles.tileTitle}>{title}</Text>
+      <Text style={styles.tileMeta} numberOfLines={2}>
+        {meta}
+      </Text>
+    </Pressable>
+  );
+});
 
 function profileStyles(colors: ThemeColors, scheme: ColorSchemeName) {
   return {
     screen: { flex: 1, backgroundColor: 'transparent' },
     content: { padding: 16, gap: 8 },
     head: {
-      flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      gap: 14,
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.cardBorder,
       borderRadius: radius.lg,
-      padding: 16,
+      paddingVertical: 24,
+      paddingHorizontal: 16,
       marginBottom: 8,
       ...shadowsFor(scheme).card,
     },
-    headBody: { flex: 1, minWidth: 0 },
-    name: { color: colors.text, fontFamily: fonts.bold, fontSize: 22 },
-    meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginTop: 4, lineHeight: 18 },
-    edit: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13, marginTop: 8 },
+    name: { color: colors.text, fontFamily: fonts.bold, fontSize: 22, marginTop: 12, textAlign: 'center' as const },
+    role: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
+    meta: {
+      color: colors.faint,
+      fontFamily: fonts.medium,
+      fontSize: 13,
+      marginTop: 8,
+      lineHeight: 18,
+      textAlign: 'center' as const,
+    },
+    edit: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13, marginTop: 12 },
+    grid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
+    tile: {
+      width: '48%' as const,
+      flexGrow: 1,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: radius.lg,
+      padding: 14,
+      minHeight: 88,
+      ...shadowsFor(scheme).card,
+    },
+    tileTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
+    tileMeta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 6, lineHeight: 16 },
     section: {
       color: colors.muted,
       fontFamily: fonts.semibold,
@@ -173,36 +231,6 @@ function profileStyles(colors: ThemeColors, scheme: ColorSchemeName) {
     },
     link: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 14 },
     empty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginBottom: 4 },
-    card: {
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      borderRadius: radius.lg,
-      padding: 16,
-      gap: 8,
-      ...shadowsFor(scheme).card,
-    },
-    cardTitle: { color: colors.text, fontFamily: fonts.bold, fontSize: 16 },
-    cardNote: { color: colors.muted, fontFamily: fonts.medium, fontSize: 13, lineHeight: 18 },
-    buy: {
-      marginTop: 4,
-      height: 48,
-      borderRadius: radius.full,
-      backgroundColor: colors.accent,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-    buyText: { color: colors.accentText, fontFamily: fonts.bold, fontSize: 15 },
-    reset: {
-      marginTop: 4,
-      height: 44,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.chipBorder,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-    resetText: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 15 },
     pressed: { opacity: 0.86 },
   };
 }

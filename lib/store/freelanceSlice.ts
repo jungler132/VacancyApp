@@ -1,13 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import { DEFAULT_HOURS, normalizeClock, parseWeekdays, WEEKDAYS } from '@/lib/services/hours';
 import { isServiceKindId } from '@/lib/services/kinds';
 import type { ServiceHours, ServiceKindId, ServiceOffer, ServiceProfile } from '@/lib/services/types';
 
 export const FREELANCE_KEY = 'workly:freelance:v1';
 export const OWN_PROFILE_ID = 'local:me';
 export const OFFERS_LIMIT = 20;
-export const OFFER_PHOTOS_LIMIT = 5;
+export const OFFER_PHOTOS_LIMIT = 12;
+export const PROFILE_PHOTOS_LIMIT = 8;
+export const CUSTOM_KINDS_LIMIT = 8;
 
 export type FreelanceState = {
   profile: ServiceProfile | null;
@@ -15,7 +18,15 @@ export type FreelanceState = {
   ready: boolean;
 };
 
-const DEFAULT_HOURS: ServiceHours = { open: '09:00', close: '18:00' };
+function parseHours(raw: unknown): ServiceHours {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_HOURS, days: [...DEFAULT_HOURS.days] };
+  const row = raw as Partial<ServiceHours>;
+  return {
+    open: normalizeClock(row.open, DEFAULT_HOURS.open),
+    close: normalizeClock(row.close, DEFAULT_HOURS.close),
+    days: parseWeekdays(row.days, WEEKDAYS),
+  };
+}
 
 const initialState: FreelanceState = {
   profile: null,
@@ -25,15 +36,6 @@ const initialState: FreelanceState = {
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value : '';
-}
-
-function parseHours(raw: unknown): ServiceHours {
-  if (!raw || typeof raw !== 'object') return DEFAULT_HOURS;
-  const row = raw as Partial<ServiceHours>;
-  return {
-    open: asString(row.open) || DEFAULT_HOURS.open,
-    close: asString(row.close) || DEFAULT_HOURS.close,
-  };
 }
 
 function parseKinds(raw: unknown): ServiceKindId[] {
@@ -48,9 +50,23 @@ function parseKinds(raw: unknown): ServiceKindId[] {
   return out;
 }
 
-function parseImages(raw: unknown): string[] {
+function parseImages(raw: unknown, limit = OFFER_PHOTOS_LIMIT): string[] {
   if (!Array.isArray(raw)) return [];
-  return raw.filter((item): item is string => typeof item === 'string' && item.length > 0).slice(0, OFFER_PHOTOS_LIMIT);
+  return raw.filter((item): item is string => typeof item === 'string' && item.length > 0).slice(0, limit);
+}
+
+function parseCustomKinds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of raw) {
+    const name = asString(item).trim().slice(0, 32);
+    const key = name.toLowerCase();
+    if (!name || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+  }
+  return out.slice(0, CUSTOM_KINDS_LIMIT);
 }
 
 export function parseProfile(raw: unknown): ServiceProfile | null {
@@ -64,9 +80,11 @@ export function parseProfile(raw: unknown): ServiceProfile | null {
     displayName,
     bio: asString(row.bio).trim(),
     avatarUri: asString(row.avatarUri) || undefined,
+    photos: parseImages(row.photos, PROFILE_PHOTOS_LIMIT),
     email: asString(row.email).trim(),
     phone: asString(row.phone).trim(),
     kinds,
+    customKinds: parseCustomKinds(row.customKinds),
     address: asString(row.address).trim() || undefined,
     hours: parseHours(row.hours),
     updatedAt: asString(row.updatedAt) || new Date().toISOString(),
@@ -85,10 +103,12 @@ export function parseOffer(raw: unknown): ServiceOffer | null {
     description: asString(row.description).trim(),
     price: asString(row.price).trim() || undefined,
     currency: asString(row.currency).trim() || 'RUB',
-    images: parseImages(row.images),
+    images: parseImages(row.images, OFFER_PHOTOS_LIMIT),
     address: asString(row.address).trim() || undefined,
     phone: asString(row.phone).trim() || undefined,
     kind: row.kind,
+    customKind: asString(row.customKind).trim().slice(0, 32) || undefined,
+    featured: Boolean(row.featured),
     updatedAt: asString(row.updatedAt) || new Date().toISOString(),
   };
 }
@@ -114,8 +134,10 @@ export function emptyProfile(): ServiceProfile {
     bio: '',
     email: '',
     phone: '',
+    photos: [],
     kinds: [],
-    hours: { ...DEFAULT_HOURS },
+    customKinds: [],
+    hours: { ...DEFAULT_HOURS, days: [...DEFAULT_HOURS.days] },
     updatedAt: new Date().toISOString(),
   };
 }

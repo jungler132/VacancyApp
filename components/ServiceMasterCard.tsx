@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { Text } from '@/components/AppText';
-import { formatServiceHours } from '@/lib/services/kinds';
+import { formatServiceSchedule } from '@/lib/services/hours';
 import type { ServiceMaster } from '@/lib/services/types';
 import { fonts, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { keyOf } from '@/lib/i18n';
@@ -18,9 +18,12 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
 }) {
   const t = useT();
   const styles = useThemedStyles(serviceMasterCardStyles);
-  const kinds = master.kinds.map((id) => t(keyOf('kind', id))).join(' · ');
-  const hours = formatServiceHours(master.hours.open, master.hours.close);
+  const kinds = [...master.kinds.map((id) => t(keyOf('kind', id))), ...(master.customKinds ?? [])]
+    .filter(Boolean)
+    .join(' · ');
+  const hours = formatServiceSchedule(master.hours, (id) => t(keyOf('week', id)), t('week.all'));
   const count = master.offers.length;
+  const featured = master.offers.some((item) => item.featured);
   const open = useCallback(() => onPress(master.id), [master.id, onPress]);
 
   return (
@@ -32,12 +35,13 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
             {master.displayName}
           </Text>
           {master.mine ? <Text style={styles.mine}>{t('common.you')}</Text> : null}
+          {featured ? <Text style={styles.mine}>{t('common.premium')}</Text> : null}
         </View>
         <Text style={styles.meta} numberOfLines={1}>
           {[kinds, master.address].filter(Boolean).join(' · ')}
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
-          {[hours ? t('services.until', { time: master.hours.close }) : null, count ? t('services.offerCount', { count }) : t('services.noOffers')]
+          {[hours || null, count ? t('services.offerCount', { count }) : t('services.noOffers')]
             .filter(Boolean)
             .join(' · ')}
         </Text>
