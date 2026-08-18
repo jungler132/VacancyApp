@@ -1,13 +1,14 @@
 import { memo, useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
 
 import {
   INTERSTITIAL_SKIP_AFTER_SEC,
   dismissInterstitial,
   subscribeInterstitial,
 } from '@/lib/ads';
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { Text } from '@/components/AppText';
+import { useT } from '@/lib/i18n/useT';
 
 export const InterstitialHost = memo(function InterstitialHost() {
   const [open, setOpen] = useState(false);
@@ -19,6 +20,8 @@ export const InterstitialHost = memo(function InterstitialHost() {
 });
 
 const InterstitialOverlay = memo(function InterstitialOverlay() {
+  const t = useT();
+  const styles = useThemedStyles(interstitialOverlayStyles);
   const [left, setLeft] = useState(INTERSTITIAL_SKIP_AFTER_SEC);
   const canSkip = left <= 0;
 
@@ -43,18 +46,18 @@ const InterstitialOverlay = memo(function InterstitialOverlay() {
       statusBarTranslucent
       onRequestClose={dismissInterstitial}>
       <View style={styles.root}>
-        <Text style={styles.kicker}>Реклама</Text>
+        <Text style={styles.kicker}>{t('ads.kicker')}</Text>
         <View style={styles.card}>
-          <Text style={styles.soon}>Скоро</Text>
-          <Text style={styles.title}>Здесь будет объявление</Text>
-          <Text style={styles.note}>Заглушка. Настоящая реклама подключится позже.</Text>
+          <Text style={styles.soon}>{t('ads.soon')}</Text>
+          <Text style={styles.title}>{t('ads.title')}</Text>
+          <Text style={styles.note}>{t('ads.note')}</Text>
         </View>
         <Pressable
           onPress={canSkip ? dismissInterstitial : undefined}
           disabled={!canSkip}
           style={({ pressed }) => [styles.skip, !canSkip && styles.skipOff, pressed && canSkip && styles.pressed]}>
           <Text style={[styles.skipLabel, !canSkip && styles.skipLabelOff]}>
-            {canSkip ? 'Пропустить' : `Пропустить через ${left} с`}
+            {canSkip ? t('ads.skip') : t('ads.skipIn', { sec: left })}
           </Text>
         </Pressable>
       </View>
@@ -62,50 +65,52 @@ const InterstitialOverlay = memo(function InterstitialOverlay() {
   );
 });
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: 'rgba(7, 9, 15, 0.96)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 28,
-  },
-  kicker: {
-    color: colors.faint,
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: 16,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 360,
-    minHeight: 220,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 8,
-  },
-  soon: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13 },
-  title: { color: colors.text, fontFamily: fonts.bold, fontSize: 20, textAlign: 'center' },
-  note: { color: colors.muted, fontFamily: fonts.medium, fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  skip: {
-    marginTop: 28,
-    minWidth: 220,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  skipOff: { backgroundColor: colors.chip, borderWidth: 1, borderColor: colors.chipBorder },
-  skipLabel: { color: colors.accentText, fontFamily: fonts.semibold, fontSize: 16 },
-  skipLabelOff: { color: colors.faint },
-  pressed: { opacity: 0.86 },
-});
+function interstitialOverlayStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    root: {
+      flex: 1,
+      backgroundColor: 'rgba(25, 28, 30, 0.72)',
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      padding: 28,
+    },
+    kicker: {
+      color: colors.faint,
+      fontFamily: fonts.semibold,
+      fontSize: 12,
+      letterSpacing: 1.2,
+      textTransform: 'uppercase' as const,
+      marginBottom: 16,
+    },
+    card: {
+      width: '100%' as const,
+      maxWidth: 360,
+      minHeight: 220,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.card,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      padding: 24,
+      gap: 8,
+    },
+    soon: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13 },
+    title: { color: colors.text, fontFamily: fonts.bold, fontSize: 20, textAlign: 'center' as const },
+    note: { color: colors.muted, fontFamily: fonts.medium, fontSize: 14, textAlign: 'center' as const, lineHeight: 20 },
+    skip: {
+      marginTop: 28,
+      minWidth: 220,
+      height: 48,
+      borderRadius: radius.full,
+      backgroundColor: colors.accent,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      paddingHorizontal: 20,
+    },
+    skipOff: { backgroundColor: colors.chip, borderWidth: 1, borderColor: colors.chipBorder },
+    skipLabel: { color: colors.accentText, fontFamily: fonts.semibold, fontSize: 16 },
+    skipLabelOff: { color: colors.faint },
+    pressed: { opacity: 0.86 },
+  };
+}

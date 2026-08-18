@@ -1,9 +1,11 @@
 import { memo } from 'react';
-import { StyleSheet } from 'react-native';
-import { Chip } from 'react-native-paper';
+import { View } from 'react-native';
 
-import { scaleFont, useFontScale } from '@/lib/fontScale';
-import { colors, radius } from '@/lib/theme';
+import { Text } from '@/components/AppText';
+import { monoAdvance, scaleFont, useFontScale } from '@/lib/fontScale';
+import { fonts, radius, useThemedStyles, type ThemeColors } from '@/lib/theme';
+
+const CHIP_FONT = 13;
 
 export const AppChip = memo(function AppChip({
   label,
@@ -13,30 +15,54 @@ export const AppChip = memo(function AppChip({
   selected?: boolean;
 }) {
   const scale = useFontScale();
+  const styles = useThemedStyles(appChipStyles);
+  const fontSize = scaleFont(CHIP_FONT, scale);
+  const textWidth = monoAdvance(label, fontSize);
   return (
-    <Chip
-      compact
-      mode="flat"
-      style={[styles.chip, selected ? styles.selected : null]}
-      textStyle={[styles.text, { fontSize: scaleFont(13, scale) }, selected ? styles.textOn : null]}>
-      {label}
-    </Chip>
+    <View style={styles.chip} collapsable={false}>
+      <View style={[styles.bg, selected ? styles.bgOn : null]} pointerEvents="none" />
+      <Text style={[styles.text, selected ? styles.textOn : null, { width: textWidth }]}>
+        {label}
+      </Text>
+    </View>
   );
 });
 
-const styles = StyleSheet.create({
-  chip: {
-    alignSelf: 'flex-start',
-    height: 32,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    backgroundColor: colors.chip,
-  },
-  selected: {
-    backgroundColor: colors.accentDim,
-    borderColor: colors.accent,
-  },
-  text: { fontSize: 13, color: colors.muted, fontWeight: '600' },
-  textOn: { color: colors.accent },
-});
+function appChipStyles(colors: ThemeColors) {
+  return {
+    chip: {
+      position: 'relative' as const,
+      flexGrow: 0,
+      flexShrink: 0,
+      flexBasis: 'auto' as const,
+      alignSelf: 'flex-start' as const,
+      overflow: 'visible' as const,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    bg: {
+      position: 'absolute' as const,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.chip,
+    },
+    bgOn: {
+      backgroundColor: colors.accentDim,
+      borderColor: colors.accentDim,
+    },
+    text: {
+      fontSize: CHIP_FONT,
+      lineHeight: 20,
+      color: colors.muted,
+      fontFamily: fonts.medium,
+      flexGrow: 0,
+      flexShrink: 0,
+    },
+    textOn: { color: colors.accent },
+  };
+}

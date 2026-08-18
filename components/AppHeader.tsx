@@ -1,10 +1,11 @@
 import { memo, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Button } from 'react-native-paper';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, useColors, useThemedStyles, type ThemeColors } from '@/lib/theme';
 import { Text } from '@/components/AppText';
+import { useT } from '@/lib/i18n/useT';
 
 export const FiltersButton = memo(function FiltersButton({
   active,
@@ -13,16 +14,47 @@ export const FiltersButton = memo(function FiltersButton({
   active: boolean;
   onPress: () => void;
 }) {
+  const t = useT();
+  const colors = useColors();
+  const styles = useThemedStyles(headerStyles);
   return (
-    <Button
-      mode={active ? 'contained-tonal' : 'outlined'}
-      compact
+    <Pressable
       onPress={onPress}
-      icon="filter-variant"
-      style={styles.filterBtn}
-      labelStyle={styles.filterLabel}>
-      Фильтры
-    </Button>
+      style={({ pressed }) => [styles.filterBtn, active && styles.filterBtnOn, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={t('common.filters')}>
+      <MaterialDesignIcons
+        name="filter-variant"
+        size={18}
+        color={active ? colors.onPrimaryContainer : colors.accent}
+      />
+      <Text style={[styles.filterLabel, active && styles.filterLabelOn]}>{t('common.filters')}</Text>
+    </Pressable>
+  );
+});
+
+export const FilterIconButton = memo(function FilterIconButton({
+  active,
+  onPress,
+}: {
+  active: boolean;
+  onPress: () => void;
+}) {
+  const t = useT();
+  const colors = useColors();
+  const styles = useThemedStyles(headerStyles);
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.filterIcon, active && styles.filterBtnOn, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={t('common.filters')}>
+      <MaterialDesignIcons
+        name="filter-variant"
+        size={22}
+        color={active ? colors.onPrimaryContainer : colors.accent}
+      />
+    </Pressable>
   );
 });
 
@@ -38,9 +70,10 @@ export const AppHeader = memo(function AppHeader({
   children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(headerStyles);
 
   return (
-    <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
+    <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
       <View style={styles.row}>
         <View style={styles.titles}>
           <Text style={styles.title} numberOfLines={1}>
@@ -59,18 +92,41 @@ export const AppHeader = memo(function AppHeader({
   );
 });
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    backgroundColor: colors.bg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.cardBorder,
-  },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36 },
-  titles: { flex: 1, minWidth: 0 },
-  title: { color: colors.text, fontSize: 18, fontFamily: fonts.semibold },
-  subtitle: { color: colors.faint, fontSize: 12, fontFamily: fonts.medium, marginTop: 2 },
-  filterBtn: { borderColor: colors.chipBorder, borderRadius: radius.md },
-  filterLabel: { marginVertical: 6, fontSize: 12 },
-});
+function headerStyles(colors: ThemeColors) {
+  return {
+    header: {
+      paddingHorizontal: 20,
+      paddingBottom: 12,
+      backgroundColor: colors.bg,
+    },
+    row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: 40 },
+    titles: { flex: 1, minWidth: 0 },
+    title: { color: colors.text, fontSize: 22, fontFamily: fonts.bold, letterSpacing: -0.3 },
+    subtitle: { color: colors.muted, fontSize: 13, fontFamily: fonts.regular, marginTop: 2 },
+    filterBtn: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 6,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.chip,
+      borderRadius: radius.full,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    filterIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.chip,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    filterBtnOn: { backgroundColor: colors.primaryContainer, borderColor: colors.primaryContainer },
+    filterLabel: { color: colors.accent, fontFamily: fonts.medium, fontSize: 12 },
+    filterLabelOn: { color: colors.onPrimaryContainer },
+    pressed: { opacity: 0.86 },
+  };
+}

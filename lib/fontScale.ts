@@ -45,3 +45,12 @@ export async function writeFontSize(id: FontSizeId): Promise<void> {
 export function scaleFont(size: number, scale: number): number {
   return Math.round(size * scale * 2) / 2;
 }
+
+/** IBM Plex Mono advance is 0.6em; Android often measures less, so we size chips ourselves. */
+export function monoAdvance(text: string, fontSize: number): number {
+  let units = 0;
+  for (const char of text) {
+    if (char !== '\n') units += 1;
+  }
+  return Math.ceil(units * fontSize * 0.66);
+}

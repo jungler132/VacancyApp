@@ -1,6 +1,6 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const TAB_CONTENT = 52;
+const TAB_CONTENT = 56;
 
 export function useTabBarLayout() {
   const insets = useSafeAreaInsets();

@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import type { BottomTabBarButtonProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
@@ -14,7 +14,8 @@ import { applySearch } from '@/lib/store/filtersSlice';
 import { removeSearch, saveSearch, toggleSearch } from '@/lib/store/alertsSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectActiveFeed, selectVisibleCount, selectVisibleIds } from '@/lib/store/selectors';
-import { colors, fonts } from '@/lib/theme';
+import { fonts, shadowsFor, useAppTheme, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { useT } from '@/lib/i18n/useT';
 
 const TabBarButton = memo(function TabBarButton({
   children,
@@ -46,32 +47,34 @@ const TabIcon = memo(function TabIcon({
   color,
   focused,
 }: {
-  name: 'magnify' | 'chart-donut' | 'star' | 'cog' | 'book-open-variant';
+  name: 'magnify' | 'briefcase-account' | 'account' | 'cog' | 'book-open-variant';
   color: string;
   focused: boolean;
 }) {
   const icon =
-    name === 'star'
+    name === 'cog'
       ? focused
-        ? 'star'
-        : 'star-outline'
-      : name === 'chart-donut'
+        ? 'cog'
+        : 'cog-outline'
+      : name === 'account'
         ? focused
-          ? 'chart-donut'
-          : 'chart-arc'
+          ? 'account'
+          : 'account-outline'
+        : name === 'briefcase-account'
+        ? focused
+          ? 'briefcase-account'
+          : 'briefcase-account-outline'
         : name === 'book-open-variant'
           ? focused
             ? 'book-open-variant'
             : 'book-open-outline'
-          : name === 'cog'
-            ? focused
-              ? 'cog'
-              : 'cog-outline'
-            : name;
+          : name;
+  const colors = useAppTheme().colors;
+  const styles = useThemedStyles(tabStyles);
   return (
     <View style={styles.iconWrap}>
-      {focused ? <View style={styles.indicator} /> : <View style={styles.indicatorSpacer} />}
-      <MaterialDesignIcons name={icon} color={color} size={22} />
+      {focused ? <View pointerEvents="none" style={styles.iconPill} /> : null}
+      <MaterialDesignIcons name={icon} color={focused ? colors.onPrimaryContainer : color} size={22} />
     </View>
   );
 });
@@ -79,6 +82,7 @@ const TabIcon = memo(function TabIcon({
 const FilterSheetHost = memo(function FilterSheetHost() {
   const dispatch = useAppDispatch();
   const sheet = useFilterSheet();
+  const locale = useAppSelector((state) => state.appearance.locale);
   const count = useAppSelector(selectVisibleCount);
   const visibleIds = useAppSelector(selectVisibleIds);
   const status = useAppSelector((state) => selectActiveFeed(state).status);
@@ -96,8 +100,8 @@ const FilterSheetHost = memo(function FilterSheetHost() {
   const currentKey = makeAlertKey(snapshot);
   const watching = alerts.some((item) => item.enabled && makeAlertKey(item) === currentKey);
   const watches = useMemo(
-    () => alerts.map((item) => ({ id: item.id, label: alertLabel(item), enabled: item.enabled })),
-    [alerts],
+    () => alerts.map((item) => ({ id: item.id, label: alertLabel(item, locale), enabled: item.enabled })),
+    [alerts, locale],
   );
 
   const onToggleWatch = useCallback(() => {
@@ -140,8 +144,6 @@ const FilterSheetHost = memo(function FilterSheetHost() {
   );
 });
 
-const TAB_LABEL_WIDTH = Math.floor(Dimensions.get('window').width / 5) - 6;
-
 const TabLabel = memo(function TabLabel({
   children,
   color,
@@ -149,13 +151,14 @@ const TabLabel = memo(function TabLabel({
   children: string;
   color: string;
 }) {
+  const styles = useThemedStyles(tabStyles);
   return (
     <Text
       numberOfLines={1}
       adjustsFontSizeToFit
-      minimumFontScale={0.72}
+      minimumFontScale={0.55}
       allowFontScaling={false}
-      style={[styles.label, { color, maxWidth: TAB_LABEL_WIDTH }]}>
+      style={[styles.label, { color }]}>
       {children}
     </Text>
   );
@@ -164,6 +167,10 @@ const TabLabel = memo(function TabLabel({
 export default function TabLayout() {
   useJobsQuery();
   const tabBar = useTabBarLayout();
+  const t = useT();
+  const { colors, scheme } = useAppTheme();
+  const styles = useThemedStyles(tabStyles);
+  const tabShadows = shadowsFor(scheme);
 
   return (
     <View style={styles.root}>
@@ -176,7 +183,7 @@ export default function TabLayout() {
           lazy: true,
           animation: 'none',
           tabBarButton: (props) => <TabBarButton {...props} />,
-          tabBarItemStyle: { paddingHorizontal: 0 },
+          tabBarItemStyle: { paddingHorizontal: 0, minWidth: 0 },
           tabBarAllowFontScaling: false,
           headerStyle: { backgroundColor: colors.bg },
           headerTintColor: colors.text,
@@ -184,13 +191,13 @@ export default function TabLayout() {
           headerTitleStyle: { fontFamily: fonts.bold, fontSize: 18 },
           tabBarStyle: {
             position: 'absolute',
-            backgroundColor: 'rgba(8, 12, 20, 0.92)',
-            borderTopColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: colors.card,
+            borderTopColor: colors.cardBorder,
             borderTopWidth: StyleSheet.hairlineWidth,
-            elevation: 0,
             height: tabBar.height,
-            paddingTop: 4,
+            paddingTop: 6,
             paddingBottom: tabBar.paddingBottom,
+            ...tabShadows.tabBar,
           },
           tabBarLabel: ({ children, color }) => <TabLabel color={String(color)}>{String(children)}</TabLabel>,
           tabBarActiveTintColor: colors.accent,
@@ -199,35 +206,37 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Вакансии',
+            title: t('tab.jobs'),
             tabBarIcon: ({ color, focused }) => <TabIcon name="magnify" color={String(color)} focused={focused} />,
           }}
         />
         <Tabs.Screen
-          name="stats"
+          name="services"
           options={{
-            title: 'Сводка',
-            tabBarIcon: ({ color, focused }) => <TabIcon name="chart-donut" color={String(color)} focused={focused} />,
-          }}
-        />
-        <Tabs.Screen
-          name="saved"
-          options={{
-            title: 'Избранное',
-            tabBarIcon: ({ color, focused }) => <TabIcon name="star" color={String(color)} focused={focused} />,
+            title: t('tab.services'),
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon name="briefcase-account" color={String(color)} focused={focused} />
+            ),
           }}
         />
         <Tabs.Screen
           name="telegram"
           options={{
-            title: 'Ресурсы',
+            title: t('tab.resources'),
             tabBarIcon: ({ color, focused }) => <TabIcon name="book-open-variant" color={String(color)} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: t('tab.profile'),
+            tabBarIcon: ({ color, focused }) => <TabIcon name="account" color={String(color)} focused={focused} />,
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
-            title: 'Настройки',
+            title: t('tab.settings'),
             tabBarIcon: ({ color, focused }) => <TabIcon name="cog" color={String(color)} focused={focused} />,
           }}
         />
@@ -237,22 +246,31 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  iconWrap: { alignItems: 'center', minWidth: 28 },
-  label: {
-    fontSize: 11,
-    fontFamily: fonts.semibold,
-    textAlign: 'center',
-    marginTop: 2,
-    paddingHorizontal: 1,
-  },
-  indicator: {
-    width: 16,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.accent,
-    marginBottom: 4,
-  },
-  indicatorSpacer: { width: 16, height: 3, marginBottom: 4 },
-});
+function tabStyles(colors: ThemeColors) {
+  return {
+    root: { flex: 1, backgroundColor: colors.bg },
+    iconWrap: {
+      width: 44,
+      height: 32,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      overflow: 'visible' as const,
+    },
+    iconPill: {
+      position: 'absolute' as const,
+      width: 44,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primaryContainer,
+    },
+    label: {
+      fontSize: 10,
+      lineHeight: 12,
+      fontFamily: fonts.semibold,
+      textAlign: 'center' as const,
+      marginTop: 2,
+      width: '100%' as const,
+      includeFontPadding: false,
+    },
+  };
+}

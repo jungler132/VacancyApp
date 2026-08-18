@@ -6,11 +6,14 @@ import { EmptyState } from '@/components/EmptyState';
 import { JobCard } from '@/components/JobCard';
 import { JobSkeletonList } from '@/components/JobSkeleton';
 import { JobsHeader } from '@/components/JobsHeader';
+import { useT } from '@/lib/i18n/useT';
 import { useJobsFeed } from '@/lib/hooks/useJobsFeed';
 import { useTabBarLayout } from '@/lib/layout';
-import { colors } from '@/lib/theme';
+import { useColors } from '@/lib/theme';
 
 export default function JobsScreen() {
+  const t = useT();
+  const colors = useColors();
   const headerHRef = useRef(88);
   const [headerH, setHeaderH] = useState(88);
   const endGuard = useRef(false);
@@ -71,11 +74,9 @@ export default function JobsScreen() {
             <JobSkeletonList />
           ) : (
             <EmptyState
-              title={emptyError ? 'Не удалось загрузить' : 'Ничего не нашлось'}
-              subtitle={
-                emptyError ? 'Проверьте сеть и обновите ленту.' : 'Смените регион, давность или источники.'
-              }
-              actionLabel={emptyError || !feed.filtersActive ? 'Обновить' : 'Сбросить фильтры'}
+              title={emptyError ? t('jobs.emptyError') : t('jobs.emptyTitle')}
+              subtitle={emptyError ? t('jobs.emptyErrorHint') : t('jobs.emptyHint')}
+              actionLabel={emptyError || !feed.filtersActive ? t('common.refresh') : t('common.resetFilters')}
               onAction={emptyError || !feed.filtersActive ? feed.refresh : feed.resetFilters}
             />
           )
@@ -101,7 +102,7 @@ export default function JobsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
-  list: { paddingHorizontal: 16 },
+  list: { paddingHorizontal: 20 },
   headerWrap: { position: 'absolute', top: 0, left: 0, right: 0 },
   footer: { height: 48, alignItems: 'center', justifyContent: 'center' },
 });

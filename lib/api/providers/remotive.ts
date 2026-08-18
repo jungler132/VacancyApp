@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery, jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { annotateSalary, excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { annotateSalary, excerptOf, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type RemotiveJob = {
@@ -50,6 +50,6 @@ export async function searchRemotive(params: SearchParams): Promise<Job[]> {
       publishedAt: toPublishedAt(job.publication_date),
       url: job.url ?? 'https://remotive.com',
       excerpt: excerptOf(job.description || job.title || ''),
-      description: stripHtml(job.description),
+      description: htmlToText(job.description),
     }));
 }

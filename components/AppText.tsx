@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import { scaleFont, useFontScale } from '@/lib/fontScale';
+import { fonts, useColors } from '@/lib/theme';
 
 function scaledStyle(style: TextProps['style'], scale: number) {
   if (scale === 1 || style == null) return style;
@@ -24,14 +25,30 @@ function scaledStyle(style: TextProps['style'], scale: number) {
 
 export const Text = memo(function Text({ style, allowFontScaling = false, ...props }: TextProps) {
   const scale = useFontScale();
-  return <RNText {...props} allowFontScaling={allowFontScaling} style={scaledStyle(style, scale)} />;
+  const colors = useColors();
+  return (
+    <RNText
+      {...props}
+      allowFontScaling={allowFontScaling}
+      style={[{ color: colors.text, fontFamily: fonts.regular }, scaledStyle(style, scale)]}
+    />
+  );
 });
 
 export const TextInput = memo(function TextInput({
   style,
   allowFontScaling = false,
+  placeholderTextColor,
   ...props
 }: TextInputProps) {
   const scale = useFontScale();
-  return <RNTextInput {...props} allowFontScaling={allowFontScaling} style={scaledStyle(style, scale)} />;
+  const colors = useColors();
+  return (
+    <RNTextInput
+      {...props}
+      allowFontScaling={allowFontScaling}
+      placeholderTextColor={placeholderTextColor ?? colors.placeholder}
+      style={[{ color: colors.text, fontFamily: fonts.regular }, scaledStyle(style, scale)]}
+    />
+  );
 });

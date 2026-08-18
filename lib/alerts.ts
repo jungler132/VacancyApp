@@ -1,9 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { enabledSourceIds, searchJobs } from '@/lib/api/aggregator';
-import { CATEGORIES, REGIONS, apiCategory } from '@/lib/catalog';
-import { AGE_PRESETS, DEFAULT_EXTRA_FILTERS, filterFeedIds, type ExtraFilters } from '@/lib/filters';
+import { apiCategory } from '@/lib/catalog';
+import { DEFAULT_EXTRA_FILTERS, filterFeedIds, parseExtraFilters, type ExtraFilters } from '@/lib/filters';
+import { keyOf, t } from '@/lib/i18n';
+import { DEFAULT_LOCALE, type AppLocale } from '@/lib/i18n/locale';
 import { notifyNewJobs } from '@/lib/notifications';
+import { readStoredLocale } from '@/lib/store/appearanceSlice';
 import { DISABLED_SOURCES_KEY } from '@/lib/store/sourcesSlice';
 import type { CategoryId, Job, RegionId } from '@/lib/types';
 
@@ -39,34 +42,28 @@ export function makeAlertKey(search: SearchSnapshot): string {
     search.region,
     [...search.categories].sort().join(','),
     search.query.trim().toLowerCase(),
-    extra.salaryMin ?? 'any',
     extra.format,
     extra.employment,
     extra.maxAgeDays,
   ].join('|');
 }
 
-export function alertLabel(search: SearchSnapshot): string {
+export function alertLabel(search: SearchSnapshot, locale: AppLocale = DEFAULT_LOCALE): string {
   const extra = search.extra ?? DEFAULT_EXTRA_FILTERS;
   const parts: string[] = [];
   const q = search.query.trim();
   if (q) parts.push(q);
-  parts.push(REGIONS.find((item) => item.id === search.region)?.label ?? search.region);
+  parts.push(t(locale, keyOf('region', search.region)));
   const cats = search.categories.filter((id) => id !== 'all');
   if (cats.length) {
-    parts.push(
-      cats
-        .map((id) => CATEGORIES.find((item) => item.id === id)?.label ?? id)
-        .join(', '),
-    );
+    parts.push(cats.map((id) => t(locale, keyOf('category', id))).join(', '));
   }
-  if (extra.salaryMin != null) parts.push(`от ${Math.round(extra.salaryMin / 1000)} тыс`);
   if (extra.maxAgeDays !== 90) {
-    parts.push(AGE_PRESETS.find((item) => item.id === extra.maxAgeDays)?.label ?? `${extra.maxAgeDays}д`);
+    parts.push(t(locale, keyOf('filters.age', extra.maxAgeDays)));
   }
-  if (extra.format === 'remote') parts.push('удалёнка');
-  if (extra.format === 'office') parts.push('офис');
-  return parts.slice(0, 4).join(' · ') || 'Все вакансии';
+  if (extra.format === 'remote') parts.push(t(locale, 'filters.format.remote'));
+  if (extra.format === 'office') parts.push(t(locale, 'filters.format.office'));
+  return parts.slice(0, 4).join(' · ') || t(locale, 'alerts.all');
 }
 
 export function normalizeAlerts(raw: unknown): SavedSearch[] {
@@ -81,7 +78,7 @@ export function normalizeAlerts(raw: unknown): SavedSearch[] {
       query: typeof row.query === 'string' ? row.query : '',
       region: row.region as RegionId,
       categories: Array.isArray(row.categories) ? (row.categories as CategoryId[]) : ['all'],
-      extra: { ...DEFAULT_EXTRA_FILTERS, ...(row.extra ?? {}) },
+      extra: parseExtraFilters(row.extra),
       enabled: row.enabled !== false,
       lastSeenIds: Array.isArray(row.lastSeenIds) ? row.lastSeenIds.filter((id) => typeof id === 'string') : [],
       lastCheckedAt: typeof row.lastCheckedAt === 'number' ? row.lastCheckedAt : 0,
@@ -132,6 +129,7 @@ export async function checkSavedSearches(options?: {
   if (!enabled.length) return alerts;
 
   const sources = enabledSourceIds(await loadDisabledSources());
+  const locale = await readStoredLocale();
   const now = Date.now();
   let changed = false;
 
@@ -170,7 +168,7 @@ export async function checkSavedSearches(options?: {
       if (!notify || skip || cooled || fresh.length === 0) continue;
 
       alert.lastNotifiedAt = now;
-      await notifyNewJobs(fresh.length, alertLabel(alert), alert.id);
+      await notifyNewJobs(fresh.length, alertLabel(alert, locale), alert.id, locale);
     } catch {
       alert.lastCheckedAt = now;
       changed = true;

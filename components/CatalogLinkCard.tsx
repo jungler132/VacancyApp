@@ -1,15 +1,18 @@
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as WebBrowser from 'expo-web-browser';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { catalogFacts, countryMeta, type CatalogLink } from '@/lib/telegramGroups';
 import { Text } from '@/components/AppText';
+import { keyOf, type MsgId } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 import { selectIsCatalogSaved } from '@/lib/store/selectors';
 import { toSavedCatalogItem, toggleSavedCatalog } from '@/lib/store/savedCatalogSlice';
+import { recordVisit } from '@/lib/store/visitsSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { colors, fonts, radius, regionColor } from '@/lib/theme';
+import { fonts, radius, regionColor, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 async function openCatalogLink(item: CatalogLink) {
   if (item.handle) {
@@ -27,6 +30,9 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
   telegram: boolean;
 }) {
   const dispatch = useAppDispatch();
+  const t = useT();
+  const colors = useColors();
+  const styles = useThemedStyles(catalogLinkCardStyles);
   const saved = useAppSelector(selectIsCatalogSaved(telegram ? 'telegram' : 'site', item.id));
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -36,8 +42,16 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
   const facts = useMemo(() => (open ? catalogFacts(item, telegram) : []), [open, item, telegram]);
 
   const onOpen = useCallback(() => {
+    dispatch(
+      recordVisit({
+        id: `${telegram ? 'telegram' : 'site'}:${item.id}`,
+        title: item.title,
+        url: item.url,
+        kind: telegram ? 'telegram' : 'site',
+      }),
+    );
     openCatalogLink(item).catch(() => undefined);
-  }, [item]);
+  }, [dispatch, item, telegram]);
 
   const onCopy = useCallback(async () => {
     await Clipboard.setStringAsync(item.url);
@@ -57,7 +71,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
       <View style={styles.cardHead}>
         <Text style={styles.cardTitle}>{item.title}</Text>
         <View style={[styles.countryBadge, { borderColor: tint }]}>
-          <Text style={[styles.countryLabel, { color: tint }]}>{country.label}</Text>
+          <Text style={[styles.countryLabel, { color: tint }]}>{t(keyOf('country', country.id) as MsgId)}</Text>
         </View>
         <Pressable
           onPress={(event) => {
@@ -66,7 +80,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
           }}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel={saved ? 'Убрать из избранного' : 'Сохранить'}>
+          accessibilityLabel={saved ? t('common.unsave') : t('common.save')}>
           <MaterialDesignIcons
             name={saved ? 'star' : 'star-outline'}
             size={20}
@@ -78,12 +92,25 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
       {open ? (
         <View style={styles.details}>
           {item.note ? <Text style={styles.note}>{item.note}</Text> : null}
-          {facts.map((fact) => (
-            <View key={fact.label} style={styles.fact}>
-              <Text style={styles.factLabel}>{fact.label}</Text>
-              <Text style={styles.factValue}>{fact.value}</Text>
-            </View>
-          ))}
+          {facts.map((fact) => {
+            const label = t(keyOf('catalog.fact', fact.id));
+            const value =
+              fact.id === 'type'
+                ? t(keyOf('catalog.type', fact.value))
+                : fact.id === 'region'
+                  ? t(keyOf('region', fact.value))
+                  : fact.id === 'focus'
+                    ? t(keyOf('catalog.focus', fact.value))
+                    : fact.id === 'access'
+                      ? t(keyOf('catalog.access', fact.value))
+                      : fact.value;
+            return (
+              <View key={fact.id} style={styles.fact}>
+                <Text style={styles.factLabel}>{label}</Text>
+                <Text style={styles.factValue}>{value}</Text>
+              </View>
+            );
+          })}
           <Pressable
             onPress={(event) => {
               event.stopPropagation();
@@ -91,7 +118,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
             }}
             hitSlop={6}>
             <Text style={styles.url} numberOfLines={2}>
-              {copied ? 'Скопировано' : item.url}
+              {copied ? t('common.copied') : item.url}
             </Text>
           </Pressable>
           <Pressable
@@ -101,7 +128,7 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
             }}
             style={({ pressed }) => [styles.openBtn, pressed && styles.pressed]}>
             <MaterialDesignIcons name={telegram ? 'send' : 'open-in-new'} size={16} color={colors.accentText} />
-            <Text style={styles.openLabel}>Открыть</Text>
+            <Text style={styles.openLabel}>{t('common.open')}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -109,41 +136,44 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
   );
 });
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: 14,
-    marginBottom: 10,
-  },
-  cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  cardTitle: { color: colors.text, fontSize: 16, fontFamily: fonts.semibold, flex: 1 },
-  countryBadge: {
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    maxWidth: 140,
-  },
-  countryLabel: { fontSize: 11, fontFamily: fonts.semibold },
-  handle: { color: colors.faint, fontSize: 13, fontFamily: fonts.medium, marginTop: 4 },
-  details: { marginTop: 12, gap: 8 },
-  note: { color: colors.muted, fontSize: 13, lineHeight: 18, marginBottom: 4 },
-  fact: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  factLabel: { color: colors.faint, fontSize: 12, fontFamily: fonts.medium },
-  factValue: { color: colors.text, fontSize: 12, fontFamily: fonts.semibold, flexShrink: 1, textAlign: 'right' },
-  url: { color: colors.accent, fontSize: 13, fontFamily: fonts.medium, lineHeight: 18, marginTop: 4 },
-  openBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-  },
-  openLabel: { color: colors.accentText, fontSize: 14, fontFamily: fonts.semibold },
-  pressed: { opacity: 0.82 },
-});
+function catalogLinkCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+  return {
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      padding: 16,
+      marginBottom: 16,
+      ...shadowsFor(scheme).card,
+    },
+    cardHead: { flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 8 },
+    cardTitle: { color: colors.text, fontSize: 16, fontFamily: fonts.semibold, flex: 1 },
+    countryBadge: {
+      borderWidth: 1,
+      borderRadius: radius.full,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      maxWidth: 140,
+    },
+    countryLabel: { fontSize: 11, fontFamily: fonts.semibold },
+    handle: { color: colors.faint, fontSize: 13, fontFamily: fonts.medium, marginTop: 4 },
+    details: { marginTop: 12, gap: 8 },
+    note: { color: colors.muted, fontSize: 13, lineHeight: 18, marginBottom: 4 },
+    fact: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, gap: 12 },
+    factLabel: { color: colors.faint, fontSize: 12, fontFamily: fonts.medium },
+    factValue: { color: colors.text, fontSize: 12, fontFamily: fonts.semibold, flexShrink: 1, textAlign: 'right' as const },
+    url: { color: colors.accent, fontSize: 13, fontFamily: fonts.medium, lineHeight: 18, marginTop: 4 },
+    openBtn: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      gap: 6,
+      height: 44,
+      borderRadius: radius.full,
+      backgroundColor: colors.accent,
+    },
+    openLabel: { color: colors.accentText, fontSize: 14, fontFamily: fonts.semibold },
+    pressed: { opacity: 0.82 },
+  };
+}

@@ -6,6 +6,9 @@ import { extraFiltersActive } from '@/lib/filters';
 import { computeJobStats } from '@/lib/stats';
 import { mergeVisibleIds } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
+import { toServiceMaster } from '@/lib/services/catalog';
+import { localizeMaster } from '@/lib/services/seed';
+import { OWN_PROFILE_ID } from './freelanceSlice';
 import { resolveCatalogItem } from './savedCatalogSlice';
 import type { RootState } from './index';
 import { makeFeedKey, type FeedCache } from './jobsSlice';
@@ -154,6 +157,39 @@ export const selectSourceErrorMap = createSelector([(state: RootState) => state.
   }
   return Object.keys(map).length ? map : EMPTY_ERROR_MAP;
 });
+
+export const selectOwnMaster = createSelector(
+  [(state: RootState) => state.freelance.profile, (state: RootState) => state.freelance.offers],
+  (profile, offers) => (profile ? toServiceMaster(profile, offers, true) : undefined),
+);
+
+export const selectCatalogMasters = createSelector(
+  [
+    (state: RootState) => state.servicesCatalog.items,
+    (state: RootState) => state.appearance.locale,
+    selectOwnMaster,
+  ],
+  function selectCatalogMastersResult(remote, locale, own) {
+    const items = remote.map((item) => localizeMaster(item, locale));
+    if (own?.displayName.trim()) return [own, ...items];
+    return items;
+  },
+);
+
+export const selectMasterById = createSelector(
+  [
+    (state: RootState) => state.servicesCatalog.items,
+    (state: RootState) => state.appearance.locale,
+    selectOwnMaster,
+    (_state: RootState, id: string) => id,
+  ],
+  function selectMasterByIdResult(items, locale, own, id) {
+    if (!id) return undefined;
+    if (id === OWN_PROFILE_ID || own?.id === id) return own;
+    const master = items.find((item) => item.id === id);
+    return master ? localizeMaster(master, locale) : undefined;
+  },
+);
 
 export const selectRecentErrors = createSelector([(state: RootState) => state.jobs.feeds], (feeds) => {
   const seen = new Set<string>();

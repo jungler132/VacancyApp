@@ -1,19 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
-import { Text, TextInput } from '@/components/AppText';
+import { FormField, useFormStyles } from '@/components/FormField';
+import { Text } from '@/components/AppText';
 import { CATEGORIES } from '@/lib/catalog';
 import { SALARY_CURRENCIES } from '@/lib/format';
+import { useT } from '@/lib/i18n/useT';
+import { keyOf } from '@/lib/i18n';
 import { LOCAL_JOBS_LIMIT } from '@/lib/tiers';
 import { buildLocalJob, upsertLocalJob } from '@/lib/store/localJobsSlice';
 import { jobHref } from '@/lib/jobRoute';
@@ -21,13 +17,16 @@ import { pinViewedJob } from '@/lib/store/jobsSlice';
 import { openPaywall } from '@/lib/store/premiumSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import type { CategoryId, JobTier } from '@/lib/types';
-import { colors, fonts, radius } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 const FORM_CATEGORIES = CATEGORIES.filter((item) => item.id !== 'all');
 
 export default function CreateJobScreen() {
+  const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const formStyles = useFormStyles();
+  const styles = useThemedStyles(createJobStyles);
   const isPremium = useAppSelector((state) => state.premium.isPremium);
   const paywallOpen = useAppSelector((state) => state.premium.paywallOpen);
   const localCount = useAppSelector((state) => state.localJobs.items.length);
@@ -52,11 +51,11 @@ export default function CreateJobScreen() {
       const nextTitle = form.title.trim();
       const nextCompany = form.company.trim();
       if (!nextTitle || !nextCompany) {
-        Alert.alert('Не хватает данных', 'Укажите должность и компанию.');
+        Alert.alert(t('common.missing'), t('create.needTitle'));
         return;
       }
       if (localCount >= LOCAL_JOBS_LIMIT) {
-        Alert.alert('Лимит', `На устройстве можно хранить не больше ${LOCAL_JOBS_LIMIT} своих вакансий.`);
+        Alert.alert(t('common.limit'), t('create.limit', { limit: LOCAL_JOBS_LIMIT }));
         return;
       }
       const job = buildLocalJob({
@@ -75,10 +74,14 @@ export default function CreateJobScreen() {
       dispatch(pinViewedJob(job));
       router.replace(jobHref(job.id));
     },
-    [dispatch, localCount, router],
+    [dispatch, localCount, router, t],
   );
 
   const onFree = useCallback(() => publish(2), [publish]);
+  const onCurrency = useCallback((id: string | number) => setCurrency(String(id)), []);
+  const onCategory = useCallback((id: string | number) => setCategory(id as CategoryId), []);
+  const onOffice = useCallback(() => setRemote(false), []);
+  const onRemote = useCallback(() => setRemote(true), []);
 
   const onPremium = useCallback(() => {
     if (isPremium) {
@@ -101,21 +104,21 @@ export default function CreateJobScreen() {
   }, [isPremium, paywallOpen, publish]);
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.lead}>Вакансия появится в ленте на этом устройстве. Позже это уйдёт на сервер.</Text>
-        <Field label="Должность" value={title} onChangeText={setTitle} placeholder="Например, продавец" />
-        <Field label="Компания" value={company} onChangeText={setCompany} placeholder="Название" />
-        <Field label="Город" value={location} onChangeText={setLocation} placeholder="Москва" />
-        <Field
-          label="Зарплата"
+    <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
+        <Text style={formStyles.lead}>{t('create.lead')}</Text>
+        <FormField label={t('create.title')} value={title} onChangeText={setTitle} placeholder={t('create.titlePh')} />
+        <FormField label={t('create.company')} value={company} onChangeText={setCompany} placeholder={t('create.companyPh')} />
+        <FormField label={t('create.city')} value={location} onChangeText={setLocation} placeholder={t('create.cityPh')} />
+        <FormField
+          label={t('create.salary')}
           value={salary}
           onChangeText={setSalary}
           placeholder="150 000"
           keyboardType="numeric"
         />
-        <Text style={styles.label}>Валюта</Text>
-        <View style={styles.wrap}>
+        <Text style={formStyles.label}>{t('offer.currency')}</Text>
+        <ChipWrap>
           {SALARY_CURRENCIES.map((item) => (
             <SelectChip
               key={item.id}
@@ -123,113 +126,56 @@ export default function CreateJobScreen() {
               label={`${item.label} ${item.id}`}
               compact
               selected={currency === item.id}
-              onChange={(id) => setCurrency(String(id))}
+              onChange={onCurrency}
             />
           ))}
-        </View>
-        <Field label="Контакт" value={contact} onChangeText={setContact} placeholder="Телефон или Telegram" />
-        <Text style={styles.label}>Сфера</Text>
-        <View style={styles.wrap}>
+        </ChipWrap>
+        <FormField label={t('create.contact')} value={contact} onChangeText={setContact} placeholder={t('create.contactPh')} />
+        <Text style={formStyles.label}>{t('create.category')}</Text>
+        <ChipWrap>
           {FORM_CATEGORIES.map((item) => (
             <SelectChip
               key={item.id}
               id={item.id}
-              label={item.label}
+              label={t(keyOf('category', item.id))}
               compact
               selected={category === item.id}
-              onChange={(id) => setCategory(id as CategoryId)}
+              onChange={onCategory}
             />
           ))}
-        </View>
-        <View style={styles.wrap}>
-          <SelectChip id="office" label="Офис" compact selected={!remote} onChange={() => setRemote(false)} />
-          <SelectChip id="remote" label="Удалёнка" compact selected={remote} onChange={() => setRemote(true)} />
-        </View>
-        <Field
-          label="Описание"
+        </ChipWrap>
+        <ChipWrap>
+          <SelectChip id="office" label={t('create.office')} compact selected={!remote} onChange={onOffice} />
+          <SelectChip id="remote" label={t('create.remote')} compact selected={remote} onChange={onRemote} />
+        </ChipWrap>
+        <FormField
+          label={t('create.description')}
           value={description}
           onChangeText={setDescription}
-          placeholder="Обязанности, условия"
+          placeholder={t('create.descriptionPh')}
           multiline
         />
-        <Pressable onPress={onFree} style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
-          <Text style={styles.primaryText}>Опубликовать</Text>
+        <Pressable onPress={onFree} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
+          <Text style={formStyles.primaryText}>{t('create.publish')}</Text>
         </Pressable>
-        <Pressable onPress={onPremium} style={({ pressed }) => [styles.premium, pressed && styles.pressed]}>
-          <Text style={styles.premiumText}>Премиум-размещение</Text>
+        <Pressable onPress={onPremium} style={({ pressed }) => [styles.premium, pressed && formStyles.pressed]}>
+          <Text style={styles.premiumText}>{t('create.premium')}</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-function Field({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  multiline,
-  keyboardType,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder: string;
-  multiline?: boolean;
-  keyboardType?: 'default' | 'numeric';
-}) {
-  return (
-    <View>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.placeholder}
-        style={[styles.input, multiline && styles.area]}
-        multiline={multiline}
-        keyboardType={keyboardType}
-        textAlignVertical={multiline ? 'top' : 'center'}
-      />
-    </View>
-  );
+function createJobStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    premium: {
+      height: 48,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    premiumText: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 16 },
+  };
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 20, paddingBottom: 40, gap: 12 },
-  lead: { color: colors.muted, fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, marginBottom: 4 },
-  label: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 12, marginBottom: 6 },
-  input: {
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    backgroundColor: colors.card,
-    color: colors.text,
-    fontFamily: fonts.medium,
-    fontSize: 15,
-    paddingHorizontal: 12,
-  },
-  area: { minHeight: 120, paddingTop: 12 },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  primary: {
-    marginTop: 8,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryText: { color: colors.accentText, fontFamily: fonts.bold, fontSize: 16 },
-  premium: {
-    height: 48,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  premiumText: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 16 },
-  pressed: { opacity: 0.86 },
-});

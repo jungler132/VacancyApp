@@ -2,6 +2,8 @@ import { memo, useCallback, useRef, useState } from 'react';
 import { Button } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
 
+import { useT } from '@/lib/i18n/useT';
+
 export const CopyLinkButton = memo(function CopyLinkButton({
   url,
   compact = false,
@@ -9,6 +11,7 @@ export const CopyLinkButton = memo(function CopyLinkButton({
   url?: string;
   compact?: boolean;
 }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -28,8 +31,8 @@ export const CopyLinkButton = memo(function CopyLinkButton({
       compact={compact}
       icon={copied ? 'check' : 'content-copy'}
       onPress={copy}
-      style={compact ? undefined : { marginTop: 10, borderRadius: 6 }}>
-      {copied ? 'Скопировано' : compact ? 'Ссылка' : 'Скопировать ссылку'}
+      style={compact ? undefined : { marginTop: 10, borderRadius: 999 }}>
+      {copied ? t('common.copied') : compact ? t('common.link') : t('common.copyLink')}
     </Button>
   );
 });

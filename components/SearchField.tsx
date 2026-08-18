@@ -1,19 +1,22 @@
 import { memo, useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
 import { Searchbar } from 'react-native-paper';
 
 import { scaleFont, useFontScale } from '@/lib/fontScale';
-import { colors, radius } from '@/lib/theme';
+import { fonts, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export const SearchField = memo(function SearchField({
   value = '',
   onSearch,
+  placeholder = '',
 }: {
   value?: string;
   onSearch: (value: string) => void;
+  placeholder?: string;
 }) {
   const [text, setText] = useState(value);
   const scale = useFontScale();
+  const colors = useColors();
+  const styles = useThemedStyles(searchStyles);
 
   useEffect(() => {
     setText(value);
@@ -29,29 +32,33 @@ export const SearchField = memo(function SearchField({
     <Searchbar
       value={text}
       onChangeText={setText}
-      placeholder="Должность или компания"
+      placeholder={placeholder}
       autoCorrect={false}
       autoCapitalize="none"
       returnKeyType="search"
       elevation={0}
       style={styles.bar}
       inputStyle={[styles.input, { fontSize: scaleFont(15, scale) }]}
-      iconColor={colors.placeholder}
+      iconColor={colors.faint}
       placeholderTextColor={colors.placeholder}
     />
   );
 });
 
-const styles = StyleSheet.create({
-  bar: {
-    backgroundColor: 'rgba(18, 26, 40, 0.78)',
-    borderWidth: 1,
-    borderColor: colors.chipBorder,
-    borderRadius: radius.md,
-    height: 44,
-  },
-  input: {
-    minHeight: 44,
-    fontSize: 15,
-  },
-});
+function searchStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+  return {
+    bar: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: radius.md,
+      height: 48,
+      ...shadowsFor(scheme).card,
+    },
+    input: {
+      minHeight: 48,
+      fontSize: 15,
+      fontFamily: fonts.regular,
+    },
+  };
+}

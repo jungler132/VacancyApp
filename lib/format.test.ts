@@ -50,13 +50,13 @@ describe('jobFacts', () => {
       schedule: 'Полный день',
       excerpt: 'Доставка по городу',
     });
-    const map = Object.fromEntries(facts.map((item) => [item.label, item.value]));
-    assert.equal(map['Источник'], 'HeadHunter');
-    assert.equal(map['Формат'], 'Офис');
-    assert.equal(map['Занятость'], 'Полная занятость');
-    assert.equal(map['График'], 'Полный день');
-    assert.equal(map['Опыт'], 'Без опыта');
-    assert.equal(map['Язык'], 'RU');
+    const map = Object.fromEntries(facts.map((item) => [item.id, item.value]));
+    assert.equal(map.source, 'HeadHunter');
+    assert.equal(map.format, 'office');
+    assert.equal(map.employment, 'full');
+    assert.equal(map.schedule, 'fullday');
+    assert.equal(map.experience, 'none');
+    assert.equal(map.langs, 'RU');
   });
 
   it('угадывает junior и удалёнку из текста, если API молчит', () => {
@@ -67,10 +67,10 @@ describe('jobFacts', () => {
       remote: true,
       excerpt: 'Remote role for a junior engineer',
     });
-    const map = Object.fromEntries(facts.map((item) => [item.label, item.value]));
-    assert.equal(map['Формат'], 'Удалённо');
-    assert.equal(map['Опыт'], 'Junior / без опыта');
-    assert.equal(map['Язык'], 'EN');
-    assert.deepEqual(jobTags({ title: 'Junior React developer', remote: true }), ['Удалённо', 'Junior / без опыта']);
+    const map = Object.fromEntries(facts.map((item) => [item.id, item.value]));
+    assert.equal(map.format, 'remote');
+    assert.equal(map.experience, 'junior');
+    assert.equal(map.langs, 'EN');
+    assert.deepEqual(jobTags({ title: 'Junior React developer', remote: true }), ['remote', 'junior']);
   });
 });

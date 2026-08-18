@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 
 import { AppHeader, FiltersButton } from '@/components/AppHeader';
 import { CatalogFiltersSheet } from '@/components/CatalogFiltersSheet';
@@ -17,29 +17,33 @@ import {
   type CatalogFilters,
   type CatalogLink,
 } from '@/lib/telegramGroups';
-import { colors, fonts } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { keyOf } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 
 const SECTIONS = [
-  { id: 'telegram', label: 'Telegram', items: TELEGRAM_GROUPS, telegram: true },
-  { id: 'sites', label: 'Сайты', items: JOB_SITES, telegram: false },
+  { id: 'telegram', items: TELEGRAM_GROUPS, telegram: true },
+  { id: 'sites', items: JOB_SITES, telegram: false },
 ] as const;
 
 type CatalogRow =
   | { type: 'header'; id: string; title: string }
   | { type: 'card'; id: string; item: CatalogLink; telegram: boolean };
 
-function toRows(items: CatalogLink[], telegram: boolean): CatalogRow[] {
+function toRows(items: CatalogLink[], telegram: boolean, countryName: (id: string) => string): CatalogRow[] {
   const groups = groupCatalogByCountry(items);
   const rows: CatalogRow[] = [];
   const showHeaders = groups.length > 1;
   for (const group of groups) {
-    if (showHeaders) rows.push({ type: 'header', id: `h-${group.id}`, title: group.label });
+    if (showHeaders) rows.push({ type: 'header', id: `h-${group.id}`, title: countryName(group.id) });
     for (const item of group.items) rows.push({ type: 'card', id: item.id, item, telegram });
   }
   return rows;
 }
 
 export default function ResourcesScreen() {
+  const t = useT();
+  const styles = useThemedStyles(telegramStyles);
   const tabBar = useTabBarLayout();
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<CatalogFilters>(DEFAULT_CATALOG_FILTERS);
@@ -50,7 +54,10 @@ export default function ResourcesScreen() {
     () => filterCatalogBySelection(section.items, filters),
     [section.items, filters],
   );
-  const rows = useMemo(() => toRows(visible, section.telegram), [visible, section.telegram]);
+  const rows = useMemo(
+    () => toRows(visible, section.telegram, (id) => t(keyOf('country', id))),
+    [visible, section.telegram, t],
+  );
   const filtersActive = catalogFiltersActive(filters);
 
   const openSheet = useCallback(() => {
@@ -64,21 +71,26 @@ export default function ResourcesScreen() {
   const renderItem = useCallback(({ item }: { item: CatalogRow }) => {
     if (item.type === 'header') return <Text style={styles.groupTitle}>{item.title}</Text>;
     return <CatalogLinkCard item={item.item} telegram={item.telegram} />;
-  }, []);
+  }, [styles.groupTitle]);
 
   const keyExtractor = useCallback((item: CatalogRow) => item.id, []);
 
   return (
     <View style={styles.screen}>
       <AppHeader
-        title="Ресурсы"
-        subtitle={`${visible.length} из ${section.items.length}`}
+        title={t('tab.resources')}
+        subtitle={t('resources.subtitle', { visible: visible.length, total: section.items.length })}
         right={<FiltersButton active={filtersActive} onPress={openSheet} />}>
         <View style={styles.tabs}>
           {SECTIONS.map((item, index) => (
-            <Pressable key={item.id} onPress={() => setPage(index)} style={styles.tab} android_ripple={null}>
-              <Text style={[styles.tabLabel, page === index && styles.tabLabelOn]}>{item.label}</Text>
-              <View style={[styles.tabLine, page === index && styles.tabLineOn]} />
+            <Pressable
+              key={item.id}
+              onPress={() => setPage(index)}
+              style={[styles.tab, page === index && styles.tabOn]}
+              android_ripple={null}>
+              <Text style={[styles.tabLabel, page === index && styles.tabLabelOn]}>
+                {item.id === 'telegram' ? t('saved.telegram') : t('saved.sites')}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -97,9 +109,9 @@ export default function ResourcesScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
-            title="Нет ресурсов в этой стране"
-            subtitle="Выберите другую страну или сбросьте фильтр."
-            actionLabel="Сбросить фильтры"
+            title={t('resources.emptyTitle')}
+            subtitle={t('resources.emptyHint')}
+            actionLabel={t('common.resetFilters')}
             onAction={resetFilters}
           />
         }
@@ -118,14 +130,22 @@ export default function ResourcesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: 'transparent' },
-  tabs: { flexDirection: 'row', marginTop: 10, marginHorizontal: -12, marginBottom: -8 },
-  tab: { flex: 1, alignItems: 'center', gap: 8 },
-  tabLabel: { color: colors.faint, fontSize: 14, fontFamily: fonts.semibold },
-  tabLabelOn: { color: colors.text },
-  tabLine: { height: 2, alignSelf: 'stretch', borderRadius: 1, backgroundColor: 'transparent' },
-  tabLineOn: { backgroundColor: colors.accent },
-  content: { padding: 16 },
-  groupTitle: { color: colors.faint, fontSize: 13, fontFamily: fonts.semibold, marginTop: 6, marginBottom: 2 },
-});
+function telegramStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+  return {
+    screen: { flex: 1, backgroundColor: 'transparent' },
+    tabs: { flexDirection: 'row' as const, gap: 8, marginTop: 12 },
+    tab: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: radius.full,
+      backgroundColor: colors.chip,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+    },
+    tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+    tabLabel: { color: colors.text, fontSize: 12, fontFamily: fonts.medium, letterSpacing: 0.4 },
+    tabLabelOn: { color: colors.accentText },
+    content: { padding: 20 },
+    groupTitle: { color: colors.faint, fontSize: 13, fontFamily: fonts.semibold, marginTop: 6, marginBottom: 2 },
+  };
+}

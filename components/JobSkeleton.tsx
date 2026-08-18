@@ -1,5 +1,5 @@
 import { memo, useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -8,9 +8,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, radius } from '@/lib/theme';
+import { radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 function Shimmer({ style }: { style?: object }) {
+  const styles = useThemedStyles(jobSkeletonStyles);
   const opacity = useSharedValue(0.28);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ function Shimmer({ style }: { style?: object }) {
 }
 
 export const JobSkeleton = memo(function JobSkeleton() {
+  const styles = useThemedStyles(jobSkeletonStyles);
   return (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -52,17 +54,20 @@ export function JobSkeletonList() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 12,
-  },
-  row: { flexDirection: 'row', gap: 10 },
-  logo: { width: 44, height: 44, borderRadius: radius.md },
-  lines: { flex: 1, gap: 8, justifyContent: 'center' },
-  block: { height: 8, borderRadius: 3, backgroundColor: '#2A3B55' },
-});
+function jobSkeletonStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+  return {
+    card: {
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginBottom: 16,
+      ...shadowsFor(scheme).card,
+    },
+    row: { flexDirection: 'row' as const, gap: 10 },
+    logo: { width: 44, height: 44, borderRadius: radius.md },
+    lines: { flex: 1, gap: 8, justifyContent: 'center' as const },
+    block: { height: 8, borderRadius: 3, backgroundColor: colors.cardBorder },
+  };
+}

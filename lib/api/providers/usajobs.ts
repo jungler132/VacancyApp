@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
-import { excerptOf, formatSalary, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, formatSalary, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type UsaJob = {
@@ -53,7 +53,7 @@ export async function searchUsaJobs(params: SearchParams): Promise<Job[]> {
       publishedAt: toPublishedAt(d.PublicationStartDate),
       url: d.PositionURI ?? 'https://www.usajobs.gov',
       excerpt: excerptOf(d.UserArea?.Details?.JobSummary || d.PositionTitle || ''),
-      description: stripHtml(d.UserArea?.Details?.JobSummary),
+      description: htmlToText(d.UserArea?.Details?.JobSummary),
     };
   });
 }

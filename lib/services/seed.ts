@@ -1,0 +1,140 @@
+import { hasMsg, t } from '@/lib/i18n';
+import { APP_LOCALES, type AppLocale } from '@/lib/i18n/locale';
+import type { ServiceMaster, ServiceOffer } from './types';
+
+export const SEED_MASTERS: ServiceMaster[] = [
+  {
+    id: 'seed:anna',
+    displayName: 'Анна Крылова',
+    bio: 'Мастер маникюра и бровей. Работаю на дому и с выездом по району.',
+    email: 'anna.nails@example.com',
+    phone: '+7 916 000 11 22',
+    photos: [],
+    customKinds: [],
+    kinds: ['beauty'],
+    address: 'Москва, Сокол',
+    hours: { open: '10:00', close: '20:00', days: [1, 2, 3, 4, 5, 6] },
+    updatedAt: '2026-08-01T10:00:00.000Z',
+    offers: [
+      {
+        id: 'seed:anna:manicure',
+        profileId: 'seed:anna',
+        title: 'Маникюр с покрытием',
+        description: 'Аппаратный маникюр, гель-лак, укрепление. Длительность около 1,5 часа.',
+        price: '2500',
+        currency: 'RUB',
+        images: [],
+        kind: 'beauty',
+        updatedAt: '2026-08-01T10:00:00.000Z',
+      },
+      {
+        id: 'seed:anna:brows',
+        profileId: 'seed:anna',
+        title: 'Оформление бровей',
+        description: 'Коррекция формы и окрашивание. Можно совместить с маникюром.',
+        price: '1200',
+        currency: 'RUB',
+        images: [],
+        kind: 'beauty',
+        updatedAt: '2026-08-01T10:00:00.000Z',
+      },
+    ],
+  },
+  {
+    id: 'seed:igor',
+    displayName: 'Игорь Савельев',
+    bio: 'Электрик. Розетки, свет, щитки, мелкий бытовой ремонт без срыва стен.',
+    email: 'igor.electro@example.com',
+    phone: '+7 903 555 44 33',
+    photos: [],
+    customKinds: [],
+    kinds: ['repair'],
+    address: 'Москва и ближнее МО',
+    hours: { open: '08:00', close: '19:00', days: [1, 2, 3, 4, 5] },
+    updatedAt: '2026-08-04T08:00:00.000Z',
+    offers: [
+      {
+        id: 'seed:igor:socket',
+        profileId: 'seed:igor',
+        title: 'Замена розетки или выключателя',
+        description: 'Приезд, диагностика, замена. Материалы по согласованию.',
+        price: '1500',
+        currency: 'RUB',
+        images: [],
+        kind: 'repair',
+        updatedAt: '2026-08-04T08:00:00.000Z',
+      },
+      {
+        id: 'seed:igor:light',
+        profileId: 'seed:igor',
+        title: 'Установка люстры или светильника',
+        description: 'Потолок, бра, подключение к существующей проводке.',
+        price: '2500',
+        currency: 'RUB',
+        images: [],
+        kind: 'repair',
+        updatedAt: '2026-08-04T08:00:00.000Z',
+      },
+    ],
+  },
+  {
+    id: 'seed:leyla',
+    displayName: 'Лейла Мамедова',
+    bio: 'Репетитор английского. Дети и взрослые, разговор и подготовка к экзаменам.',
+    email: 'leyla.english@example.com',
+    phone: '+994 50 111 22 33',
+    photos: [],
+    customKinds: [],
+    kinds: ['tutoring'],
+    address: 'Баку, онлайн или у ученика',
+    hours: { open: '09:00', close: '18:00', days: [1, 2, 3, 4, 5, 6, 7] },
+    updatedAt: '2026-08-06T09:00:00.000Z',
+    offers: [
+      {
+        id: 'seed:leyla:lesson',
+        profileId: 'seed:leyla',
+        title: 'Урок английского 60 минут',
+        description: 'Индивидуально. Разговор, грамматика или экзамен — как договоримся.',
+        price: '25',
+        currency: 'AZN',
+        images: [],
+        kind: 'tutoring',
+        updatedAt: '2026-08-06T09:00:00.000Z',
+      },
+    ],
+  },
+];
+
+function seedMsg(id: string, locale: AppLocale, fallback: string): string {
+  return hasMsg(id) ? t(locale, id) : fallback;
+}
+
+function localizeOffer(slug: string, offer: ServiceOffer, locale: AppLocale): ServiceOffer {
+  const prefix = `seed:${slug}:`;
+  if (!offer.id.startsWith(prefix)) return offer;
+  const offerSlug = offer.id.slice(prefix.length);
+  return {
+    ...offer,
+    title: seedMsg(`seed.${slug}.${offerSlug}.title`, locale, offer.title),
+    description: seedMsg(`seed.${slug}.${offerSlug}.desc`, locale, offer.description),
+  };
+}
+
+export function localizeMaster(master: ServiceMaster, locale: AppLocale): ServiceMaster {
+  if (!master.id.startsWith('seed:')) return master;
+  const slug = master.id.slice(5);
+  return {
+    ...master,
+    bio: seedMsg(`seed.${slug}.bio`, locale, master.bio),
+    address: master.address ? seedMsg(`seed.${slug}.address`, locale, master.address) : master.address,
+    offers: master.offers.map((offer) => localizeOffer(slug, offer, locale)),
+  };
+}
+
+export function seedSearchText(master: ServiceMaster): string {
+  if (!master.id.startsWith('seed:')) return '';
+  return APP_LOCALES.map((locale) => {
+    const loc = localizeMaster(master, locale);
+    return `${loc.bio} ${loc.address ?? ''} ${loc.offers.map((item) => `${item.title} ${item.description}`).join(' ')}`;
+  }).join(' ');
+}

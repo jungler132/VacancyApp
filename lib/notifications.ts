@@ -1,6 +1,9 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
+import { t } from '@/lib/i18n';
+import { DEFAULT_LOCALE, type AppLocale } from '@/lib/i18n/locale';
+
 const CHANNEL = 'workly-alerts';
 let handlerReady = false;
 
@@ -17,10 +20,10 @@ export function setupNotificationHandler() {
   });
 }
 
-async function ensureChannel() {
+async function ensureChannel(locale: AppLocale = DEFAULT_LOCALE) {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL, {
-    name: 'Новые вакансии',
+    name: t(locale, 'notify.channel'),
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }
@@ -35,18 +38,23 @@ export async function requestAlertPermission(): Promise<boolean> {
   return next.status === 'granted';
 }
 
-export async function notifyNewJobs(count: number, label: string, alertId: string): Promise<void> {
+export async function notifyNewJobs(
+  count: number,
+  label: string,
+  alertId: string,
+  locale: AppLocale = DEFAULT_LOCALE,
+): Promise<void> {
   if (Platform.OS === 'web' || count <= 0) return;
   setupNotificationHandler();
-  await ensureChannel();
+  await ensureChannel(locale);
   const allowed = await Notifications.getPermissionsAsync();
   if (allowed.status !== 'granted') return;
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Новые вакансии',
-      body: `Появилось ${count} новых · ${label}`,
+      title: t(locale, 'notify.title'),
+      body: t(locale, 'notify.body', { count, label }),
       data: { type: 'alert', alertId },
-      color: '#00D4A1',
+      color: '#00236f',
     },
     trigger: null,
   });

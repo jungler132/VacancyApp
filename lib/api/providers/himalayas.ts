@@ -1,6 +1,6 @@
 import type { Job, SearchParams } from '../../types';
 import { buildQuery, jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, stripHtml, toPublishedAt } from '../../format';
+import { excerptOf, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
 
 type HimalayasJob = {
@@ -59,6 +59,6 @@ export async function searchHimalayas(params: SearchParams): Promise<Job[]> {
       publishedAt: toPublishedAt(job.pubDate),
       url: job.applicationLink ?? 'https://himalayas.app/jobs',
       excerpt: excerptOf(job.excerpt || job.description || job.title || ''),
-      description: stripHtml(job.description || job.excerpt),
+      description: htmlToText(job.description || job.excerpt),
     }));
 }
