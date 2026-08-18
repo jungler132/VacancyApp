@@ -3,17 +3,13 @@ import { SUPPORT_EMAIL } from '@/lib/support';
 const UA = `WorklyJobs/1.0 (${SUPPORT_EMAIL})`;
 
 function combineSignals(timeoutSignal: AbortSignal, external?: AbortSignal): AbortSignal {
-  if (!external) return timeoutSignal;
-  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
-    return AbortSignal.any([timeoutSignal, external]);
-  }
   const merged = new AbortController();
   const abort = () => merged.abort();
-  if (external.aborted || timeoutSignal.aborted) {
+  if (external?.aborted || timeoutSignal.aborted) {
     abort();
     return merged.signal;
   }
-  external.addEventListener('abort', abort, { once: true });
+  external?.addEventListener('abort', abort, { once: true });
   timeoutSignal.addEventListener('abort', abort, { once: true });
   return merged.signal;
 }

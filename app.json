@@ -15,6 +15,7 @@
       "package": "com.workly.app",
       "versionCode": 1,
       "userInterfaceStyle": "automatic",
+      "icon": "./assets/images/icon.png",
       "adaptiveIcon": {
         "backgroundColor": "#00236f",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -36,7 +37,16 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#f7f9fb"
+          "backgroundColor": "#00236f",
+          "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#00236f"
+          },
+          "android": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#00236f",
+            "imageWidth": 200
+          }
         }
       ],
       "expo-font",
