@@ -63,7 +63,6 @@ function formStyleFactory(colors: ThemeColors, _scheme: ColorSchemeName) {
       paddingHorizontal: 12,
     },
     area: { minHeight: 120, paddingTop: 12 },
-    wrap: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
     primary: {
       height: 48,
       borderRadius: radius.full,

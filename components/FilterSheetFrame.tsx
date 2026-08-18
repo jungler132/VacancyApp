@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
+import { ChipWrap } from '@/components/ChipWrap';
 import { Text } from '@/components/AppText';
 import { fonts, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
@@ -89,7 +90,7 @@ export const FilterSheetSection = memo(function FilterSheetSection({
   return (
     <>
       <Text style={styles.section}>{title}</Text>
-      <View style={styles.wrap}>{children}</View>
+      <ChipWrap>{children}</ChipWrap>
     </>
   );
 });
@@ -148,7 +149,6 @@ function filterSheetFrameStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       marginTop: 12,
       marginBottom: 10,
     },
-    wrap: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
     done: {
       marginTop: 16,
       backgroundColor: colors.accent,

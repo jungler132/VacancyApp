@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 
 import { AppHeader } from '@/components/AppHeader';
+import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { NavRow } from '@/components/NavRow';
 import { Text } from '@/components/AppText';
@@ -74,14 +75,14 @@ export default function SettingsScreen() {
       <AppHeader title={t('tab.settings')} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}>
         <Text style={styles.section}>{t('settings.language')}</Text>
-        <View style={styles.wrap}>
+        <ChipWrap>
           {APP_LOCALES.map((id) => (
             <SelectChip key={id} id={id} label={t(keyOf('lang', id))} selected={locale === id} onChange={onLocale} />
           ))}
-        </View>
+        </ChipWrap>
 
         <Text style={styles.section}>{t('settings.theme')}</Text>
-        <View style={styles.wrap}>
+        <ChipWrap>
           {THEME_OPTIONS.map((id) => (
             <SelectChip
               key={id}
@@ -91,10 +92,10 @@ export default function SettingsScreen() {
               onChange={onTheme}
             />
           ))}
-        </View>
+        </ChipWrap>
 
         <Text style={styles.section}>{t('settings.font')}</Text>
-        <View style={styles.wrap}>
+        <ChipWrap>
           {FONT_SIZE_OPTIONS.map((item) => (
             <SelectChip
               key={item.id}
@@ -104,7 +105,7 @@ export default function SettingsScreen() {
               onChange={onFont}
             />
           ))}
-        </View>
+        </ChipWrap>
 
         <Pressable onPress={() => setSourcesOpen((value) => !value)} style={styles.rowBetween}>
           <Text style={styles.section}>{t('settings.sources')}</Text>
@@ -181,7 +182,6 @@ function settingsStyles(colors: ThemeColors) {
       justifyContent: 'space-between' as const,
       marginTop: 8,
     },
-    wrap: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
     link: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 14 },
     lead: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginBottom: 4 },
     empty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginBottom: 4 },

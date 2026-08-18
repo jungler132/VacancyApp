@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseFontSize, scaleFont } from './fontScale';
+import { parseFontSize, scaleFont, monoAdvance } from './fontScale';
 
 describe('fontScale', () => {
   it('принимает только три размера', () => {
@@ -16,5 +16,10 @@ describe('fontScale', () => {
     assert.equal(scaleFont(16, 1), 16);
     assert.equal(scaleFont(16, 0.88), 14);
     assert.equal(scaleFont(16, 1.18), 19);
+  });
+
+  it('считает ширину моноширинной подписи', () => {
+    assert.equal(monoAdvance('Workly', 13), Math.ceil(6 * 13 * 0.66));
+    assert.equal(monoAdvance('All fields', 13), Math.ceil(10 * 13 * 0.66));
   });
 });

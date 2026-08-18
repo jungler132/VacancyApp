@@ -2,6 +2,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
@@ -114,7 +115,7 @@ function ProfileForm() {
         <FormField label={t('me.phone')} value={phone} onChangeText={setPhone} placeholder={t('me.phonePh')} keyboardType="phone-pad" />
         <FormField label={t('me.address')} value={address} onChangeText={setAddress} placeholder={t('me.addressPh')} />
         <Text style={formStyles.label}>{t('me.kinds')}</Text>
-        <View style={formStyles.wrap}>
+        <ChipWrap>
           {SERVICE_KINDS.map((item) => (
             <SelectChip
               key={item.id}
@@ -125,19 +126,19 @@ function ProfileForm() {
               onChange={toggleKind}
             />
           ))}
-        </View>
+        </ChipWrap>
         <Text style={formStyles.label}>{t('me.open')}</Text>
-        <View style={formStyles.wrap}>
+        <ChipWrap>
           {HOUR_OPTIONS.map((item) => (
             <SelectChip key={`o-${item}`} id={item} label={item} compact selected={open === item} onChange={onOpenHour} />
           ))}
-        </View>
+        </ChipWrap>
         <Text style={formStyles.label}>{t('me.close')}</Text>
-        <View style={formStyles.wrap}>
+        <ChipWrap>
           {HOUR_OPTIONS.map((item) => (
             <SelectChip key={`c-${item}`} id={item} label={item} compact selected={close === item} onChange={onCloseHour} />
           ))}
-        </View>
+        </ChipWrap>
         {hoursLabel ? <Text style={styles.hoursPreview}>{t('me.hoursPreview', { value: hoursLabel })}</Text> : null}
         <Pressable onPress={onSave} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
           <Text style={formStyles.primaryText}>{t('me.save')}</Text>

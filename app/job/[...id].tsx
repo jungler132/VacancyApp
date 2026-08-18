@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
 import { AppChip } from '@/components/AppChip';
+import { ChipWrap } from '@/components/ChipWrap';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
 import { EmptyState } from '@/components/EmptyState';
 import { SelectChip } from '@/components/FilterChips';
@@ -172,14 +173,14 @@ export default function JobDetailsScreen() {
           </Text>
         </View>
 
-        <View style={styles.chips}>
+        <ChipWrap center style={{ marginBottom: 16 }}>
           {job.salary ? <AppChip label={job.salary} selected /> : null}
           {meta ? <AppChip label={meta} /> : null}
           {facts.map((fact) => (
             <AppChip key={fact.id} label={tokenLabel(locale, fact.value)} />
           ))}
           <AppChip label={jobTier(job) === 1 ? t('common.premium') : job.sourceName} selected />
-        </View>
+        </ChipWrap>
 
         {job.contact ? (
           <Text variant="bodyMedium" style={styles.meta}>
@@ -197,7 +198,7 @@ export default function JobDetailsScreen() {
         <Text variant="labelSmall" style={styles.statusTitle}>
           {t('job.status')}
         </Text>
-        <View style={styles.statusRow}>
+        <ChipWrap style={{ marginBottom: 12 }}>
           {APPLY_STATUSES.map((item) => (
             <SelectChip
               key={item.id}
@@ -208,7 +209,7 @@ export default function JobDetailsScreen() {
               onChange={onStatus}
             />
           ))}
-        </View>
+        </ChipWrap>
 
         {!job.description && isHhJobId(job.id) ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
 
@@ -257,7 +258,6 @@ function jobDetailsStyles(colors: ThemeColors, scheme: ColorSchemeName) {
     logo: { marginBottom: 16 },
     headline: { textAlign: 'center' as const },
     company: { marginTop: 6, opacity: 0.75, textAlign: 'center' as const },
-    chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, justifyContent: 'center' as const, marginBottom: 16 },
     meta: { marginTop: 8, opacity: 0.85 },
     companyCard: {
       backgroundColor: colors.card,
@@ -272,7 +272,6 @@ function jobDetailsStyles(colors: ThemeColors, scheme: ColorSchemeName) {
     },
     companyNote: { opacity: 0.65 },
     statusTitle: { marginTop: 8, marginBottom: 8, opacity: 0.7 },
-    statusRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, marginBottom: 12 },
     snippetHint: {
       color: colors.faint,
       fontFamily: fonts.medium,

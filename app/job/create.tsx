@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
@@ -117,7 +118,7 @@ export default function CreateJobScreen() {
           keyboardType="numeric"
         />
         <Text style={formStyles.label}>{t('offer.currency')}</Text>
-        <View style={formStyles.wrap}>
+        <ChipWrap>
           {SALARY_CURRENCIES.map((item) => (
             <SelectChip
               key={item.id}
@@ -128,10 +129,10 @@ export default function CreateJobScreen() {
               onChange={onCurrency}
             />
           ))}
-        </View>
+        </ChipWrap>
         <FormField label={t('create.contact')} value={contact} onChangeText={setContact} placeholder={t('create.contactPh')} />
         <Text style={formStyles.label}>{t('create.category')}</Text>
-        <View style={formStyles.wrap}>
+        <ChipWrap>
           {FORM_CATEGORIES.map((item) => (
             <SelectChip
               key={item.id}
@@ -142,11 +143,11 @@ export default function CreateJobScreen() {
               onChange={onCategory}
             />
           ))}
-        </View>
-        <View style={formStyles.wrap}>
+        </ChipWrap>
+        <ChipWrap>
           <SelectChip id="office" label={t('create.office')} compact selected={!remote} onChange={onOffice} />
           <SelectChip id="remote" label={t('create.remote')} compact selected={remote} onChange={onRemote} />
-        </View>
+        </ChipWrap>
         <FormField
           label={t('create.description')}
           value={description}

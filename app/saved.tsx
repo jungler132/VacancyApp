@@ -4,6 +4,7 @@ import { FlatList, Pressable, View } from 'react-native';
 import { CatalogLinkCard } from '@/components/CatalogLinkCard';
 import { Text } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
+import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { JobCard } from '@/components/JobCard';
 import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
@@ -75,17 +76,19 @@ export default function SavedScreen() {
       </View>
       {page === 'jobs' && saved.length ? (
         <View style={styles.filters}>
-          <SelectChip id="all" label={t('common.all')} compact selected={status === 'all'} onChange={onStatusAll} />
-          {APPLY_STATUSES.map((item) => (
-            <SelectChip
-              key={item.id}
-              id={item.id}
-              label={t(keyOf('apply', item.id))}
-              compact
-              selected={status === item.id}
-              onChange={onStatus}
-            />
-          ))}
+          <ChipWrap>
+            <SelectChip id="all" label={t('common.all')} compact selected={status === 'all'} onChange={onStatusAll} />
+            {APPLY_STATUSES.map((item) => (
+              <SelectChip
+                key={item.id}
+                id={item.id}
+                label={t(keyOf('apply', item.id))}
+                compact
+                selected={status === item.id}
+                onChange={onStatus}
+              />
+            ))}
+          </ChipWrap>
         </View>
       ) : null}
       {page === 'jobs' ? (
@@ -135,7 +138,7 @@ function savedStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
     tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     tabLabel: { color: colors.text, fontSize: 12, fontFamily: fonts.medium, letterSpacing: 0.4 },
     tabLabelOn: { color: colors.accentText },
-    filters: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, paddingHorizontal: 20, paddingTop: 12 },
+    filters: { paddingHorizontal: 20, paddingTop: 12 },
     list: { padding: 20, paddingBottom: 40 },
     groupTitle: { color: colors.faint, fontSize: 13, fontFamily: fonts.semibold, marginTop: 6, marginBottom: 2 },
   };

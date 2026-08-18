@@ -140,18 +140,15 @@ export const FiltersSheet = memo(function FiltersSheet({
         ))}
       </FilterSheetSection>
       <FilterSheetSection title={t('filters.format')}>
-        <View style={styles.tiles}>
-          {FORMATS.map((id) => (
-            <Pressable
-              key={id}
-              onPress={() => onFormat(id)}
-              style={[styles.tile, current.format === id && styles.tileOn]}>
-              <Text style={[styles.tileText, current.format === id && styles.tileTextOn]}>
-                {t(keyOf('filters.format', id))}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        {FORMATS.map((id) => (
+          <SelectChip
+            key={id}
+            id={id}
+            label={t(keyOf('filters.format', id))}
+            selected={current.format === id}
+            onChange={onFormat}
+          />
+        ))}
       </FilterSheetSection>
       <FilterSheetSection title={t('filters.employment')}>
         {EMPLOYMENT.map((id) => (
@@ -209,25 +206,13 @@ const WatchRow = memo(function WatchRow({
 
 function filtersSheetStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
-    tiles: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, width: '100%' as const, alignSelf: 'stretch' as const },
-    tile: {
-      width: '47%' as const,
-      borderWidth: 1,
-      borderColor: colors.chipBorder,
-      backgroundColor: colors.chip,
-      borderRadius: radius.md,
-      paddingVertical: 14,
-      alignItems: 'center' as const,
-    },
-    tileOn: { backgroundColor: colors.accentDim, borderColor: colors.accent },
-    tileText: { color: colors.text, fontFamily: fonts.semibold, fontSize: 13 },
-    tileTextOn: { color: colors.accent },
     watch: {
       marginTop: 14,
       borderWidth: 1,
       borderColor: colors.chipBorder,
       borderRadius: radius.full,
       paddingVertical: 12,
+      paddingHorizontal: 16,
       alignItems: 'center' as const,
     },
     watchOn: { backgroundColor: colors.accentDim, borderColor: colors.accent },

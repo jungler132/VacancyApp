@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { CompanyLogo } from '@/components/CompanyLogo';
+import { AppChip } from '@/components/AppChip';
+import { ChipWrap } from '@/components/ChipWrap';
 import { type ApplyStatus } from '@/lib/apply';
 import { Text } from '@/components/AppText';
 import { displayName, formatPlace, jobTags } from '@/lib/format';
@@ -111,13 +113,11 @@ const JobCardView = memo(function JobCardView({
         </View>
       ) : null}
       {tags.length ? (
-        <View style={styles.tags}>
+        <ChipWrap style={{ marginTop: 12 }}>
           {tags.map((tag) => (
-            <Text key={tag} style={styles.tag}>
-              {tokenLabel(locale, tag)}
-            </Text>
+            <AppChip key={tag} label={tokenLabel(locale, tag)} selected />
           ))}
-        </View>
+        </ChipWrap>
       ) : null}
       {applyStatus ? <Text style={styles.status}>{t(keyOf('apply', applyStatus))}</Text> : null}
     </Pressable>
@@ -161,17 +161,6 @@ function jobCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
     meta: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12, marginTop: 12 },
     metaItem: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, maxWidth: '100%' as const },
     metaText: { color: colors.muted, fontSize: 12, fontFamily: fonts.medium, flexShrink: 1 },
-    tags: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, marginTop: 12 },
-    tag: {
-      color: colors.accent,
-      fontSize: 11,
-      fontFamily: fonts.medium,
-      backgroundColor: colors.accentDim,
-      borderRadius: radius.full,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      includeFontPadding: false,
-    },
     status: { color: colors.accent, marginTop: 10, fontSize: 12, fontFamily: fonts.semibold },
   };
 }

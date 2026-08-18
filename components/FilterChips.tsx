@@ -2,10 +2,14 @@ import { memo, useCallback, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
-import { fonts, radius, useColors, useThemedStyles, type ThemeColors } from '@/lib/theme';
 import { Text } from '@/components/AppText';
+import { monoAdvance, scaleFont, useFontScale } from '@/lib/fontScale';
+import { fonts, radius, useColors, useThemedStyles, type ThemeColors } from '@/lib/theme';
 
 type Item<T extends string | number> = { id: T; label: string; icon?: string };
+
+const CHIP_FONT = 13;
+const CHIP_ICON = 22;
 
 export const SelectChip = memo(function SelectChip({
   id,
@@ -23,13 +27,17 @@ export const SelectChip = memo(function SelectChip({
   onChange: (id: string | number) => void;
 }) {
   const colors = useColors();
+  const scale = useFontScale();
   const styles = useThemedStyles(chipStyles);
   const tint = selected ? colors.onPrimaryContainer : colors.muted;
+  const fontSize = scaleFont(CHIP_FONT, scale);
+  const textWidth = monoAdvance(label, fontSize);
   const press = useCallback(() => onChange(id), [id, onChange]);
 
   return (
     <Pressable
       onPress={press}
+      android_ripple={{ borderless: true, color: 'transparent' }}
       style={[styles.chip, compact && styles.chipSm]}>
       <View style={[styles.bg, selected && styles.bgOn]} pointerEvents="none" />
       {icon ? (
@@ -40,7 +48,9 @@ export const SelectChip = memo(function SelectChip({
           style={styles.icon}
         />
       ) : null}
-      <Text style={[styles.label, selected && styles.labelOn]}>{label}</Text>
+      <Text style={[styles.label, { width: textWidth }, selected && styles.labelOn]}>
+        {label}
+      </Text>
     </Pressable>
   );
 });
@@ -92,7 +102,7 @@ export const FilterChips = memo(FilterChipsInner) as typeof FilterChipsInner;
 
 function chipStyles(colors: ThemeColors) {
   return {
-    row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, paddingRight: 8 },
+    row: { flexDirection: 'row' as const, alignItems: 'center' as const, flexShrink: 0, gap: 8, paddingRight: 8 },
     chip: {
       position: 'relative' as const,
       flexDirection: 'row' as const,
@@ -100,6 +110,7 @@ function chipStyles(colors: ThemeColors) {
       alignSelf: 'flex-start' as const,
       flexGrow: 0,
       flexShrink: 0,
+      flexBasis: 'auto' as const,
       overflow: 'visible' as const,
       paddingHorizontal: 14,
       paddingVertical: 8,
@@ -120,10 +131,10 @@ function chipStyles(colors: ThemeColors) {
       backgroundColor: colors.primaryContainer,
       borderColor: colors.primaryContainer,
     },
-    icon: { marginRight: 6 },
+    icon: { width: CHIP_ICON, marginRight: 6 },
     label: {
       color: colors.text,
-      fontSize: 13,
+      fontSize: CHIP_FONT,
       lineHeight: 20,
       fontFamily: fonts.medium,
       flexGrow: 0,

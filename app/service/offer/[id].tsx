@@ -2,6 +2,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
@@ -133,7 +134,7 @@ function OfferForm() {
         <Text style={formStyles.lead}>{t('offer.lead')}</Text>
         <FormField label={t('offer.title')} value={title} onChangeText={setTitle} placeholder={t('offer.titlePh')} />
         <Text style={formStyles.label}>{t('offer.kind')}</Text>
-        <View style={formStyles.wrap}>
+        <ChipWrap>
           {SERVICE_KINDS.map((item) => (
             <SelectChip
               key={item.id}
@@ -144,7 +145,7 @@ function OfferForm() {
               onChange={onKind}
             />
           ))}
-        </View>
+        </ChipWrap>
         <FormField
           label={t('offer.description')}
           value={description}
@@ -154,11 +155,11 @@ function OfferForm() {
         />
         <FormField label={t('offer.price')} value={price} onChangeText={setPrice} placeholder="2500" keyboardType="numeric" />
         <Text style={formStyles.label}>{t('offer.currency')}</Text>
-        <View style={formStyles.wrap}>
+        <ChipWrap>
           {SALARY_CURRENCIES.map((item) => (
             <SelectChip key={item.id} id={item.id} label={item.id} compact selected={currency === item.id} onChange={onCurrency} />
           ))}
-        </View>
+        </ChipWrap>
         <Text style={formStyles.label}>{t('offer.photos')}</Text>
         <View style={styles.photos}>
           {images.map((uri) => (
