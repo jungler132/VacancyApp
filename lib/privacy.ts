@@ -1,8 +1,9 @@
 import type { AppLocale } from '@/lib/i18n/locale';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
 export const PRIVACY_HREF = '/privacy';
 export const PRIVACY_URL = 'https://jungler132.github.io/VacancyApp/';
-export const PRIVACY_EMAIL = 'workly.app.contact@gmail.com';
+export const PRIVACY_EMAIL = SUPPORT_EMAIL;
 export const PRIVACY_UPDATED = '2026-08-15';
 
 export type PrivacyBlock = {

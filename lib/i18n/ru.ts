@@ -343,6 +343,7 @@ export const ru = {
   'stats.age': 'Давность',
   'stats.categories': 'Сферы',
   'stats.empty': 'Нет данных',
+  'stats.rest': 'Остальное',
   'stats.age.3': 'До 3 дней',
   'stats.age.7': '3–7 дней',
   'stats.age.14': '1–2 недели',

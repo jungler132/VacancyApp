@@ -2,6 +2,7 @@ import type { Job, SearchParams } from '../../types';
 import { CIS_AREAS, buildQuery } from '../../catalog';
 import { excerptOf, formatSalary, htmlToText, stripHtml, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
 type HhSalary = { from?: number | null; to?: number | null; currency?: string | null };
 type HhVacancy = {
@@ -23,8 +24,8 @@ type HhSearch = { items?: HhVacancy[]; pages?: number };
 
 const HOSTS = ['https://api.hh.ru'];
 const HH_HEADERS = {
-  'User-Agent': 'WorklyJobs/1.0 (workly.app.contact@gmail.com)',
-  'HH-User-Agent': 'WorklyJobs/1.0 (workly.app.contact@gmail.com)',
+  'User-Agent': `WorklyJobs/1.0 (${SUPPORT_EMAIL})`,
+  'HH-User-Agent': `WorklyJobs/1.0 (${SUPPORT_EMAIL})`,
 };
 
 type HhBoard = {

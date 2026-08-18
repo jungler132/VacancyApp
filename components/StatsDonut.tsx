@@ -8,7 +8,7 @@ import { useLocale, useT } from '@/lib/i18n/useT';
 import type { StatSlice } from '@/lib/stats';
 import { radius, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
-const STAT_PREFIXES = ['stats.age', 'fact', 'category', 'kind'];
+const STAT_PREFIXES = ['stats.age', 'stats', 'fact', 'category', 'kind'];
 
 export const StatsDonut = memo(function StatsDonut({
   title,

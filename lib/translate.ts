@@ -1,9 +1,10 @@
 import type { AppLocale } from '@/lib/i18n';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
 const MAX_QUERY_BYTES = 450;
 const MAX_CHUNKS = 80;
 const CONCURRENCY = 2;
-const CONTACT_EMAIL = 'workly.app.contact@gmail.com';
+const CONTACT_EMAIL = SUPPORT_EMAIL;
 
 export function detectTextLocale(text: string): AppLocale {
   if (/[əƏğĞıİöÖşŞçÇüÜ]/.test(text)) return 'az';

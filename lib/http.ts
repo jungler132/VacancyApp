@@ -1,4 +1,6 @@
-const UA = 'WorklyJobs/1.0 (workly.app.contact@gmail.com)';
+import { SUPPORT_EMAIL } from '@/lib/support';
+
+const UA = `WorklyJobs/1.0 (${SUPPORT_EMAIL})`;
 
 function combineSignals(timeoutSignal: AbortSignal, external?: AbortSignal): AbortSignal {
   if (!external) return timeoutSignal;

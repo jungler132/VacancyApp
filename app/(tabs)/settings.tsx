@@ -18,9 +18,10 @@ import { selectSourceErrorMap } from '@/lib/store/selectors';
 import { setFontSize, setLocale, setTheme } from '@/lib/store/appearanceSlice';
 import { toggleSource } from '@/lib/store/sourcesSlice';
 import { PRIVACY_HREF } from '@/lib/privacy';
+import { SUPPORT_EMAIL } from '@/lib/support';
 import { THEME_OPTIONS, fonts, radius, useThemedStyles, type ThemeColors, type ThemePreference } from '@/lib/theme';
 
-const FEEDBACK_EMAIL = 'feedback@workly.app';
+const FEEDBACK_EMAIL = SUPPORT_EMAIL;
 
 export default function SettingsScreen() {
   const t = useT();

@@ -71,21 +71,23 @@ export const JobsHeader = memo(function JobsHeader({
         </View>
         <FilterIconButton active={filtersActive} onPress={onOpenFilters} />
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tiers}
-        style={styles.tierRow}>
-        {TIER_FILTERS.map((item) => (
-          <SelectChip
-            key={String(item.id)}
-            id={item.id}
-            label={item.id === 'all' ? t('common.all') : t(keyOf('common', item.id === 1 ? 'premium' : item.id === 2 ? 'workly' : 'platforms'))}
-            compact
-            selected={tierFilter === item.id}
-            onChange={onTier}
-          />
-        ))}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tierRow}>
+        <View style={styles.tiers} collapsable={false}>
+          {TIER_FILTERS.map((item) => (
+            <SelectChip
+              key={String(item.id)}
+              id={item.id}
+              label={
+                item.id === 'all'
+                  ? t('common.all')
+                  : t(keyOf('common', item.id === 1 ? 'premium' : item.id === 2 ? 'workly' : 'platforms'))
+              }
+              compact
+              selected={tierFilter === item.id}
+              onChange={onTier}
+            />
+          ))}
+        </View>
       </ScrollView>
     </AppHeader>
   );
@@ -96,6 +98,12 @@ const styles = StyleSheet.create({
   icon: { margin: 0, width: 36, height: 36 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   search: { flex: 1 },
-  tierRow: { marginTop: 12, marginHorizontal: -4 },
-  tiers: { gap: 8, paddingHorizontal: 4, paddingBottom: 2 },
+  tierRow: { marginTop: 12, marginHorizontal: -4, flexGrow: 0 },
+  tiers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
 });

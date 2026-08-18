@@ -22,6 +22,7 @@ export type JobStats = {
 };
 
 const PALETTE = CHART_PALETTE;
+const REST_ID = 'rest';
 
 const AGE_BUCKETS: { id: string; test: (days: number) => boolean }[] = [
   { id: '3', test: (days) => days < 3 },
@@ -42,7 +43,9 @@ function toSlices(counts: Map<string, number>, limit = 8): StatSlice[] {
     color: PALETTE[index % PALETTE.length],
   }));
   if (rest > 0) {
-    slices.push({ id: 'other', label: 'other', value: rest, color: PALETTE[top.length % PALETTE.length] });
+    const existing = slices.find((item) => item.id === REST_ID);
+    if (existing) existing.value += rest;
+    else slices.push({ id: REST_ID, label: REST_ID, value: rest, color: PALETTE[top.length % PALETTE.length] });
   }
   return slices.filter((item) => item.value > 0);
 }

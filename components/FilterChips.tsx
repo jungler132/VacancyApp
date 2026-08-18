@@ -1,5 +1,5 @@
 import { memo, useCallback, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, ScrollView } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { fonts, radius, useColors, useThemedStyles, type ThemeColors } from '@/lib/theme';
@@ -30,15 +30,17 @@ export const SelectChip = memo(function SelectChip({
   return (
     <Pressable
       onPress={press}
-      style={[styles.chip, compact && styles.chipSm, selected && styles.selected]}>
+      style={[styles.chip, compact && styles.chipSm]}>
+      <View style={[styles.bg, selected && styles.bgOn]} pointerEvents="none" />
       {icon ? (
         <MaterialDesignIcons
           name={icon as ComponentProps<typeof MaterialDesignIcons>['name']}
           size={compact ? 14 : 16}
           color={tint}
+          style={styles.icon}
         />
       ) : null}
-      <Text style={[styles.label, compact && styles.labelSm, selected && styles.labelOn]}>{label}</Text>
+      <Text style={[styles.label, selected && styles.labelOn]}>{label}</Text>
     </Pressable>
   );
 });
@@ -65,19 +67,21 @@ function FilterChipsInner<T extends string | number>({
   const press = (onToggle ?? onChange) as ((id: string | number) => void) | undefined;
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-      {items.map((item) => (
-        <SelectChip
-          key={String(item.id)}
-          id={item.id}
-          label={item.label}
-          icon={item.icon}
-          compact={compact}
-          selected={selected.includes(item.id)}
-          onChange={press ?? noop}
-        />
-      ))}
-      {trailing}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <View style={styles.row} collapsable={false}>
+        {items.map((item) => (
+          <SelectChip
+            key={String(item.id)}
+            id={item.id}
+            label={item.label}
+            icon={item.icon}
+            compact={compact}
+            selected={selected.includes(item.id)}
+            onChange={press ?? noop}
+          />
+        ))}
+        {trailing}
+      </View>
     </ScrollView>
   );
 }
@@ -88,31 +92,43 @@ export const FilterChips = memo(FilterChipsInner) as typeof FilterChipsInner;
 
 function chipStyles(colors: ThemeColors) {
   return {
-    row: { gap: 8, paddingRight: 8 },
+    row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, paddingRight: 8 },
     chip: {
+      position: 'relative' as const,
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      gap: 6,
+      alignSelf: 'flex-start' as const,
       flexGrow: 0,
       flexShrink: 0,
-      borderWidth: 1,
-      borderColor: colors.chipBorder,
-      backgroundColor: colors.chip,
-      borderRadius: radius.full,
+      overflow: 'visible' as const,
       paddingHorizontal: 14,
       paddingVertical: 8,
     },
-    chipSm: { paddingHorizontal: 12, paddingVertical: 7 },
-    selected: { backgroundColor: colors.primaryContainer, borderColor: colors.primaryContainer },
+    chipSm: { paddingHorizontal: 12, paddingVertical: 8 },
+    bg: {
+      position: 'absolute' as const,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.chip,
+    },
+    bgOn: {
+      backgroundColor: colors.primaryContainer,
+      borderColor: colors.primaryContainer,
+    },
+    icon: { marginRight: 6 },
     label: {
       color: colors.text,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 13,
+      lineHeight: 20,
       fontFamily: fonts.medium,
+      flexGrow: 0,
       flexShrink: 0,
-      includeFontPadding: false,
     },
-    labelSm: { fontSize: 12 },
     labelOn: { color: colors.onPrimaryContainer },
   };
 }

@@ -321,6 +321,7 @@ export const az: Record<MsgId, string> = {
   'stats.age': 'Tarix',
   'stats.categories': 'Sahələr',
   'stats.empty': 'Məlumat yoxdur',
+  'stats.rest': 'Qalanlar',
   'stats.age.3': '3 günə qədər',
   'stats.age.7': '3–7 gün',
   'stats.age.14': '1–2 həftə',

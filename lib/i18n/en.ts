@@ -321,6 +321,7 @@ export const en: Record<MsgId, string> = {
   'stats.age': 'Posted',
   'stats.categories': 'Fields',
   'stats.empty': 'No data',
+  'stats.rest': 'Other',
   'stats.age.3': 'Under 3 days',
   'stats.age.7': '3–7 days',
   'stats.age.14': '1–2 weeks',

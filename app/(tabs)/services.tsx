@@ -2,7 +2,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { AppHeader, FiltersButton } from '@/components/AppHeader';
+import { AppHeader, FilterIconButton } from '@/components/AppHeader';
 import { Text } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchField } from '@/components/SearchField';
@@ -73,12 +73,12 @@ export default function ServicesScreen() {
 
   return (
     <View style={styles.screen}>
-      <AppHeader
-        title={t('tab.services')}
-        subtitle={t('services.subtitle', { count: visible.length })}
-        right={<FiltersButton active={filtersActive} onPress={openSheet} />}>
-        <View style={styles.search}>
-          <SearchField value={query} onSearch={setQuery} placeholder={t('search.services')} />
+      <AppHeader title={t('tab.services')} subtitle={t('services.subtitle', { count: visible.length })}>
+        <View style={styles.searchRow}>
+          <View style={styles.search}>
+            <SearchField value={query} onSearch={setQuery} placeholder={t('search.services')} />
+          </View>
+          <FilterIconButton active={filtersActive} onPress={openSheet} />
         </View>
       </AppHeader>
       <FlatList
@@ -127,7 +127,8 @@ export default function ServicesScreen() {
 function servicesStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
     screen: { flex: 1, backgroundColor: 'transparent' },
-    search: { marginTop: 12 },
+    searchRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, marginTop: 12 },
+    search: { flex: 1 },
     content: { padding: 20 },
     sep: { height: 12 },
     create: {
