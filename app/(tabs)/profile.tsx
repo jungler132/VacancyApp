@@ -1,43 +1,94 @@
-import { memo, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import type { Href } from 'expo-router';
 
 import { AppHeader } from '@/components/AppHeader';
 import { NavRow } from '@/components/NavRow';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { Text } from '@/components/AppText';
-import { useT } from '@/lib/i18n/useT';
+import { alertLabel } from '@/lib/alerts';
+import { keyOf } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n/useT';
+import { useLockedNav } from '@/lib/hooks/useLockedNav';
 import { jobHref } from '@/lib/jobRoute';
 import { useTabBarLayout } from '@/lib/layout';
-import { offerEditorHref, SAVED_HREF, SERVICE_ME_HREF, STATS_HREF } from '@/lib/services/catalog';
+import { pipelineStats } from '@/lib/pipeline';
+import { prefsFilled, searchFromPrefs } from '@/lib/prefs';
+import { offerEditorHref, PIPELINE_HREF, PREFS_HREF, SAVED_HREF, SERVICE_ME_HREF, STATS_HREF, TODAY_HREF } from '@/lib/services/catalog';
 import { jobTier } from '@/lib/tiers';
-import { pinViewedJob } from '@/lib/store/jobsSlice';
+import { collectNewJobs } from '@/lib/today';
+import { applySearch } from '@/lib/store/filtersSlice';
+import { pinViewedJob, setTodayJobs } from '@/lib/store/jobsSlice';
+import { clearPendingNew } from '@/lib/store/alertsSlice';
 import { openPaywall, clearPremiumStub } from '@/lib/store/premiumSlice';
 import { clearVisits, recordVisit, removeVisit } from '@/lib/store/visitsSlice';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { selectOwnMaster } from '@/lib/store/selectors';
+import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
+import { selectOwnMaster, selectTodayCard } from '@/lib/store/selectors';
 import { fonts, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
+const JOBS_HREF = '/' as Href;
+
 export default function ProfileScreen() {
-  const router = useRouter();
+  const nav = useLockedNav();
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const t = useT();
   const styles = useThemedStyles(profileStyles);
   const tabBar = useTabBarLayout();
   const own = useAppSelector(selectOwnMaster);
   const isPremium = useAppSelector((state) => state.premium.isPremium);
-  const savedJobs = useAppSelector((state) => state.saved.items.length);
+  const locale = useLocale();
+  const identity = useAppSelector((state) => state.identity);
+  const seeking = identity.seeking;
+  const available = identity.available;
+  const savedJobs = useAppSelector((state) => state.saved.items);
+  const statuses = useAppSelector((state) => state.saved.statuses);
+  const statusAt = useAppSelector((state) => state.saved.statusAt);
+  const digest = useAppSelector(selectTodayCard);
+  const savedJobCount = savedJobs.length;
   const savedResources = useAppSelector((state) => state.savedCatalog.items.length);
   const localJobs = useAppSelector((state) => state.localJobs.items);
   const visits = useAppSelector((state) => state.visits.items);
   const hasPage = Boolean(own?.displayName.trim());
   const name = own?.displayName.trim() || t('common.guest');
-  const frequent = useMemo(() => visits.slice(0, 8), [visits]);
-  const role = hasPage ? t('profile.master') : t('common.guest');
+  const frequent = useMemo(() => visits.slice(0, 4), [visits]);
+  const stats = useMemo(() => pipelineStats(savedJobs, statuses, statusAt), [savedJobs, statusAt, statuses]);
+  const prefsMeta =
+    [
+      identity.title.trim() || null,
+      seeking ? t('identity.seeking') : null,
+      available ? t('identity.available') : null,
+      identity.format !== 'any' ? t(keyOf('filters.format', identity.format)) : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || t('prefs.empty');
+  const newLabel = digest.alert ? alertLabel(digest.alert, locale) : identity.title.trim();
+  const newText = digest.newCount
+    ? digest.alertCount > 1
+      ? t('today.newMany', { count: digest.newCount })
+      : newLabel
+        ? t('today.new', { count: digest.newCount, label: newLabel })
+        : t('today.newYou', { count: digest.newCount })
+    : null;
+  const showToday = seeking || digest.newCount > 0 || digest.moves > 0 || Boolean(digest.staleJob);
+  const role = [
+    seeking ? t('identity.seeking') : null,
+    available ? t('identity.available') : null,
+    isPremium ? t('common.premium') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ') || t('common.guest');
   const pageMeta = hasPage
     ? t('profile.pageMeta', { count: own?.offers.length ?? 0 })
     : t('profile.pageEmpty');
+  const summary = stats.total
+    ? t('pipeline.summary', {
+        total: stats.total,
+        replies: stats.replies,
+        source: stats.bestSource ?? t('pipeline.noSource'),
+      })
+    : t('pipeline.empty');
 
   const openVisit = useCallback(
     (item: (typeof frequent)[number]) => {
@@ -51,10 +102,42 @@ export default function ProfileScreen() {
     [dispatch],
   );
 
-  const openPage = useCallback(() => router.push(SERVICE_ME_HREF), [router]);
+  const openPage = useCallback(() => nav.push(SERVICE_ME_HREF), [nav]);
   const openNewOffer = useCallback(() => {
-    router.push(hasPage ? offerEditorHref('new') : SERVICE_ME_HREF);
-  }, [hasPage, router]);
+    nav.push(hasPage ? offerEditorHref('new') : SERVICE_ME_HREF);
+  }, [hasPage, nav]);
+  const openNewJobs = useCallback(() => {
+    const state = store.getState();
+    const jobs = collectNewJobs({
+      alerts: state.alerts.items,
+      jobsById: state.jobs.byId,
+      savedJobs: state.saved.items,
+      prefs: state.identity,
+    });
+    if (jobs.length) {
+      dispatch(setTodayJobs(jobs));
+      for (const item of state.alerts.items) {
+        if (item.pendingNew || item.pendingNewIds?.length) dispatch(clearPendingNew(item.id));
+      }
+      nav.push(TODAY_HREF);
+      return;
+    }
+    if (digest.alert) {
+      dispatch(applySearch(digest.alert));
+      nav.push(JOBS_HREF);
+      return;
+    }
+    if (prefsFilled(identity)) {
+      dispatch(applySearch(searchFromPrefs(identity)));
+      nav.push(JOBS_HREF);
+    }
+  }, [digest.alert, dispatch, identity, nav, store]);
+  const openTodayStale = useCallback(() => {
+    const job = savedJobs.find((item) => item.id === digest.staleJob?.id);
+    if (!job) return;
+    dispatch(pinViewedJob(job));
+    nav.push(jobHref(job.id));
+  }, [digest.staleJob, dispatch, nav, savedJobs]);
 
   return (
     <View style={styles.screen}>
@@ -63,28 +146,42 @@ export default function ProfileScreen() {
         <Pressable onPress={openPage} style={({ pressed }) => [styles.head, pressed && styles.pressed]}>
           <ServiceAvatar uri={own?.avatarUri} name={name} size={80} />
           <Text style={styles.name}>{name}</Text>
-          <Text style={styles.role}>
-            {role}
-            {isPremium ? ` · ${t('common.premium')}` : ''}
-          </Text>
+          <Text style={styles.role}>{role}</Text>
           <Text style={styles.meta}>{own?.bio?.trim() || t('profile.guestMeta')}</Text>
-          <Text style={styles.edit}>{hasPage ? t('profile.servicePage') : t('profile.pageEmpty')}</Text>
         </Pressable>
 
-        <View style={styles.grid}>
-          <Shortcut
-            title={t('nav.saved')}
-            meta={t('saved.subtitle', { jobs: savedJobs, resources: savedResources })}
-            onPress={() => router.push(SAVED_HREF)}
-          />
-          <Shortcut title={t('nav.stats')} meta={t('profile.statsMeta')} onPress={() => router.push(STATS_HREF)} />
-          <Shortcut title={t('profile.servicePage')} meta={pageMeta} onPress={openPage} />
-          <Shortcut
-            title={t('common.premium')}
-            meta={isPremium ? t('profile.accountPremium') : t('profile.accountFree')}
-            onPress={() => dispatch(isPremium ? clearPremiumStub() : openPaywall())}
-          />
-        </View>
+        <NavRow title={t('nav.prefs')} meta={prefsMeta} onPress={() => nav.push(PREFS_HREF)} />
+
+        {showToday ? (
+          <View style={styles.today}>
+            <Text style={styles.todayTitle}>{t('today.title')}</Text>
+            {newText ? (
+              <Pressable onPress={openNewJobs} style={({ pressed }) => pressed && styles.pressed}>
+                <Text style={styles.todayLine}>{newText}</Text>
+              </Pressable>
+            ) : null}
+            {digest.moves ? (
+              <Pressable onPress={() => nav.push(PIPELINE_HREF)} style={({ pressed }) => pressed && styles.pressed}>
+                <Text style={styles.todayLine}>{t('today.moves', { count: digest.moves })}</Text>
+              </Pressable>
+            ) : null}
+            {digest.staleJob ? (
+              <Pressable onPress={openTodayStale} style={({ pressed }) => pressed && styles.pressed}>
+                <Text style={styles.todayLine}>
+                  {t('today.stale', { title: digest.staleJob.title, days: digest.staleJob.ageDays })}
+                </Text>
+              </Pressable>
+            ) : null}
+            {!newText && !digest.moves && !digest.staleJob ? (
+              <Pressable onPress={() => nav.push(PREFS_HREF)} style={({ pressed }) => pressed && styles.pressed}>
+                <Text style={styles.todayEmpty}>{t('today.empty')}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+
+        <Text style={styles.section}>{t('pipeline.titleSection')}</Text>
+        <NavRow title={t('nav.pipeline')} meta={summary} onPress={() => nav.push(PIPELINE_HREF)} />
 
         <View style={styles.rowBetween}>
           <Text style={styles.section}>{t('profile.work')}</Text>
@@ -98,16 +195,30 @@ export default function ProfileScreen() {
               key={offer.id}
               title={offer.title}
               meta={`${offer.featured ? `${t('common.premium')} · ` : ''}${offer.price ? `${offer.price} ${offer.currency}` : t('services.priceNegotiable')}`}
-              onPress={() => router.push(offerEditorHref(offer.id))}
+              onPress={() => nav.push(offerEditorHref(offer.id))}
             />
           ))
         ) : (
-          <Text style={styles.empty}>{t('me.emptyOffers')}</Text>
+          <Text style={styles.empty}>{available ? t('me.emptyOffers') : t('identity.servicesOff')}</Text>
         )}
+
+        <Text style={styles.section}>{t('identity.more')}</Text>
+        <NavRow
+          title={t('nav.saved')}
+          meta={t('saved.subtitle', { jobs: savedJobCount, resources: savedResources })}
+          onPress={() => nav.push(SAVED_HREF)}
+        />
+        <NavRow title={t('nav.stats')} meta={t('profile.statsMeta')} onPress={() => nav.push(STATS_HREF)} />
+        <NavRow title={t('profile.servicePage')} meta={pageMeta} onPress={openPage} />
+        <NavRow
+          title={t('common.premium')}
+          meta={isPremium ? t('profile.accountPremium') : t('profile.accountFree')}
+          onPress={() => dispatch(isPremium ? clearPremiumStub() : openPaywall())}
+        />
 
         <View style={styles.rowBetween}>
           <Text style={styles.section}>{t('profile.jobs')}</Text>
-          <Pressable onPress={() => router.push('/job/create')} hitSlop={8}>
+          <Pressable onPress={() => nav.push('/job/create')} hitSlop={8}>
             <Text style={styles.link}>{t('profile.create')}</Text>
           </Pressable>
         </View>
@@ -119,7 +230,7 @@ export default function ProfileScreen() {
               meta={`${job.company}${jobTier(job) === 1 ? ` · ${t('profile.jobPremium')}` : ` · ${t('common.workly')}`}`}
               onPress={() => {
                 dispatch(pinViewedJob(job));
-                router.push(jobHref(job.id));
+                nav.push(jobHref(job.id));
               }}
             />
           ))
@@ -154,26 +265,6 @@ export default function ProfileScreen() {
   );
 }
 
-const Shortcut = memo(function Shortcut({
-  title,
-  meta,
-  onPress,
-}: {
-  title: string;
-  meta: string;
-  onPress: () => void;
-}) {
-  const styles = useThemedStyles(profileStyles);
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
-      <Text style={styles.tileTitle}>{title}</Text>
-      <Text style={styles.tileMeta} numberOfLines={2}>
-        {meta}
-      </Text>
-    </Pressable>
-  );
-});
-
 function profileStyles(colors: ThemeColors, scheme: ColorSchemeName) {
   return {
     screen: { flex: 1, backgroundColor: 'transparent' },
@@ -186,11 +277,11 @@ function profileStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       borderRadius: radius.lg,
       paddingVertical: 24,
       paddingHorizontal: 16,
-      marginBottom: 8,
+      marginBottom: 4,
       ...shadowsFor(scheme).card,
     },
     name: { color: colors.text, fontFamily: fonts.bold, fontSize: 22, marginTop: 12, textAlign: 'center' as const },
-    role: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4 },
+    role: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4, textAlign: 'center' as const },
     meta: {
       color: colors.faint,
       fontFamily: fonts.medium,
@@ -199,21 +290,6 @@ function profileStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       lineHeight: 18,
       textAlign: 'center' as const,
     },
-    edit: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13, marginTop: 12 },
-    grid: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
-    tile: {
-      width: '48%' as const,
-      flexGrow: 1,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      borderRadius: radius.lg,
-      padding: 14,
-      minHeight: 88,
-      ...shadowsFor(scheme).card,
-    },
-    tileTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
-    tileMeta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 6, lineHeight: 16 },
     section: {
       color: colors.muted,
       fontFamily: fonts.semibold,
@@ -232,5 +308,18 @@ function profileStyles(colors: ThemeColors, scheme: ColorSchemeName) {
     link: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 14 },
     empty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginBottom: 4 },
     pressed: { opacity: 0.86 },
+    today: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: radius.lg,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      marginBottom: 4,
+      ...shadowsFor(scheme).card,
+    },
+    todayTitle: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13 },
+    todayLine: { color: colors.text, fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, marginTop: 6 },
+    todayEmpty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, lineHeight: 18, marginTop: 6 },
   };
 }

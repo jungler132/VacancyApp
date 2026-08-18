@@ -48,6 +48,8 @@ const alertsSlice = createSlice({
         lastCheckedAt: Date.now(),
         lastNotifiedAt: 0,
         createdAt: Date.now(),
+        pendingNew: 0,
+        pendingNewIds: [],
       };
       state.items = [next, ...state.items].slice(0, MAX_ALERTS);
     },
@@ -63,7 +65,15 @@ const alertsSlice = createSlice({
       if (!item) return;
       item.lastSeenIds = action.payload.ids.slice(0, 250);
       item.lastCheckedAt = Date.now();
+      item.pendingNew = 0;
+      item.pendingNewIds = [];
       if (action.payload.notified) item.lastNotifiedAt = Date.now();
+    },
+    clearPendingNew(state, action: PayloadAction<string>) {
+      const item = state.items.find((row) => row.id === action.payload);
+      if (!item) return;
+      item.pendingNew = 0;
+      item.pendingNewIds = [];
     },
     replaceAlerts(state, action: PayloadAction<SavedSearch[]>) {
       state.items = action.payload;
@@ -82,5 +92,6 @@ const alertsSlice = createSlice({
   },
 });
 
-export const { saveSearch, removeSearch, toggleSearch, rememberSeen, replaceAlerts } = alertsSlice.actions;
+export const { saveSearch, removeSearch, toggleSearch, rememberSeen, clearPendingNew, replaceAlerts } =
+  alertsSlice.actions;
 export default alertsSlice.reducer;

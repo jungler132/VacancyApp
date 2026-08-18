@@ -1,6 +1,6 @@
 import { memo, useCallback } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLockedNav } from '@/lib/hooks/useLockedNav';
 import { IconButton } from 'react-native-paper';
 
 import { AppHeader, FilterIconButton } from '@/components/AppHeader';
@@ -29,7 +29,7 @@ export const JobsHeader = memo(function JobsHeader({
   onRefresh: () => void;
 }) {
   const t = useT();
-  const router = useRouter();
+  const nav = useLockedNav();
   const dispatch = useAppDispatch();
   const colors = useColors();
   const tierFilter = useAppSelector((state) => state.filters.tierFilter);
@@ -49,7 +49,7 @@ export const JobsHeader = memo(function JobsHeader({
           <IconButton
             icon="plus"
             size={20}
-            onPress={() => router.push('/job/create')}
+            onPress={() => nav.push('/job/create')}
             iconColor={colors.accent}
             accessibilityLabel={t('jobs.createA11y')}
             style={styles.icon}

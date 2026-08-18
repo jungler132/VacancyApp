@@ -1,6 +1,6 @@
 import { memo, useCallback } from 'react';
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLockedNav } from '@/lib/hooks/useLockedNav';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { CompanyLogo } from '@/components/CompanyLogo';
@@ -39,7 +39,7 @@ const JobCardView = memo(function JobCardView({
   saved: boolean;
   applyStatus?: ApplyStatus;
 }) {
-  const router = useRouter();
+  const nav = useLockedNav();
   const dispatch = useAppDispatch();
   const t = useT();
   const locale = useLocale();
@@ -52,8 +52,8 @@ const JobCardView = memo(function JobCardView({
 
   const open = useCallback(() => {
     dispatch(pinViewedJob(job));
-    router.push(jobHref(job.id));
-  }, [dispatch, job, router]);
+    nav.push(jobHref(job.id));
+  }, [dispatch, job, nav]);
 
   const onToggle = useCallback(() => {
     dispatch(toggleSaved(job));
@@ -136,7 +136,7 @@ function jobCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       marginBottom: 16,
       ...shadowsFor(scheme).card,
     },
-    pressed: { opacity: 0.96, transform: [{ translateY: -1 }] },
+    pressed: { opacity: 0.92 },
     premium: {
       borderColor: colors.accentDim,
       backgroundColor: '#f8f9ff',

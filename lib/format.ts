@@ -162,6 +162,7 @@ export const SALARY_CURRENCIES: { id: string; label: string }[] = [
   { id: 'KZT', label: '₸' },
   { id: 'USD', label: '$' },
   { id: 'EUR', label: '€' },
+  { id: 'GBP', label: '£' },
   { id: 'UAH', label: '₴' },
 ];
 

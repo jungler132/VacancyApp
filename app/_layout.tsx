@@ -82,6 +82,10 @@ function Navigation() {
         <Stack.Screen name="service/offer/[id]" options={{ title: t(locale, 'nav.offer') }} />
         <Stack.Screen name="stats" options={{ title: t(locale, 'nav.stats') }} />
         <Stack.Screen name="saved" options={{ title: t(locale, 'nav.saved') }} />
+        <Stack.Screen name="pipeline/index" options={{ title: t(locale, 'nav.pipeline') }} />
+        <Stack.Screen name="pipeline/add" options={{ title: t(locale, 'nav.pipelineAdd') }} />
+        <Stack.Screen name="prefs" options={{ title: t(locale, 'nav.prefs') }} />
+        <Stack.Screen name="today" options={{ title: t(locale, 'nav.today') }} />
         <Stack.Screen name="privacy" options={{ title: t(locale, 'nav.privacy') }} />
       </Stack>
     </ThemeProvider>

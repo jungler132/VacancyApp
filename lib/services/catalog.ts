@@ -66,5 +66,9 @@ export function offerEditorHref(id: string): Href {
 export const SERVICE_ME_HREF = '/service/me' as unknown as Href;
 export const STATS_HREF = '/stats' as unknown as Href;
 export const SAVED_HREF = '/saved' as unknown as Href;
+export const PIPELINE_HREF = '/pipeline' as unknown as Href;
+export const PIPELINE_ADD_HREF = '/pipeline/add' as unknown as Href;
+export const PREFS_HREF = '/prefs' as unknown as Href;
+export const TODAY_HREF = '/today' as unknown as Href;
 export const SETTINGS_HREF = '/settings' as unknown as Href;
 export const PROFILE_HREF = '/profile' as unknown as Href;
