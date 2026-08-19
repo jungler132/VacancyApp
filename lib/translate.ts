@@ -2,9 +2,43 @@ import type { AppLocale } from '@/lib/i18n';
 import { SUPPORT_EMAIL } from '@/lib/support';
 
 const MAX_QUERY_BYTES = 450;
-const MAX_CHUNKS = 80;
-const CONCURRENCY = 2;
+const MAX_CHUNKS = 24;
+const MAX_LEFTOVER = 4;
+const CONCURRENCY = 3;
 const CONTACT_EMAIL = SUPPORT_EMAIL;
+const FETCH_TIMEOUT_MS = 8000;
+
+export type TranslateFailCode = 'network' | 'quota' | 'unavailable';
+
+export class TranslateError extends Error {
+  readonly code: TranslateFailCode;
+
+  constructor(code: TranslateFailCode) {
+    super(code);
+    this.name = 'TranslateError';
+    this.code = code;
+  }
+}
+
+export function isNetworkError(error: unknown): boolean {
+  if (error instanceof TranslateError) return error.code === 'network';
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  if (message === 'timeout' || message.includes('timed out')) return true;
+  if (message.includes('network request failed')) return true;
+  if (message.includes('failed to fetch')) return true;
+  if (message.includes('the internet connection appears to be offline')) return true;
+  if (message.includes('could not connect')) return true;
+  if (message.includes('network connection was lost')) return true;
+  if (error.name === 'TypeError' && /network|fetch|internet|connect/i.test(error.message)) return true;
+  return false;
+}
+
+export function translateFailCode(error: unknown): TranslateFailCode {
+  if (error instanceof TranslateError) return error.code;
+  if (isNetworkError(error)) return 'network';
+  return 'unavailable';
+}
 
 export function detectTextLocale(text: string): AppLocale {
   if (/[əƏğĞıİöÖşŞçÇüÜ]/.test(text)) return 'az';
@@ -19,6 +53,24 @@ export function isUsableTranslation(text: string): boolean {
   if (/INVALID LANGUAGE PAIR/i.test(out)) return false;
   if (/QUERY LENGTH LIMIT/i.test(out)) return false;
   return true;
+}
+
+export function targetScriptRatio(text: string, to: AppLocale): number {
+  const letters = [...text].filter((ch) => /\p{L}/u.test(ch));
+  if (!letters.length) return 1;
+  if (to === 'ru') {
+    return letters.filter((ch) => /[А-Яа-яЁёІіЇїЄє]/.test(ch)).length / letters.length;
+  }
+  if (to === 'en') {
+    return letters.filter((ch) => /[A-Za-z]/.test(ch)).length / letters.length;
+  }
+  return /[əƏğĞıİöÖşŞçÇüÜ]/.test(text) ? 1 : 0;
+}
+
+export function isSuccessfulTranslation(source: string, out: string, to: AppLocale): boolean {
+  if (!isUsableTranslation(out)) return false;
+  if (to === 'az') return out.trim() !== source.trim();
+  return targetScriptRatio(out, to) >= 0.45;
 }
 
 export function needsTranslation(text: string, to: AppLocale): boolean {
@@ -143,31 +195,95 @@ async function mapPool<T, R>(
   return out;
 }
 
-function delay(ms: number, signal?: AbortSignal): Promise<void> {
+type MyMemoryResponse = {
+  responseStatus?: number | string;
+  responseData?: { translatedText?: string };
+  quotaFinished?: boolean;
+};
+
+function decodeEntities(text: string): string {
+  return text.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+}
+
+async function translateFetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   throwIfAborted(signal);
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, ms);
-    const onAbort = () => {
-      clearTimeout(timer);
+  const timeoutController = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    timeoutController.abort();
+  }, FETCH_TIMEOUT_MS);
+  const merged = new AbortController();
+  const abort = () => merged.abort();
+  if (signal?.aborted || timeoutController.signal.aborted) abort();
+  else {
+    signal?.addEventListener('abort', abort, { once: true });
+    timeoutController.signal.addEventListener('abort', abort, { once: true });
+  }
+  try {
+    const response = await fetch(url, {
+      signal: merged.signal,
+      headers: { Accept: 'application/json' },
+    });
+    if (response.status === 429) throw new TranslateError('quota');
+    if (!response.ok) throw new TranslateError('unavailable');
+    return (await response.json()) as T;
+  } catch (error) {
+    if (error instanceof TranslateError) throw error;
+    if (timedOut) throw new TranslateError('network');
+    if (signal?.aborted) {
       const err = new Error('Aborted');
       err.name = 'AbortError';
-      reject(err);
-    };
-    signal?.addEventListener('abort', onAbort, { once: true });
-  });
+      throw err;
+    }
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw timedOut ? new TranslateError('network') : error;
+    }
+    if (isNetworkError(error)) throw new TranslateError('network');
+    throw new TranslateError('unavailable');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function translateMyMemory(text: string, from: AppLocale, to: AppLocale, signal?: AbortSignal): Promise<string> {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}&de=${encodeURIComponent(CONTACT_EMAIL)}`;
+  const json = await translateFetchJson<MyMemoryResponse>(url, signal);
+  const out = decodeEntities(json.responseData?.translatedText?.trim() ?? '');
+  if (json.quotaFinished || /^MYMEMORY WARNING/i.test(out)) throw new TranslateError('quota');
+  const status = Number(json.responseStatus);
+  if (!isUsableTranslation(out) || (Number.isFinite(status) && status !== 0 && status !== 200)) {
+    throw new TranslateError('unavailable');
+  }
+  return out;
+}
+
+async function translateGoogle(text: string, from: AppLocale, to: AppLocale, signal?: AbortSignal): Promise<string> {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${to}&dt=t&q=${encodeURIComponent(text)}`;
+  const json = await translateFetchJson<unknown>(url, signal);
+  if (!Array.isArray(json) || !Array.isArray(json[0])) throw new TranslateError('unavailable');
+  const out = json[0]
+    .map((part) => (Array.isArray(part) && typeof part[0] === 'string' ? part[0] : ''))
+    .join('')
+    .trim();
+  if (!isUsableTranslation(out)) throw new TranslateError('unavailable');
+  return out;
 }
 
 async function translateChunk(text: string, from: AppLocale, to: AppLocale, signal?: AbortSignal): Promise<string> {
   throwIfAborted(signal);
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}&de=${encodeURIComponent(CONTACT_EMAIL)}`;
-  const response = await fetch(url, { signal });
-  if (!response.ok) throw new Error('translate-http');
-  const json = (await response.json()) as { responseStatus?: number; responseData?: { translatedText?: string } };
-  const out = json.responseData?.translatedText?.trim() ?? '';
-  if (!isUsableTranslation(out) || (json.responseStatus && json.responseStatus !== 200)) {
-    throw new Error('translate-empty');
+  let lastError: unknown;
+  for (const engine of [translateGoogle, translateMyMemory]) {
+    try {
+      const out = await engine(text, from, to, signal);
+      if (isSuccessfulTranslation(text, out, to)) return out;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') throw error;
+      lastError = error;
+    }
   }
-  return out.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  if (lastError instanceof TranslateError) throw lastError;
+  throw new TranslateError('unavailable');
 }
 
 async function translateChunkRetry(
@@ -176,18 +292,15 @@ async function translateChunkRetry(
   to: AppLocale,
   signal?: AbortSignal,
 ): Promise<{ ok: boolean; text: string }> {
-  let last = text;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      if (attempt) await delay(280 * attempt, signal);
-      const out = await translateChunk(text, from, to, signal);
-      last = out;
-      if (!needsTranslation(out, to)) return { ok: true, text: out };
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') throw error;
-    }
+  try {
+    const out = await translateChunk(text, from, to, signal);
+    if (isSuccessfulTranslation(text, out, to)) return { ok: true, text: out };
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') throw error;
+    if (error instanceof TranslateError) throw error;
+    if (isNetworkError(error)) throw new TranslateError('network');
   }
-  return { ok: last !== text && !needsTranslation(last, to), text: last };
+  return { ok: false, text };
 }
 
 export async function translateText(text: string, to: AppLocale, signal?: AbortSignal): Promise<string> {
@@ -202,13 +315,24 @@ export async function translateText(text: string, to: AppLocale, signal?: AbortS
   const leftover = chunks.slice(MAX_CHUNKS);
   const results = await mapPool(head, CONCURRENCY, (chunk) => translateChunkRetry(chunk, from, to, signal), signal);
 
-  if (!results.some((item) => item.ok)) throw new Error('translate-empty');
+  if (!results.some((item) => item.ok)) throw new TranslateError('unavailable');
   let body = [...results.map((item) => item.text), ...leftover].join('\n');
 
-  const pending = leftoverSourcePieces(body, to);
-  for (const piece of pending) {
-    const next = await translateChunkRetry(piece, from, to, signal);
-    if (next.ok && next.text !== piece) body = body.replace(piece, next.text);
+  if (targetScriptRatio(body, to) >= 0.35) {
+    const pending = leftoverSourcePieces(body, to).slice(0, MAX_LEFTOVER);
+    for (const piece of pending) {
+      throwIfAborted(signal);
+      try {
+        const next = await translateChunkRetry(piece, from, to, signal);
+        if (next.ok && next.text !== piece) body = body.replace(piece, next.text);
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') throw error;
+      }
+    }
+  }
+
+  if (needsTranslation(source, to) && !isSuccessfulTranslation(source, body, to)) {
+    throw new TranslateError('unavailable');
   }
   return body;
 }
@@ -220,8 +344,26 @@ export async function translateJobTexts(
   to: AppLocale,
   signal?: AbortSignal,
 ): Promise<JobTextBundle> {
-  const title = await translateText(bundle.title, to, signal);
-  const company = await translateText(bundle.company, to, signal);
-  const body = await translateText(bundle.body, to, signal);
+  let lastError: unknown;
+  const one = async (text: string) => {
+    try {
+      return await translateText(text, to, signal);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') throw error;
+      lastError = error;
+      return text;
+    }
+  };
+  const title = await one(bundle.title);
+  const company = needsTranslation(bundle.company, to) ? await one(bundle.company) : bundle.company;
+  const body = await one(bundle.body);
+  if (needsTranslation(bundle.body, to) && !isSuccessfulTranslation(bundle.body, body, to)) {
+    if (lastError instanceof TranslateError) throw lastError;
+    throw new TranslateError('unavailable');
+  }
+  if (title === bundle.title && company === bundle.company && body === bundle.body) {
+    if (lastError instanceof TranslateError) throw lastError;
+    throw new TranslateError('unavailable');
+  }
   return { title, company, body };
 }

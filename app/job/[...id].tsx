@@ -19,7 +19,7 @@ import { JobBody } from '@/components/JobBody';
 import { keyOf, tokenLabel } from '@/lib/i18n';
 import { logoFromApplyUrl } from '@/lib/logo';
 import { useLocale, useT } from '@/lib/i18n/useT';
-import { detectTextLocale, translateJobTexts, type JobTextBundle } from '@/lib/translate';
+import { detectTextLocale, isSuccessfulTranslation, needsTranslation, translateFailCode, translateJobTexts, type JobTextBundle } from '@/lib/translate';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { isHhJobId } from '@/lib/api/providers/hh';
 import { hydrateJob } from '@/lib/store/jobsSlice';
@@ -127,6 +127,11 @@ export default function JobDetailsScreen() {
     translateAbort.current?.abort();
     const ac = new AbortController();
     translateAbort.current = ac;
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      ac.abort();
+    }, 25000);
     setTranslating(true);
     setTranslateError(null);
     try {
@@ -136,12 +141,29 @@ export default function JobDetailsScreen() {
         ac.signal,
       );
       if (ac.signal.aborted) return;
+      if (needsTranslation(body, locale) && !isSuccessfulTranslation(body, next.body, locale)) {
+        setTranslateError(t('job.translateFail'));
+        return;
+      }
       setTranslated(next);
       setShowTranslated(true);
     } catch (error) {
-      if (ac.signal.aborted || (error instanceof Error && error.name === 'AbortError')) return;
-      setTranslateError(t('job.translateFail'));
+      if (ac.signal.aborted || (error instanceof Error && error.name === 'AbortError')) {
+        if (timedOut) setTranslateError(t('job.translateFail'));
+        return;
+      }
+      const code = translateFailCode(error);
+      setTranslateError(
+        t(
+          code === 'network'
+            ? 'job.translateFailNetwork'
+            : code === 'quota'
+              ? 'job.translateFailQuota'
+              : 'job.translateFail',
+        ),
+      );
     } finally {
+      clearTimeout(timeout);
       if (translateAbort.current === ac) setTranslating(false);
     }
   }, [body, job, locale, showTranslated, t, translated]);

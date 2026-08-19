@@ -71,10 +71,12 @@ function Navigation() {
           headerStyle: { backgroundColor: colors.bg },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerBackButtonDisplayMode: 'minimal',
+          headerBackTitle: '',
           headerTitleStyle: { fontFamily: fonts.semibold, fontSize: scaleFont(18, scale) },
           contentStyle: { backgroundColor: colors.bg },
         }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
         <Stack.Screen name="job/create" options={{ title: t(locale, 'nav.createJob') }} />
         <Stack.Screen name="job/[...id]" options={{ title: t(locale, 'nav.job') }} />
         <Stack.Screen name="service/me" options={{ title: t(locale, 'nav.serviceMe') }} />

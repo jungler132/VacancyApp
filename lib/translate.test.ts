@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { detectTextLocale, isUsableTranslation, leftoverSourcePieces, needsTranslation, splitTranslateChunks } from './translate';
+import { detectTextLocale, isNetworkError, isSuccessfulTranslation, isUsableTranslation, leftoverSourcePieces, needsTranslation, splitTranslateChunks, translateFailCode } from './translate';
 
 describe('translate detect', () => {
   it('видит русский, английский и азербайджанский', () => {
@@ -16,6 +16,23 @@ describe('translate quality', () => {
     assert.equal(isUsableTranslation('MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY'), false);
     assert.equal(isUsableTranslation('INVALID LANGUAGE PAIR'), false);
     assert.equal(isUsableTranslation('Courier across the city'), true);
+  });
+
+  it('считает азербайджанский перевод успешным даже без ə/ş', () => {
+    assert.equal(
+      isSuccessfulTranslation('Applicants with disabilities are encouraged to apply.', 'Evezsizliyi olan namizedler muraciet ede bilerler.', 'az'),
+      true,
+    );
+    assert.equal(isSuccessfulTranslation('Hello world', 'Hello world', 'az'), false);
+    assert.equal(isSuccessfulTranslation('Hello world', 'Привет, мир', 'ru'), true);
+    assert.equal(
+      isSuccessfulTranslation(
+        'We look forward to meeting candidates who balance innovation with genuine expertise.',
+        'We look forward to meeting candidates who balance innovation with genuine expertise.',
+        'ru',
+      ),
+      false,
+    );
   });
 });
 
@@ -53,5 +70,15 @@ describe('translate leftovers', () => {
     assert.equal(leftovers.length, 1);
     assert.match(leftovers[0], /Applicants with disabilities/);
     assert.doesNotMatch(leftovers[0], /Komanda/);
+  });
+});
+
+describe('translate errors', () => {
+  it('отличает сеть от квоты и прочего', () => {
+    assert.equal(isNetworkError(new Error('Network request failed')), true);
+    assert.equal(isNetworkError(new Error('timeout')), true);
+    assert.equal(isNetworkError(new Error('HTTP 500')), false);
+    assert.equal(translateFailCode(new Error('Network request failed')), 'network');
+    assert.equal(translateFailCode(new Error('translate-empty')), 'unavailable');
   });
 });
