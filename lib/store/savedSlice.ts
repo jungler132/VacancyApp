@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { isApplyStatus, type ApplyStatus } from '@/lib/apply';
+import { MAX_PIPELINE } from '@/lib/limits';
 import type { Job } from '@/lib/types';
 
 const STORAGE_KEY = 'workly:saved-jobs';
@@ -97,12 +98,14 @@ const savedSlice = createSlice({
     setApplyStatus(state, action: PayloadAction<{ job: Job; status: ApplyStatus | null }>) {
       const { job, status } = action.payload;
       const exists = state.items.some((item) => item.id === job.id);
-      if (!exists && status) state.items = [job, ...state.items];
+      const tracked = Boolean(state.statuses[job.id]);
       if (!status) {
         delete state.statuses[job.id];
         delete state.statusAt[job.id];
         return;
       }
+      if (!tracked && Object.keys(state.statuses).length >= MAX_PIPELINE) return;
+      if (!exists) state.items = [job, ...state.items];
       state.statuses[job.id] = status;
       state.statusAt[job.id] = new Date().toISOString();
     },

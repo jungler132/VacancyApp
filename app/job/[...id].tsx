@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
@@ -20,6 +20,7 @@ import { keyOf, tokenLabel } from '@/lib/i18n';
 import { logoFromApplyUrl } from '@/lib/logo';
 import { useLocale, useT } from '@/lib/i18n/useT';
 import { detectTextLocale, isSuccessfulTranslation, needsTranslation, translateFailCode, translateJobTexts, type JobTextBundle } from '@/lib/translate';
+import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { isHhJobId } from '@/lib/api/providers/hh';
 import { hydrateJob } from '@/lib/store/jobsSlice';
@@ -47,6 +48,8 @@ export default function JobDetailsScreen() {
   const job = jobFromId ?? viewed;
   const saved = useAppSelector(selectIsSaved(job?.id ?? lookupId));
   const applyStatus = useAppSelector((state) => state.saved.statuses[job?.id ?? lookupId]);
+  const pipelineCount = useAppSelector((state) => Object.keys(state.saved.statuses).length);
+  const limits = useLimits();
 
   useEffect(() => {
     if (!decoded || decoded.startsWith('workly:')) return;
@@ -62,9 +65,13 @@ export default function JobDetailsScreen() {
 
   const open = useCallback(() => {
     if (!job) return;
-    dispatch(setApplyStatus({ job, status: 'applied' }));
+    if (!applyStatus && pipelineCount >= limits.pipeline) {
+      Alert.alert(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
+    } else {
+      dispatch(setApplyStatus({ job, status: 'applied' }));
+    }
     if (job.url) WebBrowser.openBrowserAsync(job.url);
-  }, [dispatch, job]);
+  }, [applyStatus, dispatch, job, limits.pipeline, pipelineCount, t]);
 
   const toggle = useCallback(() => {
     if (job) dispatch(toggleSaved(job));
@@ -80,9 +87,17 @@ export default function JobDetailsScreen() {
     (id: string | number) => {
       if (!job) return;
       const next = id as ApplyStatus;
-      dispatch(setApplyStatus({ job, status: applyStatus === next ? null : next }));
+      if (applyStatus === next) {
+        dispatch(setApplyStatus({ job, status: null }));
+        return;
+      }
+      if (!applyStatus && pipelineCount >= limits.pipeline) {
+        Alert.alert(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
+        return;
+      }
+      dispatch(setApplyStatus({ job, status: next }));
     },
-    [applyStatus, dispatch, job],
+    [applyStatus, dispatch, job, limits.pipeline, pipelineCount, t],
   );
 
   const body = useMemo(() => htmlToText(job?.description || job?.excerpt || ''), [job?.description, job?.excerpt]);

@@ -14,9 +14,8 @@ import { SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { pickServiceImage } from '@/lib/services/images';
 import { isServiceKindId, SERVICE_KINDS } from '@/lib/services/kinds';
 import type { ServiceKindId } from '@/lib/services/types';
+import { useLimits } from '@/lib/hooks/useLimits';
 import {
-  OFFERS_LIMIT,
-  OFFER_PHOTOS_LIMIT,
   makeOfferId,
   OWN_PROFILE_ID,
   removeOffer,
@@ -46,6 +45,7 @@ function OfferForm() {
   const offers = useAppSelector((state) => state.freelance.offers);
   const profile = useAppSelector((state) => state.freelance.profile);
   const isPremium = useAppSelector((state) => state.premium.isPremium);
+  const limits = useLimits();
   const existing = useMemo(
     () => (isNew ? undefined : offers.find((item) => item.id === offerId)),
     [isNew, offerId, offers],
@@ -88,13 +88,13 @@ function OfferForm() {
   const onCurrency = useCallback((next: string | number) => setCurrency(String(next)), []);
 
   const addPhoto = useCallback(async () => {
-    if (images.length >= OFFER_PHOTOS_LIMIT) {
-      Alert.alert(t('common.limit'), t('offer.photoLimit', { limit: OFFER_PHOTOS_LIMIT }));
+    if (images.length >= limits.offerPhotos) {
+      Alert.alert(t('common.limit'), t('offer.photoLimit', { limit: limits.offerPhotos }));
       return;
     }
     const uri = await pickServiceImage();
-    if (uri) setImages((current) => [...current, uri].slice(0, OFFER_PHOTOS_LIMIT));
-  }, [images.length, t]);
+    if (uri) setImages((current) => [...current, uri].slice(0, limits.offerPhotos));
+  }, [images.length, limits.offerPhotos, t]);
 
   const removePhoto = useCallback((uri: string) => {
     setImages((current) => current.filter((item) => item !== uri));
@@ -111,8 +111,8 @@ function OfferForm() {
       router.replace(SERVICE_ME_HREF);
       return;
     }
-    if (isNew && offers.length >= OFFERS_LIMIT) {
-      Alert.alert(t('common.limit'), t('me.offerLimit', { limit: OFFERS_LIMIT }));
+    if (isNew && offers.length >= limits.offers) {
+      Alert.alert(t('common.limit'), t('me.offerLimit', { limit: limits.offers }));
       return;
     }
     dispatch(
@@ -133,7 +133,7 @@ function OfferForm() {
       }),
     );
     router.back();
-  }, [address, currency, customKind, description, dispatch, existing?.id, featured, images, isNew, isPremium, kind, offers.length, phone, price, profile?.displayName, router, t, title]);
+  }, [address, currency, customKind, description, dispatch, existing?.id, featured, images, isNew, isPremium, kind, limits.offers, offers.length, phone, price, profile?.displayName, router, t, title]);
 
   const onDelete = useCallback(() => {
     if (!existing) return;
@@ -225,7 +225,7 @@ function OfferForm() {
         <Text style={formStyles.label}>{t('offer.photos')}</Text>
         <ServicePhotoGrid
           uris={images}
-          canAdd={images.length < OFFER_PHOTOS_LIMIT}
+          canAdd={images.length < limits.offerPhotos}
           onAdd={addPhoto}
           onRemove={removePhoto}
         />

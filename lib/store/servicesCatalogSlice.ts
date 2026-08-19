@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { SEED_MASTERS } from '@/lib/services/seed';
 import type { ServiceMaster } from '@/lib/services/types';
@@ -16,7 +16,12 @@ const initialState: ServicesCatalogState = {
 const servicesCatalogSlice = createSlice({
   name: 'servicesCatalog',
   initialState,
-  reducers: {},
+  reducers: {
+    setRemoteMasters(state, action: PayloadAction<ServiceMaster[]>) {
+      state.items = action.payload.length ? action.payload : SEED_MASTERS;
+    },
+  },
 });
 
+export const { setRemoteMasters } = servicesCatalogSlice.actions;
 export default servicesCatalogSlice.reducer;

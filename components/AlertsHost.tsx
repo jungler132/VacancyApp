@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import * as Notifications from 'expo-notifications';
 
 import { checkSavedSearches, makeAlertKey } from '@/lib/alerts';
 import { syncAlertTask } from '@/lib/alertsTask';
-import { setupNotificationHandler } from '@/lib/notifications';
+import { listenNotificationTaps, setupNotificationHandler } from '@/lib/notifications';
 import { replaceAlerts } from '@/lib/store/alertsSlice';
 import { applySearch } from '@/lib/store/filtersSlice';
 import { store } from '@/lib/store';
@@ -46,25 +45,11 @@ export function AlertsHost() {
     const app = AppState.addEventListener('change', (next) => {
       if (next === 'active') onActive();
     });
-
-    const tap = Notifications.addNotificationResponseReceivedListener((response) => {
-      applyAlertFromNotification(
-        response.notification.request.content.data?.alertId,
-        response.notification.request.identifier,
-      );
-    });
-
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!response) return;
-      applyAlertFromNotification(
-        response.notification.request.content.data?.alertId,
-        response.notification.request.identifier,
-      );
-    });
+    const stopTaps = listenNotificationTaps(applyAlertFromNotification);
 
     return () => {
       app.remove();
-      tap.remove();
+      stopTaps();
     };
   }, [ready, dispatch]);
 

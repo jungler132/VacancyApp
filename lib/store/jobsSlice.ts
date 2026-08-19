@@ -29,6 +29,7 @@ export type JobsState = {
   lru: string[];
   viewedId?: string;
   todayIds: string[];
+  worklyPublicIds: string[];
 };
 
 const initialState: JobsState = {
@@ -36,6 +37,7 @@ const initialState: JobsState = {
   feeds: {},
   lru: [],
   todayIds: [],
+  worklyPublicIds: [],
 };
 
 function sameJob(prev: Job, next: Job) {
@@ -72,6 +74,8 @@ function touchLru(state: JobsState, key: string) {
 function pruneById(state: JobsState, extraKeep: string[] = []) {
   const keep = new Set(extraKeep);
   if (state.viewedId) keep.add(state.viewedId);
+  for (const id of state.todayIds) keep.add(id);
+  for (const id of state.worklyPublicIds) keep.add(id);
   for (const feed of Object.values(state.feeds)) {
     for (const id of feed.ids) keep.add(id);
   }
@@ -164,6 +168,10 @@ const jobsSlice = createSlice({
       upsertJobs(state, action.payload);
       state.todayIds = action.payload.map((job) => job.id);
     },
+    setWorklyPublic(state, action: PayloadAction<Job[]>) {
+      upsertJobs(state, action.payload);
+      state.worklyPublicIds = action.payload.map((job) => job.id);
+    },
     pinViewedJob(state, action: PayloadAction<Job>) {
       upsertJobs(state, [action.payload]);
       state.viewedId = action.payload.id;
@@ -250,6 +258,13 @@ const jobsSlice = createSlice({
   },
 });
 
-export const { rememberJobs, setTodayJobs, pinViewedJob, pruneUnreferencedJobs, clearJobsCache, dismissFeedErrors } =
-  jobsSlice.actions;
+export const {
+  rememberJobs,
+  setTodayJobs,
+  setWorklyPublic,
+  pinViewedJob,
+  pruneUnreferencedJobs,
+  clearJobsCache,
+  dismissFeedErrors,
+} = jobsSlice.actions;
 export default jobsSlice.reducer;

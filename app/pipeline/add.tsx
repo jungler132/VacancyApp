@@ -6,7 +6,8 @@ import { FormField, useFormStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
 import { useT } from '@/lib/i18n/useT';
 import { jobHref } from '@/lib/jobRoute';
-import { makeTrackedJob, PIPELINE_LIMIT } from '@/lib/pipeline';
+import { makeTrackedJob } from '@/lib/pipeline';
+import { useLimits } from '@/lib/hooks/useLimits';
 import { pinViewedJob } from '@/lib/store/jobsSlice';
 import { setApplyStatus } from '@/lib/store/savedSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
@@ -17,6 +18,7 @@ export default function PipelineAddScreen() {
   const dispatch = useAppDispatch();
   const formStyles = useFormStyles();
   const pipelineCount = useAppSelector((state) => Object.keys(state.saved.statuses).length);
+  const limits = useLimits();
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [url, setUrl] = useState('');
@@ -28,15 +30,15 @@ export default function PipelineAddScreen() {
       Alert.alert(t('common.missing'), t('pipeline.needFields'));
       return;
     }
-    if (pipelineCount >= PIPELINE_LIMIT) {
-      Alert.alert(t('common.limit'), t('pipeline.limit', { limit: PIPELINE_LIMIT }));
+    if (pipelineCount >= limits.pipeline) {
+      Alert.alert(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
       return;
     }
     const job = makeTrackedJob({ title: nextTitle, company: nextCompany, url });
     dispatch(setApplyStatus({ job, status: 'applied' }));
     dispatch(pinViewedJob(job));
     nav.replace(jobHref(job.id));
-  }, [company, dispatch, nav, pipelineCount, t, title, url]);
+  }, [company, dispatch, limits.pipeline, nav, pipelineCount, t, title, url]);
 
   return (
     <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

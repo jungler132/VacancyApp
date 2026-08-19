@@ -31,6 +31,7 @@ import appearanceReducer, {
 } from './appearanceSlice';
 import visitsReducer, { clearVisits, hydrateVisits, persistVisits, recordVisit, removeVisit } from './visitsSlice';
 import freelanceReducer, {
+  applyRemoteMedia,
   hydrateFreelance,
   persistFreelance,
   removeOffer,
@@ -65,7 +66,9 @@ import identityReducer, {
   toggleFormat,
   toggleSeeking,
 } from './identitySlice';
+import authReducer, { hydrateAuth } from './authSlice';
 import { makeAlertKey, persistAlerts } from '@/lib/alerts';
+import { deleteRemoteJob, deleteRemoteOffer, schedulePush } from '@/lib/backend/sync';
 
 const listener = createListenerMiddleware();
 
@@ -132,6 +135,11 @@ listener.startListening({
     listenerApi.dispatch(rememberJobs(items));
     if (upsertLocalJob.match(action) || removeLocalJob.match(action)) {
       await persistLocalJobs(items);
+      const state = listenerApi.getState() as RootState;
+      if (removeLocalJob.match(action) && state.auth.userId) {
+        await deleteRemoteJob(state.auth.userId, action.payload);
+      }
+      if (state.auth.userId) schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -142,7 +150,7 @@ listener.startListening({
     const state = listenerApi.getState() as RootState;
     const savedIds = state.saved.items.map((item) => item.id);
     const localIds = state.localJobs.items.map((item) => item.id);
-    listenerApi.dispatch(pruneUnreferencedJobs([...savedIds, ...localIds, ...state.jobs.todayIds]));
+    listenerApi.dispatch(pruneUnreferencedJobs([...savedIds, ...localIds, ...state.jobs.todayIds, ...state.jobs.worklyPublicIds]));
   },
 });
 
@@ -182,11 +190,16 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(saveProfile, upsertOffer, removeOffer, hydrateFreelance.fulfilled),
+  matcher: isAnyOf(saveProfile, upsertOffer, removeOffer, applyRemoteMedia),
   effect: async (action, listenerApi) => {
-    if (!saveProfile.match(action) && !upsertOffer.match(action) && !removeOffer.match(action)) return;
     const freelance = (listenerApi.getState() as RootState).freelance;
     await persistFreelance(freelance.profile, freelance.offers);
+    if (applyRemoteMedia.match(action)) return;
+    const state = listenerApi.getState() as RootState;
+    if (removeOffer.match(action) && state.auth.userId) {
+      await deleteRemoteOffer(state.auth.userId, action.payload);
+    }
+    if (state.auth.userId) schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
   },
 });
 
@@ -200,6 +213,9 @@ listener.startListening({
       title: identity.title,
       format: identity.format,
     });
+    if ((listenerApi.getState() as RootState).auth.userId) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    }
   },
 });
 
@@ -218,11 +234,12 @@ export const store = configureStore({
     servicesCatalog: servicesCatalogReducer,
     visits: visitsReducer,
     identity: identityReducer,
+    auth: authReducer,
   },
   middleware: (getDefault) =>
     getDefault({
       serializableCheck: {
-        ignoredActionPaths: ['meta.arg.signal', 'meta.abort'],
+        ignoredActionPaths: ['meta.arg.signal', 'meta.abort', 'payload.session'],
       },
     }).prepend(listener.middleware),
 });
@@ -238,6 +255,7 @@ store.dispatch(hydrateAppearance());
 store.dispatch(hydrateFreelance());
 store.dispatch(hydrateVisits());
 store.dispatch(hydrateIdentity());
+store.dispatch(hydrateAuth());
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

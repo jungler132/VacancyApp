@@ -1,8 +1,9 @@
+import { MAX_PIPELINE } from './limits';
 import { REPLIED_STATUSES, isApplyStatus, type ApplyStatus } from './apply';
 import type { Job } from './types';
 
 export const MANUAL_SOURCE_ID = 'manual';
-export const PIPELINE_LIMIT = 100;
+export const PIPELINE_LIMIT = MAX_PIPELINE;
 
 export function isTrackedJob(job: Pick<Job, 'id' | 'sourceId'>): boolean {
   return job.sourceId === MANUAL_SOURCE_ID || job.id.startsWith('track:');

@@ -4,7 +4,7 @@ import { SUPPORT_EMAIL } from '@/lib/support';
 export const PRIVACY_HREF = '/privacy';
 export const PRIVACY_URL = 'https://jungler132.github.io/VacancyApp/';
 export const PRIVACY_EMAIL = SUPPORT_EMAIL;
-export const PRIVACY_UPDATED = '2026-08-15';
+export const PRIVACY_UPDATED = '2026-08-19';
 
 export type PrivacyBlock = {
   heading: string;
@@ -21,20 +21,20 @@ export type PrivacyDoc = {
 const DOCS: Record<AppLocale, PrivacyDoc> = {
   ru: {
     title: 'Политика конфиденциальности',
-    updated: 'Приложение Workly (Android, пакет com.workly.app). Дата вступления в силу: 15 августа 2026 г.',
+        updated: 'Приложение Workly (Android, пакет com.workly.app). Дата вступления в силу: 19 августа 2026 г.',
     blocks: [
       {
         heading: '1. Кто мы и о чём эта политика',
         paragraphs: [
           'Workly — мобильный агрегатор вакансий. Приложение показывает объявления с публичных площадок, даёт сохранить интересные вакансии, вести страницу услуг и настроить локальные оповещения о новых предложениях.',
-          'В приложении нет регистрации, аккаунта и собственной аналитики. Workly может показывать рекламу через Google AdMob. Этот текст описывает, какие данные обрабатываются на устройстве и какие запросы уходят на сторонние сервисы.',
+          'Гостевой режим работает без аккаунта, офлайн, на устройстве. По желанию можно войти по почте (код или ссылка) или анонимно и затем привязать почту — тогда страница услуг, фото и свои вакансии Workly синхронизируются с сервером. Workly может показывать рекламу через Google AdMob.',
           `Контакт: ${PRIVACY_EMAIL}`,
         ],
       },
       {
         heading: '2. Какие данные обрабатываются',
         paragraphs: [
-          'Workly не собирает имя, телефон, электронную почту, геолокацию и платёжные данные на свой сервер.',
+          'Workly не собирает платёжные данные. Имя, почта, телефон, тексты и фото страницы услуг обрабатываются, только если вы их сами указали.',
           'На устройстве пользователя (локально) могут храниться:',
         ],
         items: [
@@ -48,7 +48,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Эти данные остаются на телефоне и не отправляются нам на сервер: у Workly нет собственного бэкенда для хранения пользовательских данных.',
+          'Без входа эти данные остаются на телефоне. После входа страница услуг, фото (в сжатом виде) и свои вакансии Workly сохраняются в облаке провайдера бэкенда (Supabase) под вашим идентификатором. Канбан, фильтры, алерты и лента площадок на сервер не уходят. Публичный профиль услуг и свои вакансии могут видеть другие пользователи приложения.',
         ],
       },
       {
@@ -79,7 +79,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
           'Интернет — загрузка вакансий и открытие ссылок.',
           'Уведомления — только если вы включили оповещения о новых вакансиях. Их можно отключить в системе или в приложении.',
           'Фоновая проверка — периодический поиск новых объявлений по сохранённым фильтрам. Уведомления локальные, на устройство.',
-          'Фото — только если вы сами добавляете аватар или снимки услуги. Файлы остаются на устройстве.',
+          'Фото — только если вы сами добавляете аватар или снимки услуги. Перед отправкой на сервер файл сжимается на устройстве.',
         ],
       },
       {
@@ -106,7 +106,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '8. Хранение и удаление',
         paragraphs: [
-          'Локальные данные можно удалить, очистив хранилище приложения в настройках Android или удалив само приложение. После удаления данные с устройства пропадают.',
+          'Локальные данные можно удалить, очистив хранилище приложения в настройках Android или удалив само приложение. Данные аккаунта на сервере удаляются вместе с пользователем (выход не стирает облако; удаление аккаунта — по запросу на контактный email).',
         ],
       },
       {
@@ -123,20 +123,20 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
   },
   en: {
     title: 'Privacy policy',
-    updated: 'Workly app (Android, package com.workly.app). Effective date: 15 August 2026.',
+        updated: 'Workly app (Android, package com.workly.app). Effective date: 19 August 2026.',
     blocks: [
       {
         heading: '1. Who we are',
         paragraphs: [
           'Workly is a mobile job aggregator. It shows listings from public boards, lets you save jobs, keep a services page, and set local alerts for new listings.',
-          'There is no sign-up, account, or first-party analytics. Workly may show ads through Google AdMob. This text describes what is processed on the device and which requests go to third parties.',
+          'Guest mode works without an account, offline, on the device. You can sign in with email (code or magic link) or anonymously and later link email — then your services page, photos and Workly jobs sync to the server. Workly may show ads through Google AdMob.',
           `Contact: ${PRIVACY_EMAIL}`,
         ],
       },
       {
         heading: '2. What data is processed',
         paragraphs: [
-          'Workly does not collect your name, phone, email, location or payment data on our server.',
+          'Workly does not collect payment data. Name, email, phone, texts and service photos are processed only if you add them yourself.',
           'The following may be stored locally on your device:',
         ],
         items: [
@@ -150,7 +150,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'This data stays on the phone and is not sent to us: Workly has no backend for storing user data.',
+          'Without sign-in this data stays on the phone. After sign-in the services page, compressed photos and your Workly jobs are stored in the backend provider (Supabase) under your user id. Kanban, filters, alerts and the board feed are not uploaded. Your public services profile and Workly jobs may be visible to other users of the app.',
         ],
       },
       {
@@ -181,7 +181,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
           'Internet — to load jobs and open links.',
           'Notifications — only if you turn on new-job alerts. You can disable them in the system or in the app.',
           'Background fetch — periodic search by saved filters. Alerts are local, on the device.',
-          'Photos — only if you add an avatar or service photos. Files stay on the device.',
+          'Photos — only if you add an avatar or service photos. Files are compressed on the device before upload.',
         ],
       },
       {
@@ -208,7 +208,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '8. Storage and deletion',
         paragraphs: [
-          'You can delete local data by clearing the app storage in Android settings or by uninstalling the app. After that, the data is gone from the device.',
+          'You can delete local data by clearing the app storage in Android settings or by uninstalling the app. Account data on the server is removed with the user (sign-out does not wipe the cloud; account deletion is by email to the contact address).',
         ],
       },
       {
@@ -223,20 +223,20 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
   },
   az: {
     title: 'Məxfilik siyasəti',
-    updated: 'Workly tətbiqi (Android, paket com.workly.app). Qüvvəyə minmə tarixi: 15 avqust 2026.',
+        updated: 'Workly tətbiqi (Android, paket com.workly.app). Qüvvəyə minmə tarixi: 19 avqust 2026.',
     blocks: [
       {
         heading: '1. Biz kimik',
         paragraphs: [
           'Workly vakansiyaların mobil aqreqatorudur. Tətbiq açıq saytlardan elan göstərir, vakansiyanı yadda saxlamağa, xidmət səhifəsi tutmağa və yeni elanlar üçün lokal bildiriş qurmağa imkan verir.',
-          'Qeydiyyat, hesab və öz analitika yoxdur. Workly Google AdMob vasitəsilə reklam göstərə bilər. Bu mətn cihazda hansı məlumatın emal olunduğunu və hansı sorğuların üçüncü tərəflərə getdiyini izah edir.',
+          'Qonaq rejim hesab olmadan, oflayn, cihazda işləyir. İstəsəniz e-poçt (kod və ya keçid) və ya anonim giriş, sonra e-poçt bağlamaq olar — o zaman xidmət səhifəsi, foto və Workly vakansiyaları serverə sinxron olur. Workly Google AdMob vasitəsilə reklam göstərə bilər.',
           `Əlaqə: ${PRIVACY_EMAIL}`,
         ],
       },
       {
         heading: '2. Hansı məlumat emal olunur',
         paragraphs: [
-          'Workly ad, telefon, e-poçt, geolokasiya və ödəniş məlumatını öz serverinə toplamır.',
+          'Workly ödəniş məlumatını toplamır. Ad, e-poçt, telefon, mətn və xidmət fotoları yalnız siz özünüz yazsanız emal olunur.',
           'Cihazınızda lokal olaraq saxlana bilər:',
         ],
         items: [
@@ -250,7 +250,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Bu məlumat telefonda qalır və bizə göndərilmir: Workly-nin istifadəçi məlumatı saxlayan öz backend-i yoxdur.',
+          'Giriş olmadan bu məlumat telefonda qalır. Girişdən sonra xidmət səhifəsi, sıxılmış fotolar və öz Workly vakansiyaları backend provayderində (Supabase) sizin identifikatorunuzla saxlanır. Kanban, filterlər, bildirişlər və sayt lenti serverə getmir. İctimai xidmət profili və Workly vakansiyaları tətbiqin digər istifadəçilərinə görünə bilər.',
         ],
       },
       {
@@ -281,7 +281,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
           'İnternet — vakansiyaların yüklənməsi və keçidlərin açılması.',
           'Bildirişlər — yalnız yeni vakansiya bildirişini açsanız. Sistemdə və ya tətbiqdə söndürmək olar.',
           'Fon yoxlaması — saxlanmış filterlər üzrə dövri axtarış. Bildirişlər lokal, cihazdadır.',
-          'Foto — yalnız avatar və ya xidmət şəkli əlavə etsəniz. Fayllar cihazda qalır.',
+          'Foto — yalnız avatar və ya xidmət şəkli əlavə etsəniz. Serverə göndərməzdən əvvəl fayl cihazda sıxılır.',
         ],
       },
       {
@@ -308,7 +308,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '8. Saxlama və silmə',
         paragraphs: [
-          'Lokal məlumatı Android ayarlarında tətbiq yaddaşını təmizləməklə və ya tətbiqi silməklə silmək olar. Bundan sonra məlumat cihazdan gedir.',
+          'Lokal məlumatı Android ayarlarında tətbiq yaddaşını təmizləməklə və ya tətbiqi silməklə silmək olar. Serverdəki hesab məlumatı istifadəçi ilə silinir (çıxış buludu silmir; hesabın silinməsi əlaqə e-poçtuna sorğu ilə).',
         ],
       },
       {

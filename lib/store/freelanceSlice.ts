@@ -5,11 +5,13 @@ import { DEFAULT_HOURS, normalizeClock, parseWeekdays, WEEKDAYS } from '@/lib/se
 import { isServiceKindId } from '@/lib/services/kinds';
 import type { ServiceHours, ServiceKindId, ServiceOffer, ServiceProfile } from '@/lib/services/types';
 
+import { MAX_OFFERS, MAX_OFFER_PHOTOS, MAX_PROFILE_PHOTOS } from '@/lib/limits';
+
 export const FREELANCE_KEY = 'workly:freelance:v1';
 export const OWN_PROFILE_ID = 'local:me';
-export const OFFERS_LIMIT = 20;
-export const OFFER_PHOTOS_LIMIT = 12;
-export const PROFILE_PHOTOS_LIMIT = 8;
+export const OFFERS_LIMIT = MAX_OFFERS;
+export const OFFER_PHOTOS_LIMIT = MAX_OFFER_PHOTOS;
+export const PROFILE_PHOTOS_LIMIT = MAX_PROFILE_PHOTOS;
 export const CUSTOM_KINDS_LIMIT = 8;
 
 export type FreelanceState = {
@@ -179,6 +181,16 @@ const freelanceSlice = createSlice({
     removeOffer(state, action: PayloadAction<string>) {
       state.offers = state.offers.filter((item) => item.id !== action.payload);
     },
+    applyRemoteMedia(state, action: PayloadAction<{ avatarUri?: string; offers: Record<string, string[]> }>) {
+      if (state.profile && action.payload.avatarUri) {
+        state.profile.avatarUri = action.payload.avatarUri;
+        state.profile.photos = [action.payload.avatarUri];
+      }
+      for (const offer of state.offers) {
+        const images = action.payload.offers[offer.id];
+        if (images) offer.images = images;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -193,5 +205,5 @@ const freelanceSlice = createSlice({
   },
 });
 
-export const { saveProfile, upsertOffer, removeOffer } = freelanceSlice.actions;
+export const { saveProfile, upsertOffer, removeOffer, applyRemoteMedia } = freelanceSlice.actions;
 export default freelanceSlice.reducer;

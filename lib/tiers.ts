@@ -1,10 +1,11 @@
+import { MAX_JOBS } from './limits';
 import { jobMatchesAnyLang, jobMatchesCategories, jobMatchesRegion, apiCategory } from './catalog';
 import { DEFAULT_EXTRA_FILTERS, filterFeedIds, jobMatchesExtra, type ExtraFilters } from './filters';
 import { compareJobsByDate } from './freshness';
 import type { CategoryId, Job, JobTier, RegionId } from './types';
 
 export const WORKLY_SOURCE_ID = 'workly';
-export const LOCAL_JOBS_LIMIT = 50;
+export const LOCAL_JOBS_LIMIT = MAX_JOBS;
 
 export type TierFilter = 'all' | JobTier;
 

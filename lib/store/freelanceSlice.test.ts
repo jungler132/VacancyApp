@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import reducer, { OWN_PROFILE_ID, parseFreelance, saveProfile, upsertOffer } from './freelanceSlice';
+import reducer, { OWN_PROFILE_ID, applyRemoteMedia, parseFreelance, saveProfile, upsertOffer } from './freelanceSlice';
 
 describe('freelance persist', () => {
   it('отбрасывает профиль без имени и кривые услуги', () => {
@@ -94,5 +94,46 @@ describe('freelance persist', () => {
     );
     assert.equal(saved.offers[0]?.customKind, 'Сварка');
     assert.equal(saved.offers[0]?.featured, true);
+  });
+
+  it('подставляет https-фото без смены updatedAt', () => {
+    const withOffer = reducer(
+      {
+        profile: {
+          id: OWN_PROFILE_ID,
+          displayName: 'Мария',
+          bio: '',
+          email: '',
+          phone: '',
+          kinds: [],
+          photos: ['file://a.jpg'],
+          avatarUri: 'file://a.jpg',
+          customKinds: [],
+          hours: { open: '09:00', close: '18:00', days: [1, 2, 3, 4, 5] },
+          updatedAt: '2020-01-01T00:00:00.000Z',
+        },
+        offers: [
+          {
+            id: 'offer:1',
+            profileId: OWN_PROFILE_ID,
+            title: 'Уборка',
+            description: '',
+            currency: 'RUB',
+            images: ['file://b.jpg'],
+            kind: 'cleaning',
+            updatedAt: '2020-01-01T00:00:00.000Z',
+          },
+        ],
+        ready: true,
+      },
+      applyRemoteMedia({
+        avatarUri: 'https://cdn.example/a.jpg',
+        offers: { 'offer:1': ['https://cdn.example/b.jpg'] },
+      }),
+    );
+    assert.equal(withOffer.profile?.updatedAt, '2020-01-01T00:00:00.000Z');
+    assert.equal(withOffer.profile?.avatarUri, 'https://cdn.example/a.jpg');
+    assert.equal(withOffer.offers[0]?.updatedAt, '2020-01-01T00:00:00.000Z');
+    assert.deepEqual(withOffer.offers[0]?.images, ['https://cdn.example/b.jpg']);
   });
 });

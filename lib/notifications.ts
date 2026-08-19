@@ -1,16 +1,34 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 import { t } from '@/lib/i18n';
 import { DEFAULT_LOCALE, type AppLocale } from '@/lib/i18n/locale';
 
+type NotificationsApi = typeof import('expo-notifications');
+
 const CHANNEL = 'workly-alerts';
 let handlerReady = false;
+let cached: NotificationsApi | null | undefined;
+
+function notifications(): NotificationsApi | null {
+  if (cached !== undefined) return cached;
+  if (Platform.OS === 'web' || Constants.appOwnership === 'expo') {
+    cached = null;
+    return cached;
+  }
+  try {
+    cached = require('expo-notifications') as NotificationsApi;
+  } catch {
+    cached = null;
+  }
+  return cached;
+}
 
 export function setupNotificationHandler() {
-  if (handlerReady || Platform.OS === 'web') return;
+  const api = notifications();
+  if (!api || handlerReady) return;
   handlerReady = true;
-  Notifications.setNotificationHandler({
+  api.setNotificationHandler({
     handleNotification: async () => ({
       shouldPlaySound: false,
       shouldSetBadge: false,
@@ -21,20 +39,21 @@ export function setupNotificationHandler() {
 }
 
 async function ensureChannel(locale: AppLocale = DEFAULT_LOCALE) {
-  if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync(CHANNEL, {
+  const api = notifications();
+  if (!api || Platform.OS !== 'android') return;
+  await api.setNotificationChannelAsync(CHANNEL, {
     name: t(locale, 'notify.channel'),
-    importance: Notifications.AndroidImportance.DEFAULT,
+    importance: api.AndroidImportance.DEFAULT,
   });
 }
 
 export async function requestAlertPermission(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  const api = notifications();
+  if (!api) return false;
   setupNotificationHandler();
   await ensureChannel();
-  const current = await Notifications.getPermissionsAsync();
-  const next =
-    current.status === 'granted' ? current : await Notifications.requestPermissionsAsync();
+  const current = await api.getPermissionsAsync();
+  const next = current.status === 'granted' ? current : await api.requestPermissionsAsync();
   return next.status === 'granted';
 }
 
@@ -44,12 +63,13 @@ export async function notifyNewJobs(
   alertId: string,
   locale: AppLocale = DEFAULT_LOCALE,
 ): Promise<void> {
-  if (Platform.OS === 'web' || count <= 0) return;
+  const api = notifications();
+  if (!api || count <= 0) return;
   setupNotificationHandler();
   await ensureChannel(locale);
-  const allowed = await Notifications.getPermissionsAsync();
+  const allowed = await api.getPermissionsAsync();
   if (allowed.status !== 'granted') return;
-  await Notifications.scheduleNotificationAsync({
+  await api.scheduleNotificationAsync({
     content: {
       title: t(locale, 'notify.title'),
       body: t(locale, 'notify.body', { count, label }),
@@ -58,4 +78,19 @@ export async function notifyNewJobs(
     },
     trigger: null,
   });
+}
+
+export function listenNotificationTaps(
+  onTap: (alertId: unknown, responseId?: string) => void,
+): () => void {
+  const api = notifications();
+  if (!api) return () => undefined;
+  const tap = api.addNotificationResponseReceivedListener((response) => {
+    onTap(response.notification.request.content.data?.alertId, response.notification.request.identifier);
+  });
+  api.getLastNotificationResponseAsync().then((response) => {
+    if (!response) return;
+    onTap(response.notification.request.content.data?.alertId, response.notification.request.identifier);
+  });
+  return () => tap.remove();
 }

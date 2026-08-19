@@ -64,15 +64,22 @@ export const selectVisibleIds = createSelector(
     (state: RootState) => state.filters.extra,
     (state: RootState) => state.filters.tierFilter,
     (state: RootState) => state.localJobs.items,
+    (state: RootState) => state.jobs.worklyPublicIds,
   ],
-  (feed, byId, query, region, categories, extra, tierFilter, localJobs) =>
-    mergeVisibleIds(feed.ids.length ? feed.ids : EMPTY_IDS, localJobs, byId, {
+  (feed, byId, query, region, categories, extra, tierFilter, localJobs, worklyPublicIds) => {
+    const extras: Job[] = [];
+    for (const id of worklyPublicIds) {
+      const job = byId[id];
+      if (job) extras.push(job);
+    }
+    return mergeVisibleIds(feed.ids.length ? feed.ids : EMPTY_IDS, [...localJobs, ...extras], byId, {
       query,
       region,
       categories,
       extra,
       tierFilter,
-    }),
+    });
+  },
 );
 
 export const selectVisibleCount = createSelector([selectVisibleIds], (ids) => ids.length);

@@ -12,7 +12,7 @@ import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { offerEditorHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { formatServiceSchedule } from '@/lib/services/hours';
-import { OFFERS_LIMIT } from '@/lib/store/freelanceSlice';
+import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectMasterById } from '@/lib/store/selectors';
 import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
@@ -25,6 +25,7 @@ export default function ServicePublicScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const profileId = Array.isArray(id) ? id.join('/') : String(id ?? '');
   const master = useAppSelector((state) => selectMasterById(state, profileId));
+  const limits = useLimits();
   const hours = formatServiceSchedule(
     master?.hours,
     (id) => t(keyOf('week', id)),
@@ -47,9 +48,9 @@ export default function ServicePublicScreen() {
 
   const goEdit = useCallback(() => router.push(SERVICE_ME_HREF), [router]);
   const addOffer = useCallback(() => {
-    if (!master?.mine || master.offers.length >= OFFERS_LIMIT) return;
+    if (!master?.mine || master.offers.length >= limits.offers) return;
     router.push(offerEditorHref('new'));
-  }, [master, router]);
+  }, [limits.offers, master, router]);
   const editOffer = useCallback((offerId: string) => router.push(offerEditorHref(offerId)), [router]);
 
   if (!master) {

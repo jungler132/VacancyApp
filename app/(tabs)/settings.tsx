@@ -4,6 +4,7 @@ import { Switch } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 
+import { AccountCard } from '@/components/AccountCard';
 import { AppHeader } from '@/components/AppHeader';
 import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
@@ -74,6 +75,9 @@ export default function SettingsScreen() {
     <View style={styles.screen}>
       <AppHeader title={t('tab.settings')} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}>
+        <Text style={styles.section}>{t('auth.section')}</Text>
+        <AccountCard />
+
         <Text style={styles.section}>{t('settings.language')}</Text>
         <ChipWrap>
           {APP_LOCALES.map((id) => (

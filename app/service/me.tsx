@@ -6,7 +6,6 @@ import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
-import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { TimeWheel } from '@/components/TimeWheel';
 import { WeekdayStrip } from '@/components/WeekdayStrip';
 import { Text } from '@/components/AppText';
@@ -17,7 +16,8 @@ import { formatServiceSchedule, WORKDAYS } from '@/lib/services/hours';
 import { pickServiceImage } from '@/lib/services/images';
 import { SERVICE_KINDS } from '@/lib/services/kinds';
 import type { ServiceKindId, WeekdayId } from '@/lib/services/types';
-import { CUSTOM_KINDS_LIMIT, OWN_PROFILE_ID, emptyProfile, OFFERS_LIMIT, PROFILE_PHOTOS_LIMIT, saveProfile } from '@/lib/store/freelanceSlice';
+import { CUSTOM_KINDS_LIMIT, OWN_PROFILE_ID, emptyProfile, saveProfile } from '@/lib/store/freelanceSlice';
+import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectOwnMaster } from '@/lib/store/selectors';
 import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
@@ -36,6 +36,7 @@ function ProfileForm() {
   const formStyles = useFormStyles();
   const styles = useThemedStyles(serviceMeStyles);
   const own = useAppSelector(selectOwnMaster);
+  const limits = useLimits();
   const seed = useMemo(() => own ?? emptyProfile(), [own]);
   const [displayName, setDisplayName] = useState(seed.displayName);
   const [bio, setBio] = useState(seed.bio);
@@ -43,7 +44,6 @@ function ProfileForm() {
   const [phone, setPhone] = useState(seed.phone);
   const [address, setAddress] = useState(seed.address ?? '');
   const [avatarUri, setAvatarUri] = useState(seed.avatarUri);
-  const [photos, setPhotos] = useState<string[]>(seed.photos ?? []);
   const [kinds, setKinds] = useState<ServiceKindId[]>(seed.kinds);
   const [customKinds, setCustomKinds] = useState<string[]>(seed.customKinds ?? []);
   const [customKindDraft, setCustomKindDraft] = useState('');
@@ -74,18 +74,13 @@ function ProfileForm() {
     if (uri) setAvatarUri(uri);
   }, []);
 
-  const addPhoto = useCallback(async () => {
-    if (photos.length >= PROFILE_PHOTOS_LIMIT) {
-      Alert.alert(t('common.limit'), t('me.photoLimit', { limit: PROFILE_PHOTOS_LIMIT }));
+  const addOffer = useCallback(() => {
+    if ((own?.offers.length ?? 0) >= limits.offers) {
+      Alert.alert(t('common.limit'), t('me.offerLimit', { limit: limits.offers }));
       return;
     }
-    const uri = await pickServiceImage();
-    if (uri) setPhotos((current) => [...current, uri].slice(0, PROFILE_PHOTOS_LIMIT));
-  }, [photos.length, t]);
-
-  const removePhoto = useCallback((uri: string) => {
-    setPhotos((current) => current.filter((item) => item !== uri));
-  }, []);
+    router.push(offerEditorHref('new'));
+  }, [limits.offers, own?.offers.length, router, t]);
 
   const addCustomKind = useCallback(() => {
     const name = customKindDraft.trim();
@@ -106,14 +101,6 @@ function ProfileForm() {
     setCustomKinds((current) => current.filter((item) => item !== String(id)));
   }, []);
 
-  const addOffer = useCallback(() => {
-    if ((own?.offers.length ?? 0) >= OFFERS_LIMIT) {
-      Alert.alert(t('common.limit'), t('me.offerLimit', { limit: OFFERS_LIMIT }));
-      return;
-    }
-    router.push(offerEditorHref('new'));
-  }, [own?.offers.length, router, t]);
-
   const openOffer = useCallback((id: string) => router.push(offerEditorHref(id)), [router]);
 
   const onSave = useCallback(() => {
@@ -131,7 +118,7 @@ function ProfileForm() {
         phone: phone.trim(),
         address: address.trim() || undefined,
         avatarUri,
-        photos,
+        photos: avatarUri ? [avatarUri] : [],
         kinds,
         customKinds,
         hours: { open, close, days },
@@ -139,7 +126,7 @@ function ProfileForm() {
       }),
     );
     router.replace(masterHref(own?.id ?? OWN_PROFILE_ID));
-  }, [address, avatarUri, bio, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, photos, router, t]);
+  }, [address, avatarUri, bio, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, t]);
 
   return (
     <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -149,14 +136,6 @@ function ProfileForm() {
           <ServiceAvatar uri={avatarUri} name={displayName || t('common.you')} size={88} />
           <Text style={styles.avatarHint}>{t('me.avatar')}</Text>
         </Pressable>
-        <Text style={formStyles.label}>{t('me.photos')}</Text>
-        <ServicePhotoGrid
-          uris={photos}
-          canAdd={photos.length < PROFILE_PHOTOS_LIMIT}
-          onAdd={addPhoto}
-          onRemove={removePhoto}
-        />
-        <Text style={formStyles.hint}>{t('me.photoHint')}</Text>
         <FormField label={t('me.name')} value={displayName} onChangeText={setDisplayName} placeholder={t('me.namePh')} />
         <FormField
           label={t('me.bio')}

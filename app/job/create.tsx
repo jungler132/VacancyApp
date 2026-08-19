@@ -10,7 +10,7 @@ import { CATEGORIES } from '@/lib/catalog';
 import { SALARY_CURRENCIES } from '@/lib/format';
 import { useT } from '@/lib/i18n/useT';
 import { keyOf } from '@/lib/i18n';
-import { LOCAL_JOBS_LIMIT } from '@/lib/tiers';
+import { useLimits } from '@/lib/hooks/useLimits';
 import { buildLocalJob, upsertLocalJob } from '@/lib/store/localJobsSlice';
 import { jobHref } from '@/lib/jobRoute';
 import { pinViewedJob } from '@/lib/store/jobsSlice';
@@ -30,6 +30,7 @@ export default function CreateJobScreen() {
   const isPremium = useAppSelector((state) => state.premium.isPremium);
   const paywallOpen = useAppSelector((state) => state.premium.paywallOpen);
   const localCount = useAppSelector((state) => state.localJobs.items.length);
+  const limits = useLimits();
 
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
@@ -54,8 +55,8 @@ export default function CreateJobScreen() {
         Alert.alert(t('common.missing'), t('create.needTitle'));
         return;
       }
-      if (localCount >= LOCAL_JOBS_LIMIT) {
-        Alert.alert(t('common.limit'), t('create.limit', { limit: LOCAL_JOBS_LIMIT }));
+      if (localCount >= limits.jobs) {
+        Alert.alert(t('common.limit'), t('create.limit', { limit: limits.jobs }));
         return;
       }
       const job = buildLocalJob({
@@ -74,7 +75,7 @@ export default function CreateJobScreen() {
       dispatch(pinViewedJob(job));
       router.replace(jobHref(job.id));
     },
-    [dispatch, localCount, router, t],
+    [dispatch, limits.jobs, localCount, router, t],
   );
 
   const onFree = useCallback(() => publish(2), [publish]);

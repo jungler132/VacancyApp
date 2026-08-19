@@ -14,6 +14,7 @@ import {
 import { PaperProvider } from 'react-native-paper';
 
 import { AlertsHost } from '@/components/AlertsHost';
+import { BackendHost } from '@/components/BackendHost';
 import { InterstitialHost } from '@/components/InterstitialOverlay';
 import { PaywallHost } from '@/components/PaywallSheet';
 import { FONT_SCALE, FontScaleContext, scaleFont, useFontScale } from '@/lib/fontScale';
@@ -89,6 +90,7 @@ function Navigation() {
         <Stack.Screen name="prefs" options={{ title: t(locale, 'nav.prefs') }} />
         <Stack.Screen name="today" options={{ title: t(locale, 'nav.today') }} />
         <Stack.Screen name="privacy" options={{ title: t(locale, 'nav.privacy') }} />
+        <Stack.Screen name="auth/callback" options={{ title: t(locale, 'nav.settings') }} />
       </Stack>
     </ThemeProvider>
   );
@@ -116,6 +118,7 @@ export default function RootLayout() {
       <ThemeBridge>
         <AppShell>
           <AlertsHost />
+          <BackendHost />
           <InterstitialHost />
           <PaywallHost />
           <Navigation />
