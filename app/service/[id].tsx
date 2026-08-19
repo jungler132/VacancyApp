@@ -1,9 +1,10 @@
-import { useCallback, useLayoutEffect, useMemo } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 
 import { EmptyState } from '@/components/EmptyState';
 import { useFormStyles } from '@/components/FormField';
+import { ReportSheet } from '@/components/ReportSheet';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { ServiceOfferCard } from '@/components/ServiceOfferCard';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
@@ -26,6 +27,8 @@ export default function ServicePublicScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const profileId = Array.isArray(id) ? id.join('/') : String(id ?? '');
   const master = useAppSelector((state) => selectMasterById(state, profileId));
+  const signedIn = useAppSelector((state) => Boolean(state.auth.userId && state.auth.email && !state.auth.anonymous));
+  const [reportOpen, setReportOpen] = useState(false);
   const limits = useLimits();
   const hours = formatServiceSchedule(
     master?.hours,
@@ -57,6 +60,8 @@ export default function ServicePublicScreen() {
     router.push(offerEditorHref('new'));
   }, [limits.offers, master, router]);
   const openOffer = useCallback((offerId: string) => router.push(offerViewHref(offerId)), [router]);
+  const openReport = useCallback(() => setReportOpen(true), []);
+  const closeReport = useCallback(() => setReportOpen(false), []);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: master?.displayName || t('nav.master') });
@@ -109,6 +114,10 @@ export default function ServicePublicScreen() {
             <Text style={formStyles.primaryText}>{t('master.addOffer')}</Text>
           </Pressable>
         </View>
+      ) : signedIn ? (
+        <Pressable onPress={openReport} style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
+          <Text style={formStyles.secondaryText}>{t('report.action')}</Text>
+        </Pressable>
       ) : null}
 
       <Text style={styles.section}>{t('master.offers')}</Text>
@@ -119,6 +128,11 @@ export default function ServicePublicScreen() {
       ) : (
         <Text style={styles.empty}>{t('master.empty')}</Text>
       )}
+      <ReportSheet
+        open={reportOpen}
+        target={master ? { kind: 'master', id: master.id, title: master.displayName } : null}
+        onClose={closeReport}
+      />
     </ScrollView>
   );
 }

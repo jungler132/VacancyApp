@@ -129,3 +129,60 @@ create trigger service_offers_cap before insert on public.service_offers
 drop trigger if exists workly_jobs_cap on public.workly_jobs;
 create trigger workly_jobs_cap before insert on public.workly_jobs
   for each row execute procedure public.enforce_row_caps();
+
+create table if not exists public.service_reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references auth.users on delete cascade,
+  reporter_email text not null default '',
+  target_kind text not null,
+  target_id text not null,
+  target_title text not null default '',
+  message text not null,
+  created_at timestamptz not null default now(),
+  constraint service_reports_message_len check (char_length(message) between 1 and 120),
+  constraint service_reports_kind check (target_kind in ('master', 'offer'))
+);
+
+create index if not exists service_reports_created_idx on public.service_reports (created_at desc);
+create index if not exists service_reports_reporter_created_idx
+  on public.service_reports (reporter_id, created_at desc);
+
+alter table public.service_reports enable row level security;
+
+drop policy if exists service_reports_select_own on public.service_reports;
+create policy service_reports_select_own on public.service_reports
+  for select using (auth.uid() = reporter_id);
+
+drop policy if exists service_reports_insert on public.service_reports;
+create policy service_reports_insert on public.service_reports
+  for insert with check (
+    auth.uid() = reporter_id
+    and not exists (
+      select 1 from public.service_reports r
+      where r.reporter_id = auth.uid()
+        and r.created_at > now() - interval '24 hours'
+    )
+  );
+
+create or replace function public.service_reports_rate_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if exists (
+    select 1 from public.service_reports
+    where reporter_id = new.reporter_id
+      and created_at > now() - interval '24 hours'
+  ) then
+    raise exception 'report_cooldown';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists service_reports_rate_limit on public.service_reports;
+create trigger service_reports_rate_limit
+before insert on public.service_reports
+for each row execute procedure public.service_reports_rate_limit();

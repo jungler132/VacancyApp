@@ -29,15 +29,17 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
 
   return (
     <Pressable onPress={open} style={({ pressed }) => [styles.card, featured && styles.premium, pressed && styles.pressed]}>
-      <ServiceAvatar uri={master.avatarUri} name={master.displayName} size={52} />
+      <ServiceAvatar uri={master.avatarUri} name={master.displayName} size={56} />
       <View style={styles.body}>
-        <View style={styles.titleRow}>
-          <Text style={styles.name} numberOfLines={1}>
-            {master.displayName}
-          </Text>
-          {master.mine ? <Text style={styles.mine}>{t('common.you')}</Text> : null}
-          {featured ? <PremiumBadge compact /> : null}
-        </View>
+        <Text style={styles.name} numberOfLines={2}>
+          {master.displayName}
+        </Text>
+        {master.mine || featured ? (
+          <View style={styles.flags}>
+            {master.mine ? <Text style={styles.mine}>{t('common.you')}</Text> : null}
+            {featured ? <PremiumBadge compact /> : null}
+          </View>
+        ) : null}
         <Text style={styles.meta} numberOfLines={2}>
           {[kinds, master.address].filter(Boolean).join(' · ')}
         </Text>
@@ -56,12 +58,14 @@ function serviceMasterCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
   return {
     card: {
       flexDirection: 'row' as const,
-      alignItems: 'center' as const,
+      alignItems: 'flex-start' as const,
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.cardBorder,
       borderRadius: radius.lg,
-      padding: 14,
+      paddingVertical: 16,
+      paddingLeft: 14,
+      paddingRight: 12,
       gap: 12,
       overflow: 'hidden' as const,
       ...shadowsFor(scheme).card,
@@ -70,21 +74,19 @@ function serviceMasterCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       ...premiumSurface(colors),
       ...premiumGlow(scheme),
     },
-    body: { flex: 1, minWidth: 0 },
-    titleRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
-    name: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 16 },
-    mine: {
-      color: colors.accentText,
-      backgroundColor: colors.accent,
-      fontFamily: fonts.semibold,
-      fontSize: 11,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: radius.full,
-      overflow: 'hidden' as const,
+    body: { flex: 1, minWidth: 0, gap: 4 },
+    name: { color: colors.text, fontFamily: fonts.semibold, fontSize: 16, lineHeight: 22 },
+    flags: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, flexWrap: 'wrap' as const },
+    mine: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, lineHeight: 16 },
+    meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, lineHeight: 16 },
+    chevron: {
+      color: colors.faint,
+      fontSize: 22,
+      lineHeight: 24,
+      width: 18,
+      textAlign: 'center' as const,
+      marginTop: 8,
     },
-    meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
-    chevron: { color: colors.faint, fontSize: 22, lineHeight: 24 },
     pressed: { opacity: 0.86 },
   };
 }

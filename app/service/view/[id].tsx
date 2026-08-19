@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import { AppImage } from '@/components/AppImage';
 import { EmptyState } from '@/components/EmptyState';
 import { useFormStyles } from '@/components/FormField';
 import { PremiumBadge } from '@/components/PremiumBadge';
+import { ReportSheet } from '@/components/ReportSheet';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
@@ -25,6 +26,8 @@ export default function ServiceOfferViewScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const offerId = Array.isArray(id) ? id[0] : String(id ?? '');
   const view = useAppSelector((state) => selectOfferView(state, offerId));
+  const signedIn = useAppSelector((state) => Boolean(state.auth.userId && state.auth.email && !state.auth.anonymous));
+  const [reportOpen, setReportOpen] = useState(false);
   const offer = view?.offer;
   const master = view?.master;
   const contact = useMemo(
@@ -45,6 +48,8 @@ export default function ServiceOfferViewScreen() {
   const edit = useCallback(() => {
     if (offer) router.push(offerEditorHref(offer.id));
   }, [offer, router]);
+  const openReport = useCallback(() => setReportOpen(true), []);
+  const closeReport = useCallback(() => setReportOpen(false), []);
 
   if (!offer || !master) {
     return (
@@ -84,12 +89,21 @@ export default function ServiceOfferViewScreen() {
         <Pressable onPress={edit} style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
           <Text style={formStyles.secondaryText}>{t('offer.edit')}</Text>
         </Pressable>
+      ) : signedIn ? (
+        <Pressable onPress={openReport} style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
+          <Text style={formStyles.secondaryText}>{t('report.action')}</Text>
+        </Pressable>
       ) : null}
       {contact.phone ? (
         <Pressable onPress={call} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
           <Text style={formStyles.primaryText}>{t('offer.call')}</Text>
         </Pressable>
       ) : null}
+      <ReportSheet
+        open={reportOpen}
+        target={offer && master ? { kind: 'offer', id: offer.id, title: `${offer.title} · ${master.displayName}` } : null}
+        onClose={closeReport}
+      />
     </ScrollView>
   );
 }
