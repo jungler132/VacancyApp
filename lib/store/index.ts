@@ -49,8 +49,23 @@ import filtersReducer, {
   setRegion,
   toggleFilterCategory,
 } from './filtersSlice';
-import alertsReducer, { hydrateAlerts, rememberSeen, removeSearch, saveSearch, toggleSearch } from './alertsSlice';
-import { persistAlerts } from '@/lib/alerts';
+import alertsReducer, {
+  clearPendingNew,
+  hydrateAlerts,
+  rememberSeen,
+  removeSearch,
+  saveSearch,
+  toggleSearch,
+} from './alertsSlice';
+import identityReducer, {
+  hydrateIdentity,
+  persistIdentity,
+  savePrefs,
+  toggleAvailable,
+  toggleFormat,
+  toggleSeeking,
+} from './identitySlice';
+import { makeAlertKey, persistAlerts } from '@/lib/alerts';
 
 const listener = createListenerMiddleware();
 
@@ -70,7 +85,7 @@ listener.startListening({
     const saved = (listenerApi.getState() as RootState).saved;
     listenerApi.dispatch(rememberJobs(saved.items));
     if (toggleSaved.match(action) || setApplyStatus.match(action)) {
-      await persistSaved(saved.items, saved.statuses);
+      await persistSaved(saved.items, saved.statuses, saved.statusAt);
     }
   },
 });
@@ -84,10 +99,20 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(saveSearch, removeSearch, toggleSearch, rememberSeen),
+  matcher: isAnyOf(saveSearch, removeSearch, toggleSearch, rememberSeen, clearPendingNew),
   effect: async (_action, listenerApi) => {
     const items = (listenerApi.getState() as RootState).alerts.items;
     await persistAlerts(items);
+  },
+});
+
+listener.startListening({
+  actionCreator: applySearch,
+  effect: (_action, listenerApi) => {
+    const state = listenerApi.getState() as RootState;
+    const key = makeAlertKey(state.filters);
+    const alert = state.alerts.items.find((item) => item.enabled && makeAlertKey(item) === key);
+    if (alert?.pendingNew) listenerApi.dispatch(clearPendingNew(alert.id));
   },
 });
 
@@ -112,12 +137,12 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(fetchFeed.pending, fetchFeed.fulfilled, fetchFeed.rejected, clearJobsCache),
+  matcher: isAnyOf(fetchFeed.fulfilled, fetchFeed.rejected, clearJobsCache),
   effect: (_action, listenerApi) => {
     const state = listenerApi.getState() as RootState;
     const savedIds = state.saved.items.map((item) => item.id);
     const localIds = state.localJobs.items.map((item) => item.id);
-    listenerApi.dispatch(pruneUnreferencedJobs([...savedIds, ...localIds]));
+    listenerApi.dispatch(pruneUnreferencedJobs([...savedIds, ...localIds, ...state.jobs.todayIds]));
   },
 });
 
@@ -127,8 +152,7 @@ listener.startListening({
     if (action.meta.arg.mode === 'append') return;
     const state = listenerApi.getState() as RootState;
     const { query, region, category } = action.meta.arg;
-    const byId = { ...state.jobs.byId };
-    for (const job of action.payload.jobs) byId[job.id] = job;
+    const byId = state.jobs.byId;
     const feedIds = action.payload.jobs.map((job) => job.id);
     for (const alert of state.alerts.items) {
       if (!alert.enabled) continue;
@@ -166,6 +190,19 @@ listener.startListening({
   },
 });
 
+listener.startListening({
+  matcher: isAnyOf(toggleSeeking, toggleAvailable, toggleFormat, savePrefs),
+  effect: async (_action, listenerApi) => {
+    const identity = (listenerApi.getState() as RootState).identity;
+    await persistIdentity({
+      seeking: identity.seeking,
+      available: identity.available,
+      title: identity.title,
+      format: identity.format,
+    });
+  },
+});
+
 export const store = configureStore({
   reducer: {
     jobs: jobsReducer,
@@ -180,6 +217,7 @@ export const store = configureStore({
     freelance: freelanceReducer,
     servicesCatalog: servicesCatalogReducer,
     visits: visitsReducer,
+    identity: identityReducer,
   },
   middleware: (getDefault) =>
     getDefault({
@@ -199,6 +237,7 @@ store.dispatch(hydratePremium());
 store.dispatch(hydrateAppearance());
 store.dispatch(hydrateFreelance());
 store.dispatch(hydrateVisits());
+store.dispatch(hydrateIdentity());
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

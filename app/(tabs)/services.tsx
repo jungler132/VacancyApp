@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLockedNav } from '@/lib/hooks/useLockedNav';
 
 import { AppHeader, FilterIconButton } from '@/components/AppHeader';
 import { Text } from '@/components/AppText';
@@ -41,7 +41,7 @@ const CreatePageBanner = memo(function CreatePageBanner({
 
 export default function ServicesScreen() {
   const t = useT();
-  const router = useRouter();
+  const nav = useLockedNav();
   const styles = useThemedStyles(servicesStyles);
   const tabBar = useTabBarLayout();
   const own = useAppSelector(selectOwnMaster);
@@ -63,8 +63,8 @@ export default function ServicesScreen() {
   }, []);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
   const resetFilters = useCallback(() => setKind('all'), []);
-  const openMaster = useCallback((id: string) => router.push(masterHref(id)), [router]);
-  const openEditor = useCallback(() => router.push(SERVICE_ME_HREF), [router]);
+  const openMaster = useCallback((id: string) => nav.push(masterHref(id)), [nav]);
+  const openEditor = useCallback(() => nav.push(SERVICE_ME_HREF), [nav]);
   const renderItem = useCallback(
     ({ item }: { item: ServiceMaster }) => <ServiceMasterCard master={item} onPress={openMaster} />,
     [openMaster],

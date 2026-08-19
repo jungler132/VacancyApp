@@ -28,12 +28,14 @@ export type JobsState = {
   feeds: Record<string, FeedCache>;
   lru: string[];
   viewedId?: string;
+  todayIds: string[];
 };
 
 const initialState: JobsState = {
   byId: {},
   feeds: {},
   lru: [],
+  todayIds: [],
 };
 
 function sameJob(prev: Job, next: Job) {
@@ -158,6 +160,10 @@ const jobsSlice = createSlice({
     rememberJobs(state, action: PayloadAction<Job[]>) {
       upsertJobs(state, action.payload);
     },
+    setTodayJobs(state, action: PayloadAction<Job[]>) {
+      upsertJobs(state, action.payload);
+      state.todayIds = action.payload.map((job) => job.id);
+    },
     pinViewedJob(state, action: PayloadAction<Job>) {
       upsertJobs(state, [action.payload]);
       state.viewedId = action.payload.id;
@@ -244,6 +250,6 @@ const jobsSlice = createSlice({
   },
 });
 
-export const { rememberJobs, pinViewedJob, pruneUnreferencedJobs, clearJobsCache, dismissFeedErrors } =
+export const { rememberJobs, setTodayJobs, pinViewedJob, pruneUnreferencedJobs, clearJobsCache, dismissFeedErrors } =
   jobsSlice.actions;
 export default jobsSlice.reducer;

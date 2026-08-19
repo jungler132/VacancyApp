@@ -231,6 +231,7 @@ export default function TabLayout() {
           options={{
             title: t('tab.profile'),
             tabBarIcon: ({ color, focused }) => <TabIcon name="account" color={String(color)} focused={focused} />,
+            freezeOnBlur: true,
           }}
         />
         <Tabs.Screen

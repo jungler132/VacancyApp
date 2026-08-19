@@ -27,6 +27,8 @@ export type SavedSearch = {
   lastCheckedAt: number;
   lastNotifiedAt: number;
   createdAt: number;
+  pendingNew: number;
+  pendingNewIds: string[];
 };
 
 export type SearchSnapshot = {
@@ -84,6 +86,13 @@ export function normalizeAlerts(raw: unknown): SavedSearch[] {
       lastCheckedAt: typeof row.lastCheckedAt === 'number' ? row.lastCheckedAt : 0,
       lastNotifiedAt: typeof row.lastNotifiedAt === 'number' ? row.lastNotifiedAt : 0,
       createdAt: typeof row.createdAt === 'number' ? row.createdAt : Date.now(),
+      pendingNew:
+        typeof row.pendingNew === 'number' && Number.isFinite(row.pendingNew)
+          ? Math.min(999, Math.max(0, Math.floor(row.pendingNew)))
+          : 0,
+      pendingNewIds: Array.isArray(row.pendingNewIds)
+        ? row.pendingNewIds.filter((id): id is string => typeof id === 'string').slice(0, 80)
+        : [],
     });
   }
   return out.slice(0, MAX_ALERTS);
@@ -162,6 +171,11 @@ export async function checkSavedSearches(options?: {
       const seen = new Set(alert.lastSeenIds);
       const fresh = ids.filter((id) => !seen.has(id));
       alert.lastSeenIds = trimSeen([...fresh, ...alert.lastSeenIds]);
+      if (fresh.length) {
+        alert.pendingNew = Math.min(999, (alert.pendingNew ?? 0) + fresh.length);
+        const prev = Array.isArray(alert.pendingNewIds) ? alert.pendingNewIds : [];
+        alert.pendingNewIds = [...fresh, ...prev.filter((id) => !fresh.includes(id))].slice(0, 80);
+      }
 
       const skip = options?.skipKey && options.skipKey === makeAlertKey(alert);
       const cooled = now - alert.lastNotifiedAt < NOTIFY_COOLDOWN_MS;

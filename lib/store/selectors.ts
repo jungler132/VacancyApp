@@ -10,6 +10,7 @@ import { toServiceMaster } from '@/lib/services/catalog';
 import { localizeMaster } from '@/lib/services/seed';
 import { OWN_PROFILE_ID } from './freelanceSlice';
 import { resolveCatalogItem } from './savedCatalogSlice';
+import { todayCard } from '@/lib/today';
 import type { RootState } from './index';
 import { makeFeedKey, type FeedCache } from './jobsSlice';
 import type { CategoryId, RegionId, SourceError } from '@/lib/types';
@@ -206,3 +207,13 @@ export const selectRecentErrors = createSelector([(state: RootState) => state.jo
   }
   return out.length ? out : EMPTY_ERRORS;
 });
+
+export const selectTodayCard = createSelector(
+  [
+    (state: RootState) => state.alerts.items,
+    (state: RootState) => state.saved.items,
+    (state: RootState) => state.saved.statuses,
+    (state: RootState) => state.saved.statusAt,
+  ],
+  (alerts, savedJobs, statuses, statusAt) => todayCard({ alerts, savedJobs, statuses, statusAt }),
+);
