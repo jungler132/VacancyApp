@@ -6,9 +6,11 @@ import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
+import { runWithOverlay } from '@/components/SyncOverlay';
 import { TimeWheel } from '@/components/TimeWheel';
 import { WeekdayStrip } from '@/components/WeekdayStrip';
 import { Text } from '@/components/AppText';
+import { flushAccount } from '@/lib/backend/sync';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { masterHref, offerEditorHref, offerPriceLabel } from '@/lib/services/catalog';
@@ -18,7 +20,7 @@ import { SERVICE_KINDS } from '@/lib/services/kinds';
 import type { ServiceKindId, WeekdayId } from '@/lib/services/types';
 import { CUSTOM_KINDS_LIMIT, OWN_PROFILE_ID, emptyProfile, saveProfile } from '@/lib/store/freelanceSlice';
 import { useLimits } from '@/lib/hooks/useLimits';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 import { selectOwnMaster } from '@/lib/store/selectors';
 import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
@@ -33,9 +35,11 @@ function ProfileForm() {
   const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(serviceMeStyles);
   const own = useAppSelector(selectOwnMaster);
+  const userId = useAppSelector((state) => state.auth.userId);
   const limits = useLimits();
   const seed = useMemo(() => own ?? emptyProfile(), [own]);
   const [displayName, setDisplayName] = useState(seed.displayName);
@@ -50,6 +54,7 @@ function ProfileForm() {
   const [open, setOpen] = useState(seed.hours.open);
   const [close, setClose] = useState(seed.hours.close);
   const [days, setDays] = useState<WeekdayId[]>(seed.hours.days?.length ? seed.hours.days : [...WORKDAYS]);
+  const [saving, setSaving] = useState(false);
   const hoursLabel = useMemo(
     () => formatServiceSchedule({ open, close, days }, (id) => t(keyOf('week', id)), t('week.all')),
     [close, days, open, t],
@@ -103,35 +108,44 @@ function ProfileForm() {
 
   const openOffer = useCallback((id: string) => router.push(offerEditorHref(id)), [router]);
 
-  const onSave = useCallback(() => {
+  const onSave = useCallback(async () => {
     const name = displayName.trim();
     if (!name) {
       Alert.alert(t('common.missing'), t('me.needName'));
       return;
     }
-    dispatch(
-      saveProfile({
-        ...(own ?? emptyProfile()),
-        displayName: name,
-        bio: bio.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        address: address.trim() || undefined,
-        avatarUri,
-        photos: avatarUri ? [avatarUri] : [],
-        kinds,
-        customKinds,
-        hours: { open, close, days },
-        updatedAt: new Date().toISOString(),
-      }),
-    );
-    router.replace(masterHref(own?.id ?? OWN_PROFILE_ID));
-  }, [address, avatarUri, bio, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, t]);
+    if (saving) return;
+    setSaving(true);
+    try {
+      await runWithOverlay(t('me.saving'), async () => {
+        dispatch(
+          saveProfile({
+            ...(own ?? emptyProfile()),
+            displayName: name,
+            bio: bio.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            address: address.trim() || undefined,
+            avatarUri,
+            photos: own?.photos ?? [],
+            kinds,
+            customKinds,
+            hours: { open, close, days },
+            updatedAt: new Date().toISOString(),
+          }),
+        );
+        await flushAccount(() => store.getState(), dispatch);
+        router.replace(masterHref(own?.id ?? OWN_PROFILE_ID));
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [address, avatarUri, bio, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, saving, store, t]);
 
   return (
     <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
-        <Text style={formStyles.lead}>{t('me.lead')}</Text>
+        <Text style={formStyles.lead}>{t(userId ? 'me.lead' : 'me.leadGuest')}</Text>
         <Pressable onPress={pickAvatar} style={styles.avatarWrap}>
           <ServiceAvatar uri={avatarUri} name={displayName || t('common.you')} size={88} />
           <Text style={styles.avatarHint}>{t('me.avatar')}</Text>
@@ -196,7 +210,10 @@ function ProfileForm() {
           </View>
         </View>
         {hoursLabel ? <Text style={styles.hoursPreview}>{t('me.hoursPreview', { value: hoursLabel })}</Text> : null}
-        <Pressable onPress={onSave} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
+        <Pressable
+          onPress={onSave}
+          disabled={saving}
+          style={({ pressed }) => [formStyles.primary, (pressed || saving) && formStyles.pressed]}>
           <Text style={formStyles.primaryText}>{t('me.save')}</Text>
         </Pressable>
 

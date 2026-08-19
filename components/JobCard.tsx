@@ -7,6 +7,7 @@ import { CompanyLogo } from '@/components/CompanyLogo';
 import { AppChip } from '@/components/AppChip';
 import { ChipWrap } from '@/components/ChipWrap';
 import { type ApplyStatus } from '@/lib/apply';
+import { PremiumBadge } from '@/components/PremiumBadge';
 import { Text } from '@/components/AppText';
 import { displayName, formatPlace, jobTags } from '@/lib/format';
 import { keyOf, tokenLabel } from '@/lib/i18n';
@@ -19,7 +20,7 @@ import { toggleSaved } from '@/lib/store/savedSlice';
 import { jobHref } from '@/lib/jobRoute';
 import { jobTier } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
-import { fonts, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export const JobCard = memo(function JobCard({ jobId }: { jobId: string }) {
   const job = useAppSelector(selectJobById(jobId));
@@ -63,6 +64,7 @@ const JobCardView = memo(function JobCardView({
     <Pressable
       onPress={open}
       style={({ pressed }) => [styles.card, tier === 1 && styles.premium, pressed && styles.pressed]}>
+      {tier === 1 ? <View style={styles.stripe} /> : null}
       <View style={styles.top}>
         <CompanyLogo uri={job.companyLogo || logoFromApplyUrl(job.url)} name={company} size={56} />
         <View style={styles.head}>
@@ -73,7 +75,7 @@ const JobCardView = memo(function JobCardView({
             <Text style={styles.company} numberOfLines={1}>
               {company}
             </Text>
-            {tier === 1 ? <Text style={styles.badgePrem}>{t('common.premium')}</Text> : null}
+            {tier === 1 ? <PremiumBadge compact /> : null}
             {tier === 2 ? <Text style={styles.badgeLocal}>{t('common.workly')}</Text> : null}
           </View>
         </View>
@@ -134,18 +136,21 @@ function jobCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       borderRadius: radius.lg,
       padding: 16,
       marginBottom: 16,
+      overflow: 'hidden' as const,
       ...shadowsFor(scheme).card,
     },
     pressed: { opacity: 0.92 },
     premium: {
-      borderColor: colors.accentDim,
-      backgroundColor: '#f8f9ff',
+      ...premiumSurface(colors),
+      ...premiumGlow(scheme),
     },
-    badgePrem: {
-      color: colors.accent,
-      fontFamily: fonts.semibold,
-      fontSize: 11,
-      flexShrink: 0,
+    stripe: {
+      position: 'absolute' as const,
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      backgroundColor: colors.orange,
     },
     badgeLocal: {
       color: colors.muted,

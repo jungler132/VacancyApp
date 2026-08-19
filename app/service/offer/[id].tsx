@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Switch } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -7,10 +8,12 @@ import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
+import { runWithOverlay } from '@/components/SyncOverlay';
 import { Text } from '@/components/AppText';
+import { flushAccount } from '@/lib/backend/sync';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
-import { SERVICE_ME_HREF } from '@/lib/services/catalog';
+import { prefillOfferContact, SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { pickServiceImage } from '@/lib/services/images';
 import { isServiceKindId, SERVICE_KINDS } from '@/lib/services/kinds';
 import type { ServiceKindId } from '@/lib/services/types';
@@ -21,7 +24,7 @@ import {
   removeOffer,
   upsertOffer,
 } from '@/lib/store/freelanceSlice';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 import { openPaywall } from '@/lib/store/premiumSlice';
 import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { SALARY_CURRENCIES } from '@/lib/format';
@@ -37,6 +40,7 @@ function OfferForm() {
   const t = useT();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(offerEditorStyles);
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
@@ -51,16 +55,20 @@ function OfferForm() {
     [isNew, offerId, offers],
   );
 
+  const contact = useMemo(() => prefillOfferContact(existing, profile), [existing, profile]);
   const [title, setTitle] = useState(existing?.title ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
   const [price, setPrice] = useState(existing?.price ?? '');
+  const [negotiable, setNegotiable] = useState(Boolean(existing) && !existing?.price);
+  const insets = useSafeAreaInsets();
   const [currency, setCurrency] = useState(existing?.currency ?? 'RUB');
   const [kind, setKind] = useState<ServiceKindId>(existing?.kind ?? profile?.kinds[0] ?? 'other');
   const [customKind, setCustomKind] = useState(existing?.customKind ?? '');
   const [featured, setFeatured] = useState(Boolean(existing?.featured));
-  const [address, setAddress] = useState(existing?.address ?? '');
-  const [phone, setPhone] = useState(existing?.phone ?? '');
+  const [address, setAddress] = useState(contact.address);
+  const [phone, setPhone] = useState(contact.phone);
   const [images, setImages] = useState<string[]>(existing?.images ?? []);
+  const [saving, setSaving] = useState(false);
 
   const onKind = useCallback((next: string | number) => {
     if (isServiceKindId(next)) setKind(next);
@@ -77,15 +85,18 @@ function OfferForm() {
   const onFeatured = useCallback(
     (next: boolean) => {
       if (next && !isPremium) {
-        Alert.alert(t('common.premium'), t('offer.featuredNeedPremium'));
         dispatch(openPaywall());
         return;
       }
       setFeatured(next);
     },
-    [dispatch, isPremium, t],
+    [dispatch, isPremium],
   );
   const onCurrency = useCallback((next: string | number) => setCurrency(String(next)), []);
+  const onNegotiable = useCallback((next: boolean) => {
+    setNegotiable(next);
+    if (next) setPrice('');
+  }, []);
 
   const addPhoto = useCallback(async () => {
     if (images.length >= limits.offerPhotos) {
@@ -100,7 +111,7 @@ function OfferForm() {
     setImages((current) => current.filter((item) => item !== uri));
   }, []);
 
-  const onSave = useCallback(() => {
+  const onSave = useCallback(async () => {
     const nextTitle = title.trim();
     if (!nextTitle) {
       Alert.alert(t('common.missing'), t('offer.needTitle'));
@@ -115,25 +126,34 @@ function OfferForm() {
       Alert.alert(t('common.limit'), t('me.offerLimit', { limit: limits.offers }));
       return;
     }
-    dispatch(
-      upsertOffer({
-        id: existing?.id ?? makeOfferId(),
-        profileId: OWN_PROFILE_ID,
-        title: nextTitle,
-        description: description.trim(),
-        price: price.trim() || undefined,
-        currency,
-        images,
-        address: address.trim() || undefined,
-        phone: phone.trim() || undefined,
-        kind,
-        customKind: customKind.trim() || undefined,
-        featured: featured && isPremium,
-        updatedAt: new Date().toISOString(),
-      }),
-    );
-    router.back();
-  }, [address, currency, customKind, description, dispatch, existing?.id, featured, images, isNew, isPremium, kind, limits.offers, offers.length, phone, price, profile?.displayName, router, t, title]);
+    if (saving) return;
+    setSaving(true);
+    try {
+      await runWithOverlay(t('offer.saving'), async () => {
+        dispatch(
+          upsertOffer({
+            id: existing?.id ?? makeOfferId(),
+            profileId: OWN_PROFILE_ID,
+            title: nextTitle,
+            description: description.trim(),
+            price: negotiable ? undefined : price.trim() || undefined,
+            currency,
+            images,
+            address: address.trim() || undefined,
+            phone: phone.trim() || undefined,
+            kind,
+            customKind: customKind.trim() || undefined,
+            featured: featured && isPremium,
+            updatedAt: new Date().toISOString(),
+          }),
+        );
+        await flushAccount(() => store.getState(), dispatch);
+        router.back();
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [address, currency, customKind, description, dispatch, existing?.id, featured, images, isNew, isPremium, kind, limits.offers, negotiable, offers.length, phone, price, profile?.displayName, router, saving, store, t, title]);
 
   const onDelete = useCallback(() => {
     if (!existing) return;
@@ -160,7 +180,9 @@ function OfferForm() {
 
   return (
     <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[formStyles.content, { paddingBottom: Math.max(insets.bottom, 16) + 72 }]}
+        keyboardShouldPersistTaps="handled">
         <Text style={formStyles.lead}>{t('offer.lead')}</Text>
         <FormField label={t('offer.title')} value={title} onChangeText={setTitle} placeholder={t('offer.titlePh')} />
         <Text style={formStyles.label}>{t('offer.kind')}</Text>
@@ -202,7 +224,7 @@ function OfferForm() {
         <View style={styles.featureRow}>
           <View style={styles.featureBody}>
             <Text style={styles.featureTitle}>{t('offer.featured')}</Text>
-            <Text style={styles.featureMeta}>
+            <Text style={styles.featureMeta} numberOfLines={3}>
               {isPremium ? t('offer.featuredOn') : t('offer.featuredNeedPremium')}
             </Text>
           </View>
@@ -215,13 +237,24 @@ function OfferForm() {
           placeholder={t('offer.descriptionPh')}
           multiline
         />
-        <FormField label={t('offer.price')} value={price} onChangeText={setPrice} placeholder="2500" keyboardType="numeric" />
-        <Text style={formStyles.label}>{t('offer.currency')}</Text>
-        <ChipWrap>
-          {SALARY_CURRENCIES.map((item) => (
-            <SelectChip key={item.id} id={item.id} label={item.id} compact selected={currency === item.id} onChange={onCurrency} />
-          ))}
-        </ChipWrap>
+        <View style={styles.featureRow}>
+          <View style={styles.featureBody}>
+            <Text style={styles.featureTitle}>{t('offer.negotiable')}</Text>
+            <Text style={styles.featureMeta}>{t('offer.negotiableHint')}</Text>
+          </View>
+          <Switch value={negotiable} onValueChange={onNegotiable} />
+        </View>
+        {negotiable ? null : (
+          <>
+            <FormField label={t('offer.price')} value={price} onChangeText={setPrice} placeholder="2500" keyboardType="numeric" />
+            <Text style={formStyles.label}>{t('offer.currency')}</Text>
+            <ChipWrap>
+              {SALARY_CURRENCIES.map((item) => (
+                <SelectChip key={item.id} id={item.id} label={item.id} compact selected={currency === item.id} onChange={onCurrency} />
+              ))}
+            </ChipWrap>
+          </>
+        )}
         <Text style={formStyles.label}>{t('offer.photos')}</Text>
         <ServicePhotoGrid
           uris={images}
@@ -230,19 +263,25 @@ function OfferForm() {
           onRemove={removePhoto}
         />
         <Text style={formStyles.hint}>{t('offer.photoHint')}</Text>
-        <FormField label={t('offer.address')} value={address} onChangeText={setAddress} placeholder={profile?.address || t('offer.asProfile')} />
+        <FormField label={t('offer.address')} value={address} onChangeText={setAddress} placeholder={t('offer.asProfile')} />
         <FormField
           label={t('offer.phone')}
           value={phone}
           onChangeText={setPhone}
-          placeholder={profile?.phone || t('offer.asProfile')}
+          placeholder={t('offer.asProfile')}
           keyboardType="phone-pad"
         />
-        <Pressable onPress={onSave} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
+        <Pressable
+          onPress={onSave}
+          disabled={saving}
+          style={({ pressed }) => [formStyles.primary, (pressed || saving) && formStyles.pressed]}>
           <Text style={formStyles.primaryText}>{isNew ? t('offer.add') : t('common.save')}</Text>
         </Pressable>
         {existing ? (
-          <Pressable onPress={onDelete} style={({ pressed }) => [styles.danger, pressed && formStyles.pressed]}>
+          <Pressable
+            onPress={onDelete}
+            disabled={saving}
+            style={({ pressed }) => [styles.danger, pressed && formStyles.pressed]}>
             <Text style={styles.dangerText}>{t('common.delete')}</Text>
           </Pressable>
         ) : null}
@@ -256,7 +295,7 @@ function offerEditorStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
     featureRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, paddingVertical: 4 },
     featureBody: { flex: 1, minWidth: 0 },
     featureTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
-    featureMeta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
+    featureMeta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, lineHeight: 18, marginTop: 4 },
     danger: { height: 48, alignItems: 'center' as const, justifyContent: 'center' as const },
     dangerText: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 16 },
   };

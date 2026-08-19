@@ -11,6 +11,7 @@ import { CopyLinkButton } from '@/components/CopyLinkButton';
 import { EmptyState } from '@/components/EmptyState';
 import { SelectChip } from '@/components/FilterChips';
 import { CompanyLogo } from '@/components/CompanyLogo';
+import { PremiumBadge } from '@/components/PremiumBadge';
 import { requestInterstitial } from '@/lib/ads';
 import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
 import { displayName, formatDate, formatPlace, htmlToText, joinMeta, jobFacts } from '@/lib/format';
@@ -29,7 +30,7 @@ import { matchRouteJobId, parseJobIdParam } from '@/lib/jobRoute';
 import { selectIsSaved, selectJobById, selectViewedJob } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
 import { isLocalJob, jobTier } from '@/lib/tiers';
-import { fonts, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function JobDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
@@ -146,7 +147,7 @@ export default function JobDetailsScreen() {
     const timeout = setTimeout(() => {
       timedOut = true;
       ac.abort();
-    }, 25000);
+    }, 50000);
     setTranslating(true);
     setTranslateError(null);
     try {
@@ -194,14 +195,17 @@ export default function JobDetailsScreen() {
   const title = showTranslated && translated ? translated.title : job.title;
   const company = showTranslated && translated ? translated.company : displayName(job.company);
   const text = showTranslated && translated ? translated.body : body;
+  const premium = jobTier(job) === 1;
 
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={[styles.content, job.url && styles.contentCta]}>
-        <View style={styles.hero}>
+        <View style={[styles.hero, premium && styles.heroPremium]}>
+          {premium ? <View style={styles.stripe} /> : null}
           <View style={styles.logo}>
             <CompanyLogo uri={job.companyLogo || logoFromApplyUrl(job.url)} name={company} size={80} />
           </View>
+          {premium ? <PremiumBadge /> : null}
           <Text variant="headlineSmall" style={styles.headline}>
             {title}
           </Text>
@@ -216,7 +220,7 @@ export default function JobDetailsScreen() {
           {facts.map((fact) => (
             <AppChip key={fact.id} label={tokenLabel(locale, fact.value)} />
           ))}
-          <AppChip label={jobTier(job) === 1 ? t('common.premium') : job.sourceName} selected />
+          <AppChip label={premium ? t('common.premium') : job.sourceName} selected />
         </ChipWrap>
 
         {job.contact ? (
@@ -225,10 +229,10 @@ export default function JobDetailsScreen() {
           </Text>
         ) : null}
 
-        <View style={styles.companyCard}>
+        <View style={[styles.companyCard, premium && styles.companyCardPremium]}>
           <Text variant="titleSmall">{company}</Text>
           <Text variant="bodySmall" style={styles.companyNote}>
-            {job.sourceName}
+            {premium ? t('common.premium') : job.sourceName}
           </Text>
         </View>
 
@@ -291,7 +295,25 @@ function jobDetailsStyles(colors: ThemeColors, scheme: ColorSchemeName) {
     content: { padding: 20, paddingBottom: 48 },
     contentCta: { paddingBottom: 24 },
     center: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center' as const, padding: 24 },
-    hero: { alignItems: 'center' as const, marginBottom: 16 },
+    hero: { alignItems: 'center' as const, marginBottom: 16, paddingVertical: 8 },
+    heroPremium: {
+      ...premiumSurface(colors),
+      ...premiumGlow(scheme),
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      paddingHorizontal: 16,
+      paddingVertical: 20,
+      overflow: 'hidden' as const,
+      gap: 8,
+    },
+    stripe: {
+      position: 'absolute' as const,
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      backgroundColor: colors.orange,
+    },
     logo: { marginBottom: 16 },
     headline: { textAlign: 'center' as const },
     company: { marginTop: 6, opacity: 0.75, textAlign: 'center' as const },
@@ -306,6 +328,10 @@ function jobDetailsStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       marginBottom: 16,
       gap: 4,
       ...shadowsFor(scheme).card,
+    },
+    companyCardPremium: {
+      ...premiumSurface(colors),
+      ...premiumGlow(scheme),
     },
     companyNote: { opacity: 0.65 },
     statusTitle: { marginTop: 8, marginBottom: 8, opacity: 0.7 },

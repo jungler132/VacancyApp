@@ -184,12 +184,16 @@ const freelanceSlice = createSlice({
     applyRemoteMedia(state, action: PayloadAction<{ avatarUri?: string; offers: Record<string, string[]> }>) {
       if (state.profile && action.payload.avatarUri) {
         state.profile.avatarUri = action.payload.avatarUri;
-        state.profile.photos = [action.payload.avatarUri];
       }
       for (const offer of state.offers) {
         const images = action.payload.offers[offer.id];
         if (images) offer.images = images;
       }
+    },
+    replaceAccount(state, action: PayloadAction<{ profile: ServiceProfile | null; offers: ServiceOffer[] }>) {
+      const next = parseFreelance(action.payload);
+      state.profile = next.profile;
+      state.offers = next.offers;
     },
   },
   extraReducers: (builder) => {
@@ -205,5 +209,5 @@ const freelanceSlice = createSlice({
   },
 });
 
-export const { saveProfile, upsertOffer, removeOffer, applyRemoteMedia } = freelanceSlice.actions;
+export const { saveProfile, upsertOffer, removeOffer, applyRemoteMedia, replaceAccount } = freelanceSlice.actions;
 export default freelanceSlice.reducer;

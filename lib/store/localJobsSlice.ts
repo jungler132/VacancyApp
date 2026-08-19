@@ -79,6 +79,9 @@ const localJobsSlice = createSlice({
     removeLocalJob(state, action: PayloadAction<string>) {
       state.items = state.items.filter((item) => item.id !== action.payload);
     },
+    replaceLocalJobs(state, action: PayloadAction<Job[]>) {
+      state.items = parseLocalJobs(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -92,7 +95,7 @@ const localJobsSlice = createSlice({
   },
 });
 
-export const { upsertLocalJob, removeLocalJob } = localJobsSlice.actions;
+export const { upsertLocalJob, removeLocalJob, replaceLocalJobs } = localJobsSlice.actions;
 export default localJobsSlice.reducer;
 
 export function buildLocalJob(input: {

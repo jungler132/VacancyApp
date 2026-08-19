@@ -1,5 +1,6 @@
 import '@/lib/alertsTask';
 import { useEffect, useMemo, type ReactNode } from 'react';
+import { View } from 'react-native';
 import { Provider } from 'react-redux';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -17,6 +18,7 @@ import { AlertsHost } from '@/components/AlertsHost';
 import { BackendHost } from '@/components/BackendHost';
 import { InterstitialHost } from '@/components/InterstitialOverlay';
 import { PaywallHost } from '@/components/PaywallSheet';
+import { SyncOverlayHost } from '@/components/SyncOverlay';
 import { FONT_SCALE, FontScaleContext, scaleFont, useFontScale } from '@/lib/fontScale';
 import { store } from '@/lib/store';
 import { useAppSelector } from '@/lib/store/hooks';
@@ -82,6 +84,7 @@ function Navigation() {
         <Stack.Screen name="job/[...id]" options={{ title: t(locale, 'nav.job') }} />
         <Stack.Screen name="service/me" options={{ title: t(locale, 'nav.serviceMe') }} />
         <Stack.Screen name="service/[id]" options={{ title: t(locale, 'nav.master') }} />
+        <Stack.Screen name="service/view/[id]" options={{ title: t(locale, 'nav.offer') }} />
         <Stack.Screen name="service/offer/[id]" options={{ title: t(locale, 'nav.offer') }} />
         <Stack.Screen name="stats" options={{ title: t(locale, 'nav.stats') }} />
         <Stack.Screen name="saved" options={{ title: t(locale, 'nav.saved') }} />
@@ -117,11 +120,14 @@ export default function RootLayout() {
     <Provider store={store}>
       <ThemeBridge>
         <AppShell>
-          <AlertsHost />
-          <BackendHost />
-          <InterstitialHost />
-          <PaywallHost />
-          <Navigation />
+          <View style={{ flex: 1 }}>
+            <AlertsHost />
+            <BackendHost />
+            <InterstitialHost />
+            <PaywallHost />
+            <Navigation />
+            <SyncOverlayHost />
+          </View>
         </AppShell>
       </ThemeBridge>
     </Provider>

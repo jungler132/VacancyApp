@@ -14,7 +14,7 @@ export type SavedState = {
   ready: boolean;
 };
 
-type SavedPersist = {
+export type SavedPersist = {
   items: Job[];
   statuses: Record<string, ApplyStatus>;
   statusAt: Record<string, string>;
@@ -47,18 +47,21 @@ function parseStatusAt(raw: unknown): Record<string, string> {
 
 function parseSaved(raw: string): SavedPersist {
   try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (Array.isArray(parsed)) return { items: parsed as Job[], statuses: {}, statusAt: {} };
-    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as SavedPersist).items)) {
-      const row = parsed as SavedPersist;
-      return {
-        items: row.items,
-        statuses: parseStatuses(row.statuses),
-        statusAt: parseStatusAt(row.statusAt),
-      };
-    }
+    return parseSavedPersist(JSON.parse(raw));
   } catch {
-    /* ignore */
+    return { items: [], statuses: {}, statusAt: {} };
+  }
+}
+
+export function parseSavedPersist(raw: unknown): SavedPersist {
+  if (Array.isArray(raw)) return { items: raw as Job[], statuses: {}, statusAt: {} };
+  if (raw && typeof raw === 'object' && Array.isArray((raw as SavedPersist).items)) {
+    const row = raw as SavedPersist;
+    return {
+      items: row.items,
+      statuses: parseStatuses(row.statuses),
+      statusAt: parseStatusAt(row.statusAt),
+    };
   }
   return { items: [], statuses: {}, statusAt: {} };
 }
@@ -109,6 +112,12 @@ const savedSlice = createSlice({
       state.statuses[job.id] = status;
       state.statusAt[job.id] = new Date().toISOString();
     },
+    replaceSaved(state, action: PayloadAction<SavedPersist>) {
+      const next = parseSavedPersist(action.payload);
+      state.items = next.items;
+      state.statuses = next.statuses;
+      state.statusAt = next.statusAt;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(hydrateSaved.fulfilled, (state, action) => {
@@ -123,7 +132,7 @@ const savedSlice = createSlice({
   },
 });
 
-export const { toggleSaved, setApplyStatus } = savedSlice.actions;
+export const { toggleSaved, setApplyStatus, replaceSaved } = savedSlice.actions;
 export default savedSlice.reducer;
 
 export function persistSaved(

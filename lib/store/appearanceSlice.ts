@@ -82,6 +82,11 @@ const appearanceSlice = createSlice({
     setTheme(state, action: PayloadAction<ThemePreference>) {
       state.theme = parseThemePref(action.payload);
     },
+    replaceAppearance(state, action: PayloadAction<{ fontSize: FontSizeId; locale: AppLocale; theme: ThemePreference }>) {
+      state.fontSize = parseFontSize(action.payload.fontSize);
+      state.locale = parseLocale(action.payload.locale) ?? DEFAULT_LOCALE;
+      state.theme = parseThemePref(action.payload.theme);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -98,5 +103,5 @@ const appearanceSlice = createSlice({
   },
 });
 
-export const { setFontSize, setLocale, setTheme } = appearanceSlice.actions;
+export const { setFontSize, setLocale, setTheme, replaceAppearance } = appearanceSlice.actions;
 export default appearanceSlice.reducer;

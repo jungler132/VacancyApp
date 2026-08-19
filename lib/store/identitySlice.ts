@@ -68,6 +68,12 @@ const identitySlice = createSlice({
       state.seeking = action.payload.seeking;
       state.available = action.payload.available;
     },
+    resetIdentity(state) {
+      state.title = DEFAULT_SEEK_PREFS.title;
+      state.format = DEFAULT_SEEK_PREFS.format;
+      state.seeking = true;
+      state.available = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -84,5 +90,5 @@ const identitySlice = createSlice({
   },
 });
 
-export const { toggleSeeking, toggleAvailable, toggleFormat, savePrefs } = identitySlice.actions;
+export const { toggleSeeking, toggleAvailable, toggleFormat, savePrefs, resetIdentity } = identitySlice.actions;
 export default identitySlice.reducer;

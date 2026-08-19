@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { AppImage } from '@/components/AppImage';
 import { Text } from '@/components/AppText';
 import { fonts, radius, useThemedStyles, type ThemeColors } from '@/lib/theme';
 
@@ -39,10 +40,10 @@ const PhotoThumb = memo(function PhotoThumb({
 }) {
   const styles = useThemedStyles(photoGridStyles);
   const press = useCallback(() => onRemove?.(uri), [onRemove, uri]);
-  if (!onRemove) return <Image source={{ uri }} style={styles.photo} />;
+  if (!onRemove) return <AppImage uri={uri} style={styles.photo} />;
   return (
     <Pressable onPress={press}>
-      <Image source={{ uri }} style={styles.photo} />
+      <AppImage uri={uri} style={styles.photo} />
     </Pressable>
   );
 });

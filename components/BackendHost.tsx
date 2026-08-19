@@ -2,27 +2,44 @@ import { useEffect, useRef } from 'react';
 import * as Linking from 'expo-linking';
 
 import { exchangeAuthUrl } from '@/lib/backend/auth';
-import { pullAccount, refreshPublic, resetPushCache } from '@/lib/backend/sync';
+import { pullAccount, refreshPublic, resetPushCache, schedulePush } from '@/lib/backend/sync';
 import { getSupabase } from '@/lib/backend/supabase';
 import { hydrateAuth, setSession } from '@/lib/store/authSlice';
+import { clearPremiumStub } from '@/lib/store/premiumSlice';
 import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 
 export function BackendHost() {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const ready = useAppSelector(
-    (state) => state.freelance.ready && state.localJobs.ready && state.identity.ready && state.auth.ready,
+    (state) =>
+      state.freelance.ready &&
+      state.localJobs.ready &&
+      state.identity.ready &&
+      state.auth.ready &&
+      state.saved.ready &&
+      state.savedCatalog.ready &&
+      state.appearance.ready &&
+      state.filters.ready &&
+      state.alerts.ready &&
+      state.sources.ready &&
+      state.visits.ready,
   );
   const userId = useAppSelector((state) => state.auth.userId);
-  const pulled = useRef<string | null>(null);
+  const email = useAppSelector((state) => state.auth.email);
+  const lastUser = useRef<string | null | undefined>(undefined);
+  const lastEmail = useRef<string | null | undefined>(undefined);
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
 
   useEffect(() => {
     dispatch(hydrateAuth());
     const supabase = getSupabase();
     if (!supabase) return undefined;
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextId = session?.user.id ?? null;
+      if (userIdRef.current !== nextId) resetPushCache();
       dispatch(setSession(session));
-      if (!session) resetPushCache();
     });
     const sub = Linking.addEventListener('url', ({ url }) => {
       exchangeAuthUrl(url).catch(() => undefined);
@@ -39,10 +56,23 @@ export function BackendHost() {
   useEffect(() => {
     if (!ready) return;
     refreshPublic(dispatch, userId).catch(() => undefined);
-    if (!userId || pulled.current === userId) return;
-    pulled.current = userId;
-    pullAccount(dispatch, store.getState()).catch(() => undefined);
-  }, [dispatch, ready, store, userId]);
+    const prev = lastUser.current;
+    if (prev === userId) {
+      if (userId && email && lastEmail.current !== email) {
+        lastEmail.current = email;
+        schedulePush(() => store.getState(), dispatch);
+      }
+      return;
+    }
+    lastUser.current = userId;
+    lastEmail.current = email ?? null;
+    resetPushCache();
+    if (!userId) {
+      dispatch(clearPremiumStub());
+      return;
+    }
+    pullAccount(dispatch, () => store.getState()).catch(() => undefined);
+  }, [dispatch, email, ready, store, userId]);
 
   return null;
 }

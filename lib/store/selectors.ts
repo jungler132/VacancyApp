@@ -7,7 +7,6 @@ import { computeJobStats } from '@/lib/stats';
 import { mergeVisibleIds } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
 import { toServiceMaster } from '@/lib/services/catalog';
-import { localizeMaster } from '@/lib/services/seed';
 import { OWN_PROFILE_ID } from './freelanceSlice';
 import { resolveCatalogItem } from './savedCatalogSlice';
 import { todayCard } from '@/lib/today';
@@ -166,6 +165,20 @@ export const selectSourceErrorMap = createSelector([(state: RootState) => state.
   return Object.keys(map).length ? map : EMPTY_ERROR_MAP;
 });
 
+function isOwnCatalogEntry(
+  id: string,
+  email: string | undefined,
+  own: { id: string; email?: string } | undefined,
+  userId: string | null,
+) {
+  if (!id) return false;
+  if (id === OWN_PROFILE_ID || own?.id === id) return true;
+  if (userId && (id === userId || id === `user:${userId}`)) return true;
+  const ownEmail = own?.email?.trim().toLowerCase();
+  const nextEmail = email?.trim().toLowerCase();
+  return Boolean(ownEmail && nextEmail && ownEmail === nextEmail);
+}
+
 export const selectOwnMaster = createSelector(
   [(state: RootState) => state.freelance.profile, (state: RootState) => state.freelance.offers],
   (profile, offers) => (profile ? toServiceMaster(profile, offers, true) : undefined),
@@ -174,11 +187,11 @@ export const selectOwnMaster = createSelector(
 export const selectCatalogMasters = createSelector(
   [
     (state: RootState) => state.servicesCatalog.items,
-    (state: RootState) => state.appearance.locale,
     selectOwnMaster,
+    (state: RootState) => state.auth.userId,
   ],
-  function selectCatalogMastersResult(remote, locale, own) {
-    const items = remote.map((item) => localizeMaster(item, locale));
+  function selectCatalogMastersResult(remote, own, userId) {
+    const items = remote.filter((item) => !isOwnCatalogEntry(item.id, item.email, own, userId));
     if (own?.displayName.trim()) return [own, ...items];
     return items;
   },
@@ -187,15 +200,26 @@ export const selectCatalogMasters = createSelector(
 export const selectMasterById = createSelector(
   [
     (state: RootState) => state.servicesCatalog.items,
-    (state: RootState) => state.appearance.locale,
     selectOwnMaster,
+    (state: RootState) => state.auth.userId,
     (_state: RootState, id: string) => id,
   ],
-  function selectMasterByIdResult(items, locale, own, id) {
+  function selectMasterByIdResult(items, own, userId, id) {
     if (!id) return undefined;
-    if (id === OWN_PROFILE_ID || own?.id === id) return own;
-    const master = items.find((item) => item.id === id);
-    return master ? localizeMaster(master, locale) : undefined;
+    if (isOwnCatalogEntry(id, undefined, own, userId)) return own;
+    return items.find((item) => item.id === id);
+  },
+);
+
+export const selectOfferView = createSelector(
+  [selectCatalogMasters, (_state: RootState, offerId: string) => offerId],
+  function selectOfferViewResult(masters, offerId) {
+    if (!offerId) return undefined;
+    for (const master of masters) {
+      const offer = master.offers.find((item) => item.id === offerId);
+      if (offer) return { master, offer };
+    }
+    return undefined;
   },
 );
 

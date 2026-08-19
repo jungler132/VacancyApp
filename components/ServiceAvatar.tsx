@@ -1,6 +1,7 @@
 import { memo } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 
+import { AppImage } from '@/components/AppImage';
 import { Text } from '@/components/AppText';
 import { initialsOf } from '@/lib/services/kinds';
 import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
@@ -18,7 +19,7 @@ export const ServiceAvatar = memo(function ServiceAvatar({
   const radius = size / 2;
   const box = { width: size, height: size, borderRadius: radius };
 
-  if (uri) return <Image source={{ uri }} style={[styles.image, box]} />;
+  if (uri) return <AppImage uri={uri} style={[styles.image, box]} />;
 
   return (
     <View style={[styles.fallback, box]}>

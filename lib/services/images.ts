@@ -24,7 +24,7 @@ export async function pickServiceImage(opts?: { square?: boolean }): Promise<str
     mediaTypes: ['images'],
     allowsEditing: Boolean(opts?.square),
     aspect: opts?.square ? [1, 1] : undefined,
-    quality: 1,
+    quality: 0.8,
   });
   if (result.canceled) return undefined;
   const uri = result.assets[0]?.uri;

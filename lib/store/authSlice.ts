@@ -27,9 +27,11 @@ const initialState: AuthState = {
 function fromSession(session: Session | null): Pick<AuthState, 'userId' | 'email' | 'anonymous'> {
   const user = session?.user;
   if (!user) return { userId: null, email: null, anonymous: false };
+  const meta = user.user_metadata as { email?: unknown } | undefined;
+  const identityEmail = user.identities?.map((item) => item.identity_data?.email).find((value) => typeof value === 'string' && value);
   return {
     userId: user.id,
-    email: user.email ?? null,
+    email: user.email || (typeof meta?.email === 'string' ? meta.email : null) || (typeof identityEmail === 'string' ? identityEmail : null),
     anonymous: Boolean(user.is_anonymous),
   };
 }

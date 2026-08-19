@@ -71,6 +71,20 @@ describe('translate leftovers', () => {
     assert.match(leftovers[0], /Applicants with disabilities/);
     assert.doesNotMatch(leftovers[0], /Komanda/);
   });
+
+  it('достаёт длинный английский хвост целиком, не одну фразу', () => {
+    const tail = [
+      '1Password is proud to be an equal opportunity employer.',
+      'We are committed to fostering an inclusive workplace.',
+      'We do not discriminate on the basis of race or religion.',
+      'Remote work has been part of our culture since 2005.',
+      'Please contact nextbit@agilebits.com for accommodations.',
+    ].join(' ');
+    const leftovers = leftoverSourcePieces(`Тебе место здесь. ${tail}`, 'ru');
+    assert.ok(leftovers.length >= 1);
+    assert.match(leftovers.join(' '), /equal opportunity/);
+    assert.match(leftovers.join(' '), /Remote work/);
+  });
 });
 
 describe('translate errors', () => {

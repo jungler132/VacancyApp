@@ -84,6 +84,23 @@ export const radius = {
   full: 999,
 };
 
+export function premiumSurface(colors: ThemeColors) {
+  return {
+    borderColor: colors.orange,
+    backgroundColor: colors.orangeDim,
+  };
+}
+
+export function premiumGlow(scheme: ColorSchemeName) {
+  return {
+    shadowColor: '#c47b2a',
+    shadowOpacity: scheme === 'dark' ? 0.42 : 0.2,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 7,
+  };
+}
+
 export function shadowsFor(scheme: ColorSchemeName) {
   if (scheme === 'dark') {
     return {

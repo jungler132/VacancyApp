@@ -2,10 +2,11 @@ import { memo, useCallback } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { ServiceAvatar } from '@/components/ServiceAvatar';
+import { PremiumBadge } from '@/components/PremiumBadge';
 import { Text } from '@/components/AppText';
 import { formatServiceSchedule } from '@/lib/services/hours';
 import type { ServiceMaster } from '@/lib/services/types';
-import { fonts, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 
@@ -27,7 +28,7 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   const open = useCallback(() => onPress(master.id), [master.id, onPress]);
 
   return (
-    <Pressable onPress={open} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable onPress={open} style={({ pressed }) => [styles.card, featured && styles.premium, pressed && styles.pressed]}>
       <ServiceAvatar uri={master.avatarUri} name={master.displayName} size={52} />
       <View style={styles.body}>
         <View style={styles.titleRow}>
@@ -35,9 +36,9 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
             {master.displayName}
           </Text>
           {master.mine ? <Text style={styles.mine}>{t('common.you')}</Text> : null}
-          {featured ? <Text style={styles.mine}>{t('common.premium')}</Text> : null}
+          {featured ? <PremiumBadge compact /> : null}
         </View>
-        <Text style={styles.meta} numberOfLines={1}>
+        <Text style={styles.meta} numberOfLines={2}>
           {[kinds, master.address].filter(Boolean).join(' · ')}
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
@@ -62,7 +63,12 @@ function serviceMasterCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       borderRadius: radius.lg,
       padding: 14,
       gap: 12,
+      overflow: 'hidden' as const,
       ...shadowsFor(scheme).card,
+    },
+    premium: {
+      ...premiumSurface(colors),
+      ...premiumGlow(scheme),
     },
     body: { flex: 1, minWidth: 0 },
     titleRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },

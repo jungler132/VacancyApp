@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useLayoutEffect, useMemo } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 
 import { EmptyState } from '@/components/EmptyState';
 import { useFormStyles } from '@/components/FormField';
@@ -10,7 +10,7 @@ import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
-import { offerEditorHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
+import { offerEditorHref, offerViewHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { formatServiceSchedule } from '@/lib/services/hours';
 import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppSelector } from '@/lib/store/hooks';
@@ -20,6 +20,7 @@ import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '
 export default function ServicePublicScreen() {
   const t = useT();
   const router = useRouter();
+  const navigation = useNavigation();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(servicePublicStyles);
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
@@ -35,6 +36,10 @@ export default function ServicePublicScreen() {
     if (!master) return '';
     return [...master.kinds.map((id) => t(keyOf('kind', id))), ...(master.customKinds ?? [])].filter(Boolean).join(' · ');
   }, [master, t]);
+  const gallery = useMemo(
+    () => (master?.photos ?? []).filter((uri) => uri && uri !== master.avatarUri),
+    [master?.avatarUri, master?.photos],
+  );
 
   const call = useCallback(() => {
     const phone = master?.phone?.trim();
@@ -51,7 +56,11 @@ export default function ServicePublicScreen() {
     if (!master?.mine || master.offers.length >= limits.offers) return;
     router.push(offerEditorHref('new'));
   }, [limits.offers, master, router]);
-  const editOffer = useCallback((offerId: string) => router.push(offerEditorHref(offerId)), [router]);
+  const openOffer = useCallback((offerId: string) => router.push(offerViewHref(offerId)), [router]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: master?.displayName || t('nav.master') });
+  }, [master?.displayName, navigation, t]);
 
   if (!master) {
     return (
@@ -73,10 +82,10 @@ export default function ServicePublicScreen() {
         </View>
       </View>
       {master.bio ? <Text style={styles.bio}>{master.bio}</Text> : null}
-      {master.photos?.length ? (
+      {gallery.length ? (
         <>
           <Text style={styles.section}>{t('master.gallery')}</Text>
-          <ServicePhotoGrid uris={master.photos} />
+          <ServicePhotoGrid uris={gallery} />
         </>
       ) : null}
       {master.address ? <Text style={styles.meta}>{t('master.address', { value: master.address })}</Text> : null}
@@ -105,12 +114,7 @@ export default function ServicePublicScreen() {
       <Text style={styles.section}>{t('master.offers')}</Text>
       {master.offers.length ? (
         master.offers.map((offer) => (
-          <ServiceOfferCard
-            key={offer.id}
-            offer={offer}
-            profile={master}
-            onPress={master.mine ? editOffer : undefined}
-          />
+          <ServiceOfferCard key={offer.id} offer={offer} profile={master} onPress={openOffer} />
         ))
       ) : (
         <Text style={styles.empty}>{t('master.empty')}</Text>

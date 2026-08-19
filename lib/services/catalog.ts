@@ -3,7 +3,6 @@ import type { Href } from 'expo-router';
 import { composeSalary } from '@/lib/format';
 import { APP_LOCALES } from '@/lib/i18n/locale';
 import { keyOf, t } from '@/lib/i18n';
-import { seedSearchText } from './seed';
 import type { ServiceKindId, ServiceMaster, ServiceOffer, ServiceProfile } from './types';
 
 export function toServiceMaster(profile: ServiceProfile, offers: ServiceOffer[], mine = false): ServiceMaster {
@@ -20,7 +19,7 @@ export function masterHaystack(master: ServiceMaster): string {
     .flatMap((id) => APP_LOCALES.map((locale) => t(locale, keyOf('kind', id))))
     .join(' ');
   const offers = master.offers.map((item) => `${item.title} ${item.description} ${item.customKind ?? ''}`).join(' ');
-  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${kinds} ${master.customKinds.join(' ')} ${offers} ${seedSearchText(master)}`.toLowerCase();
+  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${kinds} ${master.customKinds.join(' ')} ${offers}`.toLowerCase();
 }
 
 export function filterServiceMasters(
@@ -45,9 +44,16 @@ export function filterServiceMasters(
 }
 
 export function offerContact(offer: ServiceOffer, profile: ServiceProfile): { phone: string; address: string } {
+  return prefillOfferContact(offer, profile);
+}
+
+export function prefillOfferContact(
+  offer: { address?: string; phone?: string } | undefined,
+  profile: { address?: string; phone?: string } | null | undefined,
+): { phone: string; address: string } {
   return {
-    phone: offer.phone?.trim() || profile.phone,
-    address: offer.address?.trim() || profile.address || '',
+    phone: offer?.phone?.trim() || profile?.phone?.trim() || '',
+    address: offer?.address?.trim() || profile?.address?.trim() || '',
   };
 }
 
@@ -61,6 +67,10 @@ export function masterHref(id: string): Href {
 
 export function offerEditorHref(id: string): Href {
   return { pathname: '/service/offer/[id]', params: { id } } as unknown as Href;
+}
+
+export function offerViewHref(id: string): Href {
+  return { pathname: '/service/view/[id]', params: { id } } as unknown as Href;
 }
 
 export const SERVICE_ME_HREF = '/service/me' as unknown as Href;

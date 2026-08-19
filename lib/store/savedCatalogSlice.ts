@@ -84,6 +84,9 @@ const savedCatalogSlice = createSlice({
         ? state.items.filter((item) => item.kind !== next.kind || item.id !== next.id)
         : [next, ...state.items];
     },
+    replaceSavedCatalog(state, action: PayloadAction<SavedCatalogItem[]>) {
+      state.items = parseSavedCatalog(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -97,5 +100,5 @@ const savedCatalogSlice = createSlice({
   },
 });
 
-export const { toggleSavedCatalog } = savedCatalogSlice.actions;
+export const { toggleSavedCatalog, replaceSavedCatalog } = savedCatalogSlice.actions;
 export default savedCatalogSlice.reducer;

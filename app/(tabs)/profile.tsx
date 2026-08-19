@@ -5,6 +5,8 @@ import type { Href } from 'expo-router';
 
 import { AppHeader } from '@/components/AppHeader';
 import { NavRow } from '@/components/NavRow';
+import { PlanSwitch } from '@/components/PlanSwitch';
+import { PremiumBadge } from '@/components/PremiumBadge';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { Text } from '@/components/AppText';
 import { alertLabel } from '@/lib/alerts';
@@ -15,7 +17,7 @@ import { jobHref } from '@/lib/jobRoute';
 import { useTabBarLayout } from '@/lib/layout';
 import { pipelineStats } from '@/lib/pipeline';
 import { prefsFilled, searchFromPrefs } from '@/lib/prefs';
-import { offerEditorHref, PIPELINE_HREF, PREFS_HREF, SAVED_HREF, SERVICE_ME_HREF, STATS_HREF, TODAY_HREF } from '@/lib/services/catalog';
+import { offerEditorHref, offerViewHref, PIPELINE_HREF, PREFS_HREF, SAVED_HREF, SERVICE_ME_HREF, STATS_HREF, TODAY_HREF } from '@/lib/services/catalog';
 import { jobTier } from '@/lib/tiers';
 import { collectNewJobs } from '@/lib/today';
 import { applySearch } from '@/lib/store/filtersSlice';
@@ -25,7 +27,7 @@ import { openPaywall, clearPremiumStub } from '@/lib/store/premiumSlice';
 import { clearVisits, recordVisit, removeVisit } from '@/lib/store/visitsSlice';
 import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 import { selectOwnMaster, selectTodayCard } from '@/lib/store/selectors';
-import { fonts, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 const JOBS_HREF = '/' as Href;
 
@@ -38,6 +40,8 @@ export default function ProfileScreen() {
   const tabBar = useTabBarLayout();
   const own = useAppSelector(selectOwnMaster);
   const isPremium = useAppSelector((state) => state.premium.isPremium);
+  const signedIn = useAppSelector((state) => Boolean(state.auth.userId && state.auth.email && !state.auth.anonymous));
+  const showPremium = isPremium && signedIn;
   const locale = useLocale();
   const identity = useAppSelector((state) => state.identity);
   const seeking = identity.seeking;
@@ -75,7 +79,7 @@ export default function ProfileScreen() {
   const role = [
     seeking ? t('identity.seeking') : null,
     available ? t('identity.available') : null,
-    isPremium ? t('common.premium') : null,
+    showPremium ? t('common.premium') : null,
   ]
     .filter(Boolean)
     .join(' · ') || t('common.guest');
@@ -143,9 +147,13 @@ export default function ProfileScreen() {
     <View style={styles.screen}>
       <AppHeader title={t('tab.profile')} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}>
-        <Pressable onPress={openPage} style={({ pressed }) => [styles.head, pressed && styles.pressed]}>
+        <Pressable onPress={openPage} style={({ pressed }) => [styles.head, showPremium && styles.headPremium, pressed && styles.pressed]}>
+          {showPremium ? <View style={styles.stripe} /> : null}
           <ServiceAvatar uri={own?.avatarUri} name={name} size={80} />
-          <Text style={styles.name}>{name}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{name}</Text>
+            {showPremium ? <PremiumBadge compact /> : null}
+          </View>
           <Text style={styles.role}>{role}</Text>
           <Text style={styles.meta}>{own?.bio?.trim() || t('profile.guestMeta')}</Text>
         </Pressable>
@@ -195,7 +203,8 @@ export default function ProfileScreen() {
               key={offer.id}
               title={offer.title}
               meta={`${offer.featured ? `${t('common.premium')} · ` : ''}${offer.price ? `${offer.price} ${offer.currency}` : t('services.priceNegotiable')}`}
-              onPress={() => nav.push(offerEditorHref(offer.id))}
+              premium={offer.featured}
+              onPress={() => nav.push(offerViewHref(offer.id))}
             />
           ))
         ) : (
@@ -210,10 +219,10 @@ export default function ProfileScreen() {
         />
         <NavRow title={t('nav.stats')} meta={t('profile.statsMeta')} onPress={() => nav.push(STATS_HREF)} />
         <NavRow title={t('profile.servicePage')} meta={pageMeta} onPress={openPage} />
-        <NavRow
-          title={t('common.premium')}
-          meta={isPremium ? t('profile.accountPremium') : t('profile.accountFree')}
-          onPress={() => dispatch(isPremium ? clearPremiumStub() : openPaywall())}
+        <PlanSwitch
+          premium={isPremium}
+          onBasic={() => dispatch(clearPremiumStub())}
+          onPremium={() => dispatch(openPaywall())}
         />
 
         <View style={styles.rowBetween}>
@@ -228,6 +237,7 @@ export default function ProfileScreen() {
               key={job.id}
               title={job.title}
               meta={`${job.company}${jobTier(job) === 1 ? ` · ${t('profile.jobPremium')}` : ` · ${t('common.workly')}`}`}
+              premium={jobTier(job) === 1}
               onPress={() => {
                 dispatch(pinViewedJob(job));
                 nav.push(jobHref(job.id));
@@ -268,7 +278,7 @@ export default function ProfileScreen() {
 function profileStyles(colors: ThemeColors, scheme: ColorSchemeName) {
   return {
     screen: { flex: 1, backgroundColor: 'transparent' },
-    content: { padding: 16, gap: 8 },
+    content: { padding: 16, gap: 8, paddingBottom: 24 },
     head: {
       alignItems: 'center' as const,
       backgroundColor: colors.card,
@@ -278,9 +288,23 @@ function profileStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       paddingVertical: 24,
       paddingHorizontal: 16,
       marginBottom: 4,
+      overflow: 'hidden' as const,
       ...shadowsFor(scheme).card,
     },
-    name: { color: colors.text, fontFamily: fonts.bold, fontSize: 22, marginTop: 12, textAlign: 'center' as const },
+    headPremium: {
+      ...premiumSurface(colors),
+      ...premiumGlow(scheme),
+    },
+    stripe: {
+      position: 'absolute' as const,
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      backgroundColor: colors.orange,
+    },
+    nameRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, marginTop: 12 },
+    name: { color: colors.text, fontFamily: fonts.bold, fontSize: 22, textAlign: 'center' as const },
     role: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4, textAlign: 'center' as const },
     meta: {
       color: colors.faint,

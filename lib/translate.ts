@@ -2,8 +2,8 @@ import type { AppLocale } from '@/lib/i18n';
 import { SUPPORT_EMAIL } from '@/lib/support';
 
 const MAX_QUERY_BYTES = 450;
-const MAX_CHUNKS = 24;
-const MAX_LEFTOVER = 4;
+const MAX_CHUNKS = 48;
+const MAX_LEFTOVER = 20;
 const CONCURRENCY = 3;
 const CONTACT_EMAIL = SUPPORT_EMAIL;
 const FETCH_TIMEOUT_MS = 8000;
@@ -318,17 +318,27 @@ export async function translateText(text: string, to: AppLocale, signal?: AbortS
   if (!results.some((item) => item.ok)) throw new TranslateError('unavailable');
   let body = [...results.map((item) => item.text), ...leftover].join('\n');
 
-  if (targetScriptRatio(body, to) >= 0.35) {
-    const pending = leftoverSourcePieces(body, to).slice(0, MAX_LEFTOVER);
-    for (const piece of pending) {
+  let leftoverTries = 0;
+  while (leftoverTries < MAX_LEFTOVER) {
+    const pending = leftoverSourcePieces(body, to)[0];
+    if (!pending) break;
+    const parts = splitTranslateChunks(pending);
+    let progressed = false;
+    for (const part of parts) {
+      if (leftoverTries >= MAX_LEFTOVER) break;
+      leftoverTries += 1;
       throwIfAborted(signal);
       try {
-        const next = await translateChunkRetry(piece, from, to, signal);
-        if (next.ok && next.text !== piece) body = body.replace(piece, next.text);
+        const next = await translateChunkRetry(part, from, to, signal);
+        if (next.ok && next.text !== part) {
+          body = body.replace(part, next.text);
+          progressed = true;
+        }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') throw error;
       }
     }
+    if (!progressed) break;
   }
 
   if (needsTranslation(source, to) && !isSuccessfulTranslation(source, body, to)) {

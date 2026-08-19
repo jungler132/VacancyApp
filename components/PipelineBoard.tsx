@@ -16,8 +16,9 @@ import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { jobsForStatus } from '@/lib/pipeline';
+import { jobTier } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
-import { fonts, radius, useColors, useThemedStyles, type ThemeColors } from '@/lib/theme';
+import { fonts, premiumGlow, premiumSurface, radius, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 type SectionBox = { y: number; height: number };
 
@@ -191,6 +192,7 @@ const PipelineCard = memo(function PipelineCard({
   onDragMove: (pageY: number, dx: number, dy: number) => void;
   onDragEnd: (pageY: number) => void;
 }) {
+  const t = useT();
   const styles = useThemedStyles(pipelineBoardStyles);
   const cardRef = useRef<View>(null);
   const origin = useRef({ x: 0, y: 0, width: 0, height: 0 });
@@ -231,7 +233,7 @@ const PipelineCard = memo(function PipelineCard({
     <View
       ref={cardRef}
       collapsable={false}
-      style={[styles.card, hidden && styles.cardHidden]}
+      style={[styles.card, jobTier(job) === 1 && styles.premium, hidden && styles.cardHidden]}
       onLayout={() => {
         cardRef.current?.measureInWindow((x, y, width, height) => {
           origin.current = { x, y, width, height };
@@ -245,14 +247,14 @@ const PipelineCard = memo(function PipelineCard({
           {job.title}
         </Text>
         <Text style={styles.cardMeta} numberOfLines={1}>
-          {[job.company, job.sourceName].filter(Boolean).join(' · ')}
+          {[job.company, jobTier(job) === 1 ? t('common.premium') : job.sourceName].filter(Boolean).join(' · ')}
         </Text>
       </Pressable>
     </View>
   );
 });
 
-function pipelineBoardStyles(colors: ThemeColors) {
+function pipelineBoardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
   return {
     screen: { flex: 1 },
     list: { padding: 16, paddingBottom: 48, gap: 12 },
@@ -280,6 +282,11 @@ function pipelineBoardStyles(colors: ThemeColors) {
       paddingVertical: 10,
       paddingRight: 12,
       minHeight: 56,
+      overflow: 'hidden' as const,
+    },
+    premium: {
+      ...premiumSurface(colors),
+      ...premiumGlow(scheme),
     },
     cardHidden: { opacity: 0.28 },
     handle: { width: 44, alignItems: 'center' as const, justifyContent: 'center' as const, alignSelf: 'stretch' as const },

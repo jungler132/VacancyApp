@@ -11,16 +11,13 @@ import { scaleFont, useFontScale } from '@/lib/fontScale';
 import { fonts, useColors } from '@/lib/theme';
 
 function scaledStyle(style: TextProps['style'], scale: number) {
-  if (scale === 1 || style == null) return style;
   const flat = StyleSheet.flatten(style);
-  if (!flat || (flat.fontSize == null && flat.lineHeight == null)) return style;
-  return [
-    style,
-    {
-      fontSize: flat.fontSize != null ? scaleFont(flat.fontSize, scale) : undefined,
-      lineHeight: flat.lineHeight != null ? scaleFont(flat.lineHeight, scale) : undefined,
-    },
-  ];
+  if (!flat) return style;
+  const fontSize = flat.fontSize != null ? scaleFont(flat.fontSize, scale) : undefined;
+  const lineHeight =
+    flat.lineHeight != null ? scaleFont(flat.lineHeight, scale) : fontSize != null ? Math.ceil(fontSize * 1.35) : undefined;
+  if (fontSize == null && lineHeight == null) return style;
+  return [style, { fontSize, lineHeight }];
 }
 
 export const Text = memo(function Text({ style, allowFontScaling = false, ...props }: TextProps) {
@@ -48,7 +45,10 @@ export const TextInput = memo(function TextInput({
       {...props}
       allowFontScaling={allowFontScaling}
       placeholderTextColor={placeholderTextColor ?? colors.placeholder}
-      style={[{ color: colors.text, fontFamily: fonts.regular }, scaledStyle(style, scale)]}
+      style={[
+        { color: colors.text, fontFamily: fonts.regular, paddingVertical: 10, includeFontPadding: false },
+        scaledStyle(style, scale),
+      ]}
     />
   );
 });

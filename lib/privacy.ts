@@ -48,7 +48,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Без входа эти данные остаются на телефоне. После входа страница услуг, фото (в сжатом виде) и свои вакансии Workly сохраняются в облаке провайдера бэкенда (Supabase) под вашим идентификатором. Канбан, фильтры, алерты и лента площадок на сервер не уходят. Публичный профиль услуг и свои вакансии могут видеть другие пользователи приложения.',
+          'Без входа эти данные остаются на телефоне. После входа страница услуг, фото (в сжатом виде), свои вакансии Workly, канбан, фильтры, алерты, тема, язык и размер шрифта сохраняются в облаке провайдера бэкенда (Supabase) под вашим идентификатором. Публичный профиль услуг и свои вакансии могут видеть другие пользователи приложения.',
         ],
       },
       {
@@ -150,7 +150,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Without sign-in this data stays on the phone. After sign-in the services page, compressed photos and your Workly jobs are stored in the backend provider (Supabase) under your user id. Kanban, filters, alerts and the board feed are not uploaded. Your public services profile and Workly jobs may be visible to other users of the app.',
+          'Without sign-in this data stays on the phone. After sign-in the services page, compressed photos, your Workly jobs, kanban, filters, alerts, theme, language and font size are stored in the backend provider (Supabase) under your user id. Your public services profile and Workly jobs may be visible to other users of the app.',
         ],
       },
       {
@@ -250,7 +250,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Giriş olmadan bu məlumat telefonda qalır. Girişdən sonra xidmət səhifəsi, sıxılmış fotolar və öz Workly vakansiyaları backend provayderində (Supabase) sizin identifikatorunuzla saxlanır. Kanban, filterlər, bildirişlər və sayt lenti serverə getmir. İctimai xidmət profili və Workly vakansiyaları tətbiqin digər istifadəçilərinə görünə bilər.',
+          'Giriş olmadan bu məlumat telefonda qalır. Girişdən sonra xidmət səhifəsi, sıxılmış fotolar, öz Workly vakansiyaları, kanban, filterlər, bildirişlər, tema, dil və şrift ölçüsü backend provayderində (Supabase) sizin identifikatorunuzla saxlanır. İctimai xidmət profili və Workly vakansiyaları tətbiqin digər istifadəçilərinə görünə bilər.',
         ],
       },
       {

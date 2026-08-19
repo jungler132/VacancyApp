@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { Text } from '@/components/AppText';
-import { fonts, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export const NavRow = memo(function NavRow({
   title,
@@ -12,6 +12,7 @@ export const NavRow = memo(function NavRow({
   onClear,
   clearLabel,
   right,
+  premium,
 }: {
   title: string;
   meta?: string;
@@ -19,12 +20,14 @@ export const NavRow = memo(function NavRow({
   onClear?: () => void;
   clearLabel?: string;
   right?: ReactNode;
+  premium?: boolean;
 }) {
   const colors = useColors();
   const styles = useThemedStyles(navRowStyles);
   const press = useCallback(() => onPress(), [onPress]);
   return (
-    <Pressable onPress={press} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+    <Pressable onPress={press} style={({ pressed }) => [styles.row, premium && styles.premium, pressed && styles.pressed]}>
+      {premium ? <View style={styles.stripe} /> : null}
       <View style={styles.body}>
         <Text style={styles.title}>{title}</Text>
         {meta ? <Text style={styles.meta}>{meta}</Text> : null}
@@ -61,7 +64,20 @@ function navRowStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       paddingHorizontal: 16,
       paddingVertical: 14,
       gap: 8,
+      overflow: 'hidden' as const,
       ...shadowsFor(scheme).card,
+    },
+    premium: {
+      ...premiumSurface(colors),
+      ...premiumGlow(scheme),
+    },
+    stripe: {
+      position: 'absolute' as const,
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      backgroundColor: colors.orange,
     },
     body: { flex: 1, minWidth: 0 },
     title: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },

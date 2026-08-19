@@ -1,13 +1,15 @@
 import { memo, useCallback } from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { AppImage } from '@/components/AppImage';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
+import { PremiumBadge } from '@/components/PremiumBadge';
 import { Text } from '@/components/AppText';
 import { offerContact, offerKindLabel, offerPriceLabel } from '@/lib/services/catalog';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import type { ServiceOffer, ServiceProfile } from '@/lib/services/types';
-import { fonts, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export const ServiceOfferCard = memo(function ServiceOfferCard({
   offer,
@@ -26,15 +28,22 @@ export const ServiceOfferCard = memo(function ServiceOfferCard({
   const press = useCallback(() => onPress?.(offer.id), [offer.id, onPress]);
 
   return (
-    <Pressable onPress={press} disabled={!onPress} style={styles.card}>
-      {offer.images[0] ? <Image source={{ uri: offer.images[0] }} style={styles.image} /> : null}
+    <Pressable
+      onPress={press}
+      disabled={!onPress}
+      style={({ pressed }) => [styles.card, offer.featured && styles.premium, pressed && styles.pressed]}>
+      {offer.images[0] ? <AppImage uri={offer.images[0]} style={styles.image} /> : null}
       <View style={styles.titleRow}>
         <Text style={styles.title}>{offer.title}</Text>
-        {offer.featured ? <Text style={styles.badge}>{t('common.premium')}</Text> : null}
+        {offer.featured ? <PremiumBadge compact /> : null}
       </View>
       <Text style={styles.price}>{offerPriceLabel(offer, t('services.priceNegotiable'))}</Text>
       <Text style={styles.kind}>{kind}</Text>
-      {offer.description ? <Text style={styles.body}>{offer.description}</Text> : null}
+      {offer.description ? (
+        <Text style={styles.body} numberOfLines={4}>
+          {offer.description}
+        </Text>
+      ) : null}
       {extras.length ? <ServicePhotoGrid uris={extras} /> : null}
       {contact.address ? <Text style={styles.meta}>{contact.address}</Text> : null}
       {contact.phone ? <Text style={styles.meta}>{contact.phone}</Text> : null}
@@ -51,24 +60,20 @@ function serviceOfferCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       borderRadius: radius.lg,
       padding: 16,
       gap: 4,
+      overflow: 'hidden' as const,
       ...shadowsFor(scheme).card,
+    },
+    premium: {
+      ...premiumSurface(colors),
+      ...premiumGlow(scheme),
     },
     image: { width: '100%' as const, height: 160, borderRadius: radius.md, marginBottom: 8, backgroundColor: colors.chip },
     titleRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
     title: { flex: 1, color: colors.text, fontFamily: fonts.semibold, fontSize: 17 },
-    badge: {
-      color: colors.accentText,
-      backgroundColor: colors.accent,
-      fontFamily: fonts.semibold,
-      fontSize: 11,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: radius.full,
-      overflow: 'hidden' as const,
-    },
     price: { color: colors.salary, fontFamily: fonts.semibold, fontSize: 16, marginTop: 2 },
     kind: { color: colors.accent, fontFamily: fonts.medium, fontSize: 12 },
     body: { color: colors.text, fontFamily: fonts.regular, fontSize: 15, lineHeight: 22, marginTop: 6 },
     meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginTop: 2 },
+    pressed: { opacity: 0.86 },
   };
 }

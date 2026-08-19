@@ -12,27 +12,27 @@ export async function uploadMedia(userId: string, uri: string, kind: string, nam
   if (!uri || isRemoteUri(uri)) return uri;
   const supabase = getSupabase();
   if (!supabase) return uri;
-  const local = await compressImage(uri, kind === 'avatar' ? 'avatar' : 'photo');
-  const response = await fetch(local);
-  if (!response.ok) return uri;
-  const body = new Uint8Array(await response.arrayBuffer());
-  const path = extPath(userId, kind, name);
-  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, body, {
-    contentType: 'image/jpeg',
-    cacheControl: '3600',
-    upsert: true,
-  });
-  if (error) return uri;
-  const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
-  return data.publicUrl || uri;
+  try {
+    const local = await compressImage(uri, kind === 'avatar' ? 'avatar' : 'photo');
+    const response = await fetch(local);
+    if (!response.ok) return uri;
+    const body = new Uint8Array(await response.arrayBuffer());
+    const path = extPath(userId, kind, name);
+    const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, body, {
+      contentType: 'image/jpeg',
+      cacheControl: '3600',
+      upsert: true,
+    });
+    if (error) return uri;
+    const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+    return data.publicUrl || uri;
+  } catch {
+    return uri;
+  }
 }
 
 export async function uploadMany(userId: string, uris: string[], kind: string): Promise<string[]> {
-  const out: string[] = [];
-  for (let i = 0; i < uris.length; i += 1) {
-    out.push(await uploadMedia(userId, uris[i], kind, String(i)));
-  }
-  return out;
+  return Promise.all(uris.map((uri, index) => uploadMedia(userId, uri, kind, String(index))));
 }
 
 export async function deleteOfferMedia(userId: string, offerId: string) {

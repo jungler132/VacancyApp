@@ -8,33 +8,37 @@ import jobsReducer, {
   pruneUnreferencedJobs,
   rememberJobs,
 } from './jobsSlice';
-import savedReducer, { hydrateSaved, persistSaved, setApplyStatus, toggleSaved } from './savedSlice';
+import savedReducer, { hydrateSaved, persistSaved, replaceSaved, setApplyStatus, toggleSaved } from './savedSlice';
 import savedCatalogReducer, {
   hydrateSavedCatalog,
   persistSavedCatalog,
+  replaceSavedCatalog,
   toggleSavedCatalog,
 } from './savedCatalogSlice';
-import sourcesReducer, { hydrateSources, persistDisabledSources, toggleSource } from './sourcesSlice';
+import sourcesReducer, { hydrateSources, persistDisabledSources, replaceDisabledSources, toggleSource } from './sourcesSlice';
 import localJobsReducer, {
   hydrateLocalJobs,
   persistLocalJobs,
   removeLocalJob,
+  replaceLocalJobs,
   upsertLocalJob,
 } from './localJobsSlice';
 import premiumReducer, { hydratePremium } from './premiumSlice';
 import appearanceReducer, {
   hydrateAppearance,
   persistAppearance,
+  replaceAppearance,
   setFontSize,
   setLocale,
   setTheme,
 } from './appearanceSlice';
-import visitsReducer, { clearVisits, hydrateVisits, persistVisits, recordVisit, removeVisit } from './visitsSlice';
+import visitsReducer, { clearVisits, hydrateVisits, persistVisits, recordVisit, removeVisit, replaceVisits } from './visitsSlice';
 import freelanceReducer, {
   applyRemoteMedia,
   hydrateFreelance,
   persistFreelance,
   removeOffer,
+  replaceAccount,
   saveProfile,
   upsertOffer,
 } from './freelanceSlice';
@@ -43,6 +47,7 @@ import filtersReducer, {
   applySearch,
   hydrateFilters,
   persistFilters,
+  replaceFilters,
   resetFilters,
   setExtra,
   setMaxAgeDays,
@@ -55,12 +60,14 @@ import alertsReducer, {
   hydrateAlerts,
   rememberSeen,
   removeSearch,
+  replaceAlerts,
   saveSearch,
   toggleSearch,
 } from './alertsSlice';
 import identityReducer, {
   hydrateIdentity,
   persistIdentity,
+  resetIdentity,
   savePrefs,
   toggleAvailable,
   toggleFormat,
@@ -70,42 +77,58 @@ import authReducer, { hydrateAuth } from './authSlice';
 import { makeAlertKey, persistAlerts } from '@/lib/alerts';
 import { deleteRemoteJob, deleteRemoteOffer, schedulePush } from '@/lib/backend/sync';
 
+function canPush(state: { auth: { userId: string | null; email: string | null; anonymous: boolean } }) {
+  return Boolean(state.auth.userId && !state.auth.anonymous);
+}
+
 const listener = createListenerMiddleware();
 
 listener.startListening({
-  matcher: isAnyOf(toggleSavedCatalog, hydrateSavedCatalog.fulfilled),
+  matcher: isAnyOf(toggleSavedCatalog, hydrateSavedCatalog.fulfilled, replaceSavedCatalog),
   effect: async (action, listenerApi) => {
     const items = (listenerApi.getState() as RootState).savedCatalog.items;
-    if (toggleSavedCatalog.match(action)) {
+    if (toggleSavedCatalog.match(action) || replaceSavedCatalog.match(action)) {
       await persistSavedCatalog(items);
+    }
+    if (toggleSavedCatalog.match(action) && canPush(listenerApi.getState() as RootState)) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
 
 listener.startListening({
-  matcher: isAnyOf(toggleSaved, setApplyStatus, hydrateSaved.fulfilled),
+  matcher: isAnyOf(toggleSaved, setApplyStatus, hydrateSaved.fulfilled, replaceSaved),
   effect: async (action, listenerApi) => {
     const saved = (listenerApi.getState() as RootState).saved;
     listenerApi.dispatch(rememberJobs(saved.items));
-    if (toggleSaved.match(action) || setApplyStatus.match(action)) {
+    if (toggleSaved.match(action) || setApplyStatus.match(action) || replaceSaved.match(action)) {
       await persistSaved(saved.items, saved.statuses, saved.statusAt);
+    }
+    if ((toggleSaved.match(action) || setApplyStatus.match(action)) && canPush(listenerApi.getState() as RootState)) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
 
 listener.startListening({
-  actionCreator: toggleSource,
-  effect: async (_action, listenerApi) => {
+  matcher: isAnyOf(toggleSource, replaceDisabledSources),
+  effect: async (action, listenerApi) => {
     const ids = (listenerApi.getState() as RootState).sources.disabledIds;
     await persistDisabledSources(ids);
+    if (toggleSource.match(action) && canPush(listenerApi.getState() as RootState)) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    }
   },
 });
 
 listener.startListening({
-  matcher: isAnyOf(saveSearch, removeSearch, toggleSearch, rememberSeen, clearPendingNew),
-  effect: async (_action, listenerApi) => {
+  matcher: isAnyOf(saveSearch, removeSearch, toggleSearch, rememberSeen, clearPendingNew, replaceAlerts),
+  effect: async (action, listenerApi) => {
     const items = (listenerApi.getState() as RootState).alerts.items;
     await persistAlerts(items);
+    if (!replaceAlerts.match(action) && canPush(listenerApi.getState() as RootState)) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    }
   },
 });
 
@@ -120,26 +143,33 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(setQuery, setRegion, setExtra, setMaxAgeDays, toggleFilterCategory, resetFilters, applySearch),
-  effect: async (_action, listenerApi) => {
+  matcher: isAnyOf(setQuery, setRegion, setExtra, setMaxAgeDays, toggleFilterCategory, resetFilters, applySearch, replaceFilters),
+  effect: async (action, listenerApi) => {
     const filters = (listenerApi.getState() as RootState).filters;
     if (!filters.ready) return;
     await persistFilters(filters);
+    if (!replaceFilters.match(action) && canPush(listenerApi.getState() as RootState)) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    }
   },
 });
 
 listener.startListening({
-  matcher: isAnyOf(upsertLocalJob, removeLocalJob, hydrateLocalJobs.fulfilled),
+  matcher: isAnyOf(upsertLocalJob, removeLocalJob, hydrateLocalJobs.fulfilled, replaceLocalJobs),
   effect: async (action, listenerApi) => {
     const items = (listenerApi.getState() as RootState).localJobs.items;
     listenerApi.dispatch(rememberJobs(items));
+    if (replaceLocalJobs.match(action)) {
+      await persistLocalJobs(items);
+      return;
+    }
     if (upsertLocalJob.match(action) || removeLocalJob.match(action)) {
       await persistLocalJobs(items);
       const state = listenerApi.getState() as RootState;
       if (removeLocalJob.match(action) && state.auth.userId) {
         await deleteRemoteJob(state.auth.userId, action.payload);
       }
-      if (state.auth.userId) schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      if (canPush(state)) schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -175,37 +205,46 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(setFontSize, setLocale, setTheme, hydrateAppearance.fulfilled),
-  effect: async (_action, listenerApi) => {
+  matcher: isAnyOf(setFontSize, setLocale, setTheme, hydrateAppearance.fulfilled, replaceAppearance),
+  effect: async (action, listenerApi) => {
     const appearance = (listenerApi.getState() as RootState).appearance;
     await persistAppearance(appearance.fontSize, appearance.locale, appearance.theme);
+    if (
+      (setFontSize.match(action) || setLocale.match(action) || setTheme.match(action)) &&
+      canPush(listenerApi.getState() as RootState)
+    ) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    }
   },
 });
 
 listener.startListening({
-  matcher: isAnyOf(recordVisit, removeVisit, clearVisits),
-  effect: async (_action, listenerApi) => {
+  matcher: isAnyOf(recordVisit, removeVisit, clearVisits, replaceVisits),
+  effect: async (action, listenerApi) => {
     await persistVisits((listenerApi.getState() as RootState).visits.items);
+    if (!replaceVisits.match(action) && canPush(listenerApi.getState() as RootState)) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    }
   },
 });
 
 listener.startListening({
-  matcher: isAnyOf(saveProfile, upsertOffer, removeOffer, applyRemoteMedia),
+  matcher: isAnyOf(saveProfile, upsertOffer, removeOffer, applyRemoteMedia, replaceAccount),
   effect: async (action, listenerApi) => {
     const freelance = (listenerApi.getState() as RootState).freelance;
     await persistFreelance(freelance.profile, freelance.offers);
-    if (applyRemoteMedia.match(action)) return;
+    if (applyRemoteMedia.match(action) || replaceAccount.match(action)) return;
     const state = listenerApi.getState() as RootState;
     if (removeOffer.match(action) && state.auth.userId) {
       await deleteRemoteOffer(state.auth.userId, action.payload);
     }
-    if (state.auth.userId) schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    if (canPush(state)) schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
   },
 });
 
 listener.startListening({
-  matcher: isAnyOf(toggleSeeking, toggleAvailable, toggleFormat, savePrefs),
-  effect: async (_action, listenerApi) => {
+  matcher: isAnyOf(toggleSeeking, toggleAvailable, toggleFormat, savePrefs, resetIdentity),
+  effect: async (action, listenerApi) => {
     const identity = (listenerApi.getState() as RootState).identity;
     await persistIdentity({
       seeking: identity.seeking,
@@ -213,7 +252,8 @@ listener.startListening({
       title: identity.title,
       format: identity.format,
     });
-    if ((listenerApi.getState() as RootState).auth.userId) {
+    if (resetIdentity.match(action)) return;
+    if (canPush(listenerApi.getState() as RootState)) {
       schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
@@ -240,7 +280,9 @@ export const store = configureStore({
     getDefault({
       serializableCheck: {
         ignoredActionPaths: ['meta.arg.signal', 'meta.abort', 'payload.session'],
+        warnAfter: 128,
       },
+      immutableCheck: { warnAfter: 128 },
     }).prepend(listener.middleware),
 });
 

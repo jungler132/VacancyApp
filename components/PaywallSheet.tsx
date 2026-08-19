@@ -1,17 +1,16 @@
-import { memo, useCallback, useEffect } from 'react';
-import { Dimensions, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { memo, useCallback } from 'react';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { closePaywall, purchasePremiumStub } from '@/lib/store/premiumSlice';
 import { Text } from '@/components/AppText';
 import { useT } from '@/lib/i18n/useT';
+import type { MsgId } from '@/lib/i18n';
+import { closePaywall, purchasePremiumStub } from '@/lib/store/premiumSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ThemeColors } from '@/lib/theme';
 
-const SHEET_TRAVEL = Dimensions.get('window').height;
-const OPEN_CFG = { duration: 220, easing: Easing.out(Easing.cubic) };
-const CLOSE_CFG = { duration: 180, easing: Easing.in(Easing.cubic) };
+const PERKS: MsgId[] = ['paywall.item1', 'paywall.item2', 'paywall.item3', 'paywall.item4', 'paywall.item5'];
 
 export const PaywallHost = memo(function PaywallHost() {
   const dispatch = useAppDispatch();
@@ -41,102 +40,89 @@ export const PaywallSheet = memo(function PaywallSheet({
   const t = useT();
   const insets = useSafeAreaInsets();
   const styles = useThemedStyles(paywallSheetStyles);
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    progress.value = withTiming(open ? 1 : 0, open ? OPEN_CFG : CLOSE_CFG);
-  }, [open, progress]);
 
   const close = useCallback(() => {
     if (open) onClose();
   }, [onClose, open]);
 
-  const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - progress.value) * SHEET_TRAVEL }],
-  }));
-
   return (
-    <Modal visible={open} transparent animationType="fade" statusBarTranslucent onRequestClose={close}>
-      <View pointerEvents={open ? 'auto' : 'none'} style={styles.root}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={close}>
-        <Animated.View style={[styles.backdrop, backdropStyle]} />
-      </Pressable>
-      <Animated.View style={[styles.sheet, sheetStyle, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={styles.handle} />
-        <Text style={styles.kicker}>{t('paywall.kicker')}</Text>
-        <Text style={styles.title}>{t('paywall.title')}</Text>
-        <Text style={styles.note}>{t('paywall.note')}</Text>
-        <View style={styles.list}>
-          <Text style={styles.item}>{t('paywall.item1')}</Text>
-          <Text style={styles.item}>{t('paywall.item2')}</Text>
-          <Text style={styles.item}>{t('paywall.item3')}</Text>
+    <Modal visible={open} animationType="fade" presentationStyle="fullScreen" onRequestClose={close}>
+      {open ? <StatusBar style="light" /> : null}
+      <View style={[styles.root, { paddingTop: Math.max(insets.top, 12) }]}>
+        <View style={styles.hero}>
+          <Text style={styles.kicker}>{t('paywall.kicker')}</Text>
+          <Text style={styles.title}>{t('paywall.title')}</Text>
+          <Text style={styles.note}>{t('paywall.note')}</Text>
         </View>
-        <Pressable
-          onPress={purchasing ? undefined : onPurchase}
-          disabled={purchasing}
-          style={({ pressed }) => [styles.buy, pressed && !purchasing && styles.pressed]}>
-          <Text style={styles.buyText}>{purchasing ? t('paywall.buying') : t('paywall.buy')}</Text>
-        </Pressable>
-        <Pressable onPress={close} style={styles.later}>
-          <Text style={styles.laterText}>{t('paywall.later')}</Text>
-        </Pressable>
-      </Animated.View>
-    </View>
+        <ScrollView
+          contentContainerStyle={[styles.body, { paddingBottom: Math.max(insets.bottom, 16) + 20 }]}
+          bounces={false}>
+          {PERKS.map((id) => (
+            <View key={id} style={styles.perk}>
+              <View style={styles.dot} />
+              <Text style={styles.item}>{t(id)}</Text>
+            </View>
+          ))}
+          <Pressable
+            onPress={purchasing ? undefined : onPurchase}
+            disabled={purchasing}
+            style={({ pressed }) => [styles.buy, pressed && !purchasing && styles.pressed]}>
+            <Text style={styles.buyText}>{purchasing ? t('paywall.buying') : t('paywall.buy')}</Text>
+          </Pressable>
+          <Pressable onPress={close} style={styles.later}>
+            <Text style={styles.laterText}>{t('paywall.later')}</Text>
+          </Pressable>
+        </ScrollView>
+      </View>
     </Modal>
   );
 });
 
-function paywallSheetStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
+function paywallSheetStyles(colors: ThemeColors) {
   return {
-    root: {
-      flex: 1,
-      justifyContent: 'flex-end' as const,
-    },
-    backdrop: {
-      position: 'absolute' as const,
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    sheet: {
-      backgroundColor: colors.card,
-      borderTopLeftRadius: radius.xl,
-      borderTopRightRadius: radius.xl,
-      paddingHorizontal: 20,
-      paddingTop: 8,
-    },
-    handle: {
-      alignSelf: 'center' as const,
-      width: 36,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: colors.cardBorder,
-      marginBottom: 12,
+    root: { flex: 1, backgroundColor: colors.primaryContainer },
+    hero: {
+      paddingHorizontal: 24,
+      paddingTop: 20,
+      paddingBottom: 20,
     },
     kicker: {
-      color: colors.accent,
+      color: colors.onPrimaryContainer,
       fontFamily: fonts.semibold,
       fontSize: 12,
-      letterSpacing: 0.8,
+      letterSpacing: 1.4,
       textTransform: 'uppercase' as const,
     },
-    title: { color: colors.text, fontSize: 22, fontFamily: fonts.bold, marginTop: 8 },
-    note: { color: colors.muted, fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, marginTop: 10 },
-    list: { marginTop: 16, gap: 8 },
-    item: { color: colors.text, fontFamily: fonts.medium, fontSize: 14 },
-    buy: {
-      marginTop: 22,
-      backgroundColor: colors.accent,
-      borderRadius: radius.full,
+    title: { color: '#ffffff', fontSize: 32, fontFamily: fonts.bold, marginTop: 10, lineHeight: 38 },
+    note: { color: colors.onPrimaryContainer, fontFamily: fonts.medium, fontSize: 15, lineHeight: 22, marginTop: 12 },
+    body: { paddingHorizontal: 20, paddingTop: 8, gap: 10 },
+    perk: {
+      flexDirection: 'row' as const,
+      alignItems: 'flex-start' as const,
+      gap: 12,
+      backgroundColor: colors.orangeDim,
+      borderRadius: radius.lg,
+      paddingHorizontal: 14,
       paddingVertical: 14,
+    },
+    dot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.orange,
+      marginTop: 6,
+    },
+    item: { flex: 1, color: colors.text, fontFamily: fonts.medium, fontSize: 15, lineHeight: 22 },
+    buy: {
+      marginTop: 18,
+      backgroundColor: colors.orange,
+      borderRadius: radius.full,
+      paddingVertical: 16,
       alignItems: 'center' as const,
     },
-    buyText: { color: colors.accentText, fontFamily: fonts.bold, fontSize: 16 },
-    later: { marginTop: 12, alignItems: 'center' as const, paddingVertical: 8 },
-    laterText: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 14 },
+    buyText: { color: '#ffffff', fontFamily: fonts.bold, fontSize: 16 },
+    later: { alignItems: 'center' as const, paddingVertical: 16 },
+    laterText: { color: colors.onPrimaryContainer, fontFamily: fonts.semibold, fontSize: 15 },
     pressed: { opacity: 0.86 },
   };
 }

@@ -22,6 +22,7 @@ create table if not exists public.profiles (
   available boolean not null default false,
   seek_title text not null default '',
   seek_format text not null default 'any',
+  account_state jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
 

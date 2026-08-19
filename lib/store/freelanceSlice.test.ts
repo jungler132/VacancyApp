@@ -133,6 +133,7 @@ describe('freelance persist', () => {
     );
     assert.equal(withOffer.profile?.updatedAt, '2020-01-01T00:00:00.000Z');
     assert.equal(withOffer.profile?.avatarUri, 'https://cdn.example/a.jpg');
+    assert.deepEqual(withOffer.profile?.photos, ['file://a.jpg']);
     assert.equal(withOffer.offers[0]?.updatedAt, '2020-01-01T00:00:00.000Z');
     assert.deepEqual(withOffer.offers[0]?.images, ['https://cdn.example/b.jpg']);
   });

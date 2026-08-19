@@ -40,7 +40,7 @@ export type FiltersState = {
   ready: boolean;
 };
 
-type PersistedFilters = {
+export type PersistedFilters = {
   query: string;
   region: RegionId;
   categories: CategoryId[];
@@ -145,6 +145,13 @@ const filtersSlice = createSlice({
       state.extra = parseExtraFilters(action.payload.extra);
       state.sheetOpen = false;
     },
+    replaceFilters(state, action: PayloadAction<PersistedFilters>) {
+      const next = parsePersistedFilters(action.payload);
+      state.query = next.query;
+      state.region = next.region;
+      state.categories = next.categories;
+      state.extra = next.extra;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -172,6 +179,7 @@ export const {
   closeFilters,
   resetFilters,
   applySearch,
+  replaceFilters,
 } = filtersSlice.actions;
 
 export default filtersSlice.reducer;

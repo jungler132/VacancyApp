@@ -1,31 +1,38 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
-import { linkEmail, sendEmailOtp, signOutAccount, startAnonymous, verifyEmailOtp } from '@/lib/backend/auth';
+import { isDroppedAuthFetch, linkEmail, sendEmailOtp, signInWithEmailOtp, signOutAccount } from '@/lib/backend/auth';
+import { EMAIL_OTP_LENGTH } from '@/lib/backend/config';
 import { resetPushCache } from '@/lib/backend/sync';
 import type { MsgId } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { setAuthBusy, setAuthNotice } from '@/lib/store/authSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { fonts, useThemedStyles, type ThemeColors } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ThemeColors } from '@/lib/theme';
 
-type AuthPrompt = 'send' | 'verify' | 'sync' | 'link' | 'out';
+type AuthPrompt = 'send' | 'verify' | 'link' | 'out';
 
 const PROMPT_COPY: Record<AuthPrompt, { title: MsgId; body: MsgId }> = {
   send: { title: 'auth.explain.send.title', body: 'auth.explain.send.body' },
   verify: { title: 'auth.explain.verify.title', body: 'auth.explain.verify.body' },
-  sync: { title: 'auth.explain.sync.title', body: 'auth.explain.sync.body' },
   link: { title: 'auth.explain.link.title', body: 'auth.explain.link.body' },
   out: { title: 'auth.explain.out.title', body: 'auth.explain.out.body' },
 };
 
-function noticeFromError(error: unknown, fallback: string, taken: string) {
+function digitsOnly(value: string, length: number) {
+  return value.replace(/\D/g, '').slice(0, length);
+}
+
+function noticeFromError(error: unknown, t: (id: MsgId) => string) {
   const raw = error instanceof Error ? error.message : '';
-  if (/already been registered/i.test(raw)) return taken;
-  return raw || fallback;
+  if (/already been registered/i.test(raw)) return t('auth.emailTaken');
+  if (/expired|invalid/i.test(raw)) return t('auth.codeInvalid');
+  if (/sending magic link|error sending/i.test(raw)) return t('auth.sendFailed');
+  if (isDroppedAuthFetch(error) || /fetch failed/i.test(raw)) return t('auth.dropped');
+  return raw || t('auth.error');
 }
 
 export function AccountCard() {
@@ -38,6 +45,16 @@ export function AccountCard() {
   const [code, setCode] = useState('');
   const [awaitingCode, setAwaitingCode] = useState(false);
   const [prompt, setPrompt] = useState<AuthPrompt | null>(null);
+  const prevAuthEmail = useRef(auth.email);
+
+  useEffect(() => {
+    if (auth.email && auth.email !== prevAuthEmail.current) {
+      setEmail(auth.email);
+      setAwaitingCode(false);
+      setCode('');
+    }
+    prevAuthEmail.current = auth.email;
+  }, [auth.email]);
 
   const run = useCallback(
     async (fn: () => Promise<void>, notice: string) => {
@@ -46,7 +63,7 @@ export function AccountCard() {
         await fn();
         dispatch(setAuthNotice(notice));
       } catch (error) {
-        dispatch(setAuthNotice(noticeFromError(error, t('auth.error'), t('auth.emailTaken'))));
+        dispatch(setAuthNotice(noticeFromError(error, t)));
       }
     },
     [dispatch, t],
@@ -59,6 +76,7 @@ export function AccountCard() {
     setPrompt(null);
     if (!next) return;
     if (next === 'send') {
+      setCode('');
       run(async () => {
         await sendEmailOtp(email.trim());
         setAwaitingCode(true);
@@ -66,11 +84,11 @@ export function AccountCard() {
       return;
     }
     if (next === 'verify') {
-      run(() => verifyEmailOtp(email.trim(), code.trim()), t('auth.linked'));
-      return;
-    }
-    if (next === 'sync') {
-      run(startAnonymous, t('auth.linked'));
+      run(async () => {
+        await signInWithEmailOtp(email.trim(), code.trim());
+        setAwaitingCode(false);
+        setCode('');
+      }, t('auth.linked'));
       return;
     }
     if (next === 'link') {
@@ -81,6 +99,7 @@ export function AccountCard() {
       resetPushCache();
       await signOutAccount();
       setAwaitingCode(false);
+      setCode('');
     }, t('auth.guest'));
   }, [code, email, prompt, run, t]);
 
@@ -95,6 +114,11 @@ export function AccountCard() {
   const signedIn = Boolean(auth.userId && auth.email && !auth.anonymous);
   const anonymous = Boolean(auth.userId && auth.anonymous);
   const guest = !auth.userId;
+  const typed = email.trim().toLowerCase();
+  const current = (auth.email ?? '').trim().toLowerCase();
+  const switching = signedIn && Boolean(typed) && typed !== current;
+  const canSend = (guest || switching) && !awaitingCode;
+  const canVerify = (guest || signedIn) && awaitingCode;
 
   return (
     <View style={styles.box}>
@@ -102,7 +126,7 @@ export function AccountCard() {
         {signedIn ? t('auth.signedIn', { email: auth.email ?? '' }) : anonymous ? t('auth.anonymous') : t('auth.guest')}
       </Text>
 
-      {guest || anonymous ? (
+      {guest || anonymous || signedIn ? (
         <FormField
           label={t('auth.email')}
           value={email}
@@ -115,7 +139,7 @@ export function AccountCard() {
         />
       ) : null}
 
-      {guest && !awaitingCode ? (
+      {canSend ? (
         <Pressable
           onPress={() => {
             if (!email.trim()) {
@@ -125,22 +149,23 @@ export function AccountCard() {
             setPrompt('send');
           }}
           style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
-          <Text style={formStyles.primaryText}>{t('auth.sendCode')}</Text>
+          <Text style={formStyles.primaryText}>{signedIn ? t('auth.switchEmail') : t('auth.sendCode')}</Text>
         </Pressable>
       ) : null}
 
-      {guest && awaitingCode ? (
+      {canVerify ? (
         <>
           <FormField
             label={t('auth.code')}
             value={code}
-            onChangeText={setCode}
-            placeholder="000000"
+            onChangeText={(value) => setCode(digitsOnly(value, EMAIL_OTP_LENGTH))}
+            placeholder={'0'.repeat(EMAIL_OTP_LENGTH)}
             keyboardType="number-pad"
+            maxLength={EMAIL_OTP_LENGTH}
           />
           <Pressable
             onPress={() => {
-              if (!code.trim()) {
+              if (code.length !== EMAIL_OTP_LENGTH) {
                 dispatch(setAuthNotice(t('auth.needCode')));
                 return;
               }
@@ -148,6 +173,14 @@ export function AccountCard() {
             }}
             style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
             <Text style={formStyles.primaryText}>{t('auth.verify')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setCode('');
+              setPrompt('send');
+            }}
+            style={({ pressed }) => [styles.textBtn, pressed && formStyles.pressed]}>
+            <Text style={styles.textBtnLabel}>{t('auth.resend')}</Text>
           </Pressable>
         </>
       ) : null}
@@ -166,15 +199,9 @@ export function AccountCard() {
         </Pressable>
       ) : null}
 
-      {guest ? (
-        <Pressable onPress={() => setPrompt('sync')} style={({ pressed }) => [styles.textBtn, pressed && formStyles.pressed]}>
-          <Text style={styles.textBtnLabel}>{t('auth.syncDevice')}</Text>
-        </Pressable>
-      ) : null}
-
       {auth.userId ? (
-        <Pressable onPress={() => setPrompt('out')} style={({ pressed }) => [styles.textBtn, pressed && formStyles.pressed]}>
-          <Text style={styles.textBtnLabel}>{t('auth.signOut')}</Text>
+        <Pressable onPress={() => setPrompt('out')} style={({ pressed }) => [styles.outBtn, pressed && formStyles.pressed]}>
+          <Text style={styles.outBtnText}>{t('auth.signOut')}</Text>
         </Pressable>
       ) : null}
 
@@ -198,5 +225,14 @@ function accountStyles(colors: ThemeColors) {
     meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, lineHeight: 18 },
     textBtn: { alignSelf: 'flex-start' as const, paddingVertical: 4 },
     textBtnLabel: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 14 },
+    outBtn: {
+      height: 48,
+      borderRadius: radius.full,
+      borderWidth: 1.5,
+      borderColor: colors.danger,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    outBtnText: { color: colors.danger, fontFamily: fonts.bold, fontSize: 16 },
   };
 }

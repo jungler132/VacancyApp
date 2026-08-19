@@ -39,6 +39,9 @@ const sourcesSlice = createSlice({
         ? state.disabledIds.filter((item) => item !== id)
         : [...state.disabledIds, id];
     },
+    replaceDisabledSources(state, action: PayloadAction<string[]>) {
+      state.disabledIds = action.payload.filter((id) => typeof id === 'string' && id);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -52,5 +55,5 @@ const sourcesSlice = createSlice({
   },
 });
 
-export const { toggleSource } = sourcesSlice.actions;
+export const { toggleSource, replaceDisabledSources } = sourcesSlice.actions;
 export default sourcesSlice.reducer;

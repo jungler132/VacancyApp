@@ -85,6 +85,9 @@ const visitsSlice = createSlice({
     clearVisits(state) {
       state.items = [];
     },
+    replaceVisits(state, action: PayloadAction<SiteVisit[]>) {
+      state.items = parseVisits(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -98,5 +101,5 @@ const visitsSlice = createSlice({
   },
 });
 
-export const { recordVisit, removeVisit, clearVisits } = visitsSlice.actions;
+export const { recordVisit, removeVisit, clearVisits, replaceVisits } = visitsSlice.actions;
 export default visitsSlice.reducer;

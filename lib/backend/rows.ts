@@ -23,6 +23,7 @@ type ProfileRow = {
   seek_title: string;
   seek_format: string;
   updated_at: string;
+  account_state?: unknown;
 };
 
 type OfferRow = {
@@ -69,7 +70,7 @@ export function profileFromRow(row: ProfileRow, own = false): ServiceProfile {
     displayName: row.display_name,
     bio: row.bio,
     avatarUri: row.avatar_url || undefined,
-    photos: row.avatar_url ? [row.avatar_url] : [],
+    photos: [],
     email: row.email,
     phone: row.phone,
     kinds: (row.kinds ?? []) as ServiceProfile['kinds'],
