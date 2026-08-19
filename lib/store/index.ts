@@ -15,6 +15,12 @@ import savedCatalogReducer, {
   replaceSavedCatalog,
   toggleSavedCatalog,
 } from './savedCatalogSlice';
+import savedServicesReducer, {
+  hydrateSavedServices,
+  persistSavedServices,
+  replaceSavedServices,
+  toggleSavedService,
+} from './savedServicesSlice';
 import sourcesReducer, { hydrateSources, persistDisabledSources, replaceDisabledSources, toggleSource } from './sourcesSlice';
 import localJobsReducer, {
   hydrateLocalJobs,
@@ -91,6 +97,19 @@ listener.startListening({
       await persistSavedCatalog(items);
     }
     if (toggleSavedCatalog.match(action) && canPush(listenerApi.getState() as RootState)) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    }
+  },
+});
+
+listener.startListening({
+  matcher: isAnyOf(toggleSavedService, hydrateSavedServices.fulfilled, replaceSavedServices),
+  effect: async (action, listenerApi) => {
+    const items = (listenerApi.getState() as RootState).savedServices.items;
+    if (toggleSavedService.match(action) || replaceSavedServices.match(action)) {
+      await persistSavedServices(items);
+    }
+    if (toggleSavedService.match(action) && canPush(listenerApi.getState() as RootState)) {
       schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
@@ -264,6 +283,7 @@ export const store = configureStore({
     jobs: jobsReducer,
     saved: savedReducer,
     savedCatalog: savedCatalogReducer,
+    savedServices: savedServicesReducer,
     sources: sourcesReducer,
     filters: filtersReducer,
     alerts: alertsReducer,
@@ -288,6 +308,7 @@ export const store = configureStore({
 
 store.dispatch(hydrateSaved());
 store.dispatch(hydrateSavedCatalog());
+store.dispatch(hydrateSavedServices());
 store.dispatch(hydrateSources());
 store.dispatch(hydrateFilters());
 store.dispatch(hydrateAlerts());

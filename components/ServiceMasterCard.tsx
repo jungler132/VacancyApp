@@ -1,6 +1,7 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { SaveStar } from '@/components/SaveStar';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { PremiumBadge } from '@/components/PremiumBadge';
 import { Text } from '@/components/AppText';
@@ -9,6 +10,9 @@ import type { ServiceMaster } from '@/lib/services/types';
 import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { toSavedMaster, toggleSavedService } from '@/lib/store/savedServicesSlice';
+import { selectIsServiceSaved } from '@/lib/store/selectors';
 
 export const ServiceMasterCard = memo(function ServiceMasterCard({
   master,
@@ -18,6 +22,7 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   onPress: (id: string) => void;
 }) {
   const t = useT();
+  const dispatch = useAppDispatch();
   const styles = useThemedStyles(serviceMasterCardStyles);
   const kinds = [...master.kinds.map((id) => t(keyOf('kind', id))), ...(master.customKinds ?? [])]
     .filter(Boolean)
@@ -25,7 +30,15 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   const hours = formatServiceSchedule(master.hours, (id) => t(keyOf('week', id)), t('week.all'));
   const count = master.offers.length;
   const featured = master.offers.some((item) => item.featured);
+  const savedRef = useMemo(
+    () => ({ kind: 'master' as const, id: master.id, profileId: master.id }),
+    [master.id],
+  );
+  const saved = useAppSelector(selectIsServiceSaved(savedRef));
   const open = useCallback(() => onPress(master.id), [master.id, onPress]);
+  const onToggle = useCallback(() => {
+    dispatch(toggleSavedService(toSavedMaster(master)));
+  }, [dispatch, master]);
 
   return (
     <Pressable onPress={open} style={({ pressed }) => [styles.card, featured && styles.premium, pressed && styles.pressed]}>
@@ -49,7 +62,13 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
             .join(' · ')}
         </Text>
       </View>
-      <Text style={styles.chevron}>›</Text>
+      {master.mine ? (
+        <Text style={styles.chevron}>›</Text>
+      ) : (
+        <View style={styles.star}>
+          <SaveStar saved={saved} onToggle={onToggle} />
+        </View>
+      )}
     </Pressable>
   );
 });
@@ -87,6 +106,7 @@ function serviceMasterCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       textAlign: 'center' as const,
       marginTop: 8,
     },
+    star: { marginTop: 6 },
     pressed: { opacity: 0.86 },
   };
 }

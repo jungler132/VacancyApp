@@ -52,6 +52,7 @@ export default function ProfileScreen() {
   const digest = useAppSelector(selectTodayCard);
   const savedJobCount = savedJobs.length;
   const savedResources = useAppSelector((state) => state.savedCatalog.items.length);
+  const savedServices = useAppSelector((state) => state.savedServices.items.length);
   const localJobs = useAppSelector((state) => state.localJobs.items);
   const visits = useAppSelector((state) => state.visits.items);
   const hasPage = Boolean(own?.displayName.trim());
@@ -214,7 +215,7 @@ export default function ProfileScreen() {
         <Text style={styles.section}>{t('identity.more')}</Text>
         <NavRow
           title={t('nav.saved')}
-          meta={t('saved.subtitle', { jobs: savedJobCount, resources: savedResources })}
+          meta={t('saved.subtitle', { jobs: savedJobCount, services: savedServices, resources: savedResources })}
           onPress={() => nav.push(SAVED_HREF)}
         />
         <NavRow title={t('nav.stats')} meta={t('profile.statsMeta')} onPress={() => nav.push(STATS_HREF)} />

@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "apk": "node scripts/build-apk.cjs",
     "postinstall": "node scripts/patch-expo-modules-jsi.cjs && node scripts/patch-expo-cli-ios-launch.cjs",
-    "test": "tsx --test lib/api/aggregator.test.ts lib/filters.test.ts lib/feedKey.test.ts lib/telegramGroups.test.ts lib/format.test.ts lib/jobBody.test.ts lib/logo.test.ts lib/ads.test.ts lib/tiers.test.ts lib/store/savedCatalogSlice.test.ts lib/fontScale.test.ts lib/jobRoute.test.ts lib/services/catalog.test.ts lib/services/hours.test.ts lib/store/freelanceSlice.test.ts lib/i18n/i18n.test.ts lib/store/visitsSlice.test.ts lib/translate.test.ts lib/pipeline.test.ts lib/store/identitySlice.test.ts lib/navLock.test.ts lib/prefs.test.ts lib/limits.test.ts lib/backend/merge.test.ts lib/support.test.ts"
+    "test": "tsx --test lib/http.test.ts lib/api/aggregator.test.ts lib/filters.test.ts lib/feedKey.test.ts lib/telegramGroups.test.ts lib/format.test.ts lib/jobBody.test.ts lib/logo.test.ts lib/ads.test.ts lib/tiers.test.ts lib/store/savedCatalogSlice.test.ts lib/store/savedServicesSlice.test.ts lib/fontScale.test.ts lib/jobRoute.test.ts lib/services/catalog.test.ts lib/services/hours.test.ts lib/store/freelanceSlice.test.ts lib/i18n/i18n.test.ts lib/store/visitsSlice.test.ts lib/translate.test.ts lib/pipeline.test.ts lib/store/identitySlice.test.ts lib/navLock.test.ts lib/prefs.test.ts lib/limits.test.ts lib/backend/merge.test.ts lib/support.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",

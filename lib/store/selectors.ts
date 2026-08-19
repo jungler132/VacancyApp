@@ -9,6 +9,7 @@ import type { Job } from '@/lib/types';
 import { toServiceMaster } from '@/lib/services/catalog';
 import { OWN_PROFILE_ID } from './freelanceSlice';
 import { resolveCatalogItem } from './savedCatalogSlice';
+import { serviceSaveKey, type SavedServiceItem } from './savedServicesSlice';
 import { todayCard } from '@/lib/today';
 import type { RootState } from './index';
 import { makeFeedKey, type FeedCache } from './jobsSlice';
@@ -150,6 +151,15 @@ export const selectSavedCatalogMap = createSelector([selectSavedCatalogItems], (
 
 export const selectIsCatalogSaved = (kind: 'telegram' | 'site', id: string) => (state: RootState) =>
   Boolean(selectSavedCatalogMap(state)[`${kind}:${id}`]);
+
+export const selectSavedServiceKeySet = createSelector(
+  [(state: RootState) => state.savedServices.items],
+  (items) => new Set(items.map(serviceSaveKey)),
+);
+
+export const selectIsServiceSaved =
+  (item: Pick<SavedServiceItem, 'kind' | 'id' | 'profileId'>) => (state: RootState) =>
+    selectSavedServiceKeySet(state).has(serviceSaveKey(item));
 
 const EMPTY_ERRORS: SourceError[] = [];
 const EMPTY_ERROR_MAP: Record<string, string> = Object.create(null);

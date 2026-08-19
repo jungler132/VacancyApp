@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 
 import { exchangeAuthUrl } from '@/lib/backend/auth';
-import { pullAccount, refreshPublic, resetPushCache, schedulePush } from '@/lib/backend/sync';
+import { writeBoundEmail } from '@/lib/backend/boundEmail';
+import { clearLocalAccount, pullAccount, refreshPublic, resetPushCache, schedulePush } from '@/lib/backend/sync';
 import { getSupabase } from '@/lib/backend/supabase';
 import { hydrateAuth, setSession } from '@/lib/store/authSlice';
 import { clearPremiumStub } from '@/lib/store/premiumSlice';
@@ -19,6 +21,7 @@ export function BackendHost() {
       state.auth.ready &&
       state.saved.ready &&
       state.savedCatalog.ready &&
+      state.savedServices.ready &&
       state.appearance.ready &&
       state.filters.ready &&
       state.alerts.ready &&
@@ -33,6 +36,7 @@ export function BackendHost() {
   userIdRef.current = userId;
 
   useEffect(() => {
+    WebBrowser.maybeCompleteAuthSession();
     dispatch(hydrateAuth());
     const supabase = getSupabase();
     if (!supabase) return undefined;
@@ -68,6 +72,10 @@ export function BackendHost() {
     lastEmail.current = email ?? null;
     resetPushCache();
     if (!userId) {
+      if (prev) {
+        clearLocalAccount(dispatch);
+        void writeBoundEmail(null);
+      }
       dispatch(clearPremiumStub());
       return;
     }

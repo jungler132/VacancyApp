@@ -1,3 +1,6 @@
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+
 import { EMAIL_OTP_LENGTH } from './config';
 import { getSupabase } from './supabase';
 
@@ -85,12 +88,54 @@ function param(url: string, key: string) {
 export async function exchangeAuthUrl(url: string) {
   const supabase = getSupabase();
   if (!supabase) return;
+  const oauthError = param(url, 'error_description') ?? param(url, 'error');
+  if (oauthError) throw new Error(oauthError.replace(/\+/g, ' '));
   const code = param(url, 'code');
   if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    return;
+  }
+  const accessToken = param(url, 'access_token');
+  const refreshToken = param(url, 'refresh_token');
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (error) throw error;
     return;
   }
   const token = param(url, 'token') ?? param(url, 'otp');
   const email = param(url, 'email');
   if (token && email) await supabase.auth.verifyOtp({ email, token, type: 'email' });
+}
+
+export function isAuthCancelled(error: unknown): boolean {
+  if (!error) return false;
+  if (typeof error === 'object' && error !== null && 'name' in error && (error as { name?: string }).name === 'AuthCancel') {
+    return true;
+  }
+  return error instanceof Error && /cancel|dismiss/i.test(error.message);
+}
+
+export async function signInWithGoogle() {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('off');
+  const redirectTo = Linking.createURL('auth/callback');
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+      queryParams: { access_type: 'offline', prompt: 'select_account' },
+    },
+  });
+  if (error) throw error;
+  if (!data.url) throw new Error('google');
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo, { showInRecents: true });
+  if (result.type !== 'success' || !result.url) {
+    throw Object.assign(new Error('cancelled'), { name: 'AuthCancel' });
+  }
+  await exchangeAuthUrl(result.url);
 }

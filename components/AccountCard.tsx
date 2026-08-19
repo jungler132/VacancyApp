@@ -4,22 +4,23 @@ import { Pressable, View } from 'react-native';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
-import { isDroppedAuthFetch, linkEmail, sendEmailOtp, signInWithEmailOtp, signOutAccount } from '@/lib/backend/auth';
+import { isAuthCancelled, isDroppedAuthFetch, linkEmail, sendEmailOtp, signInWithEmailOtp, signInWithGoogle } from '@/lib/backend/auth';
 import { EMAIL_OTP_LENGTH } from '@/lib/backend/config';
-import { resetPushCache } from '@/lib/backend/sync';
+import { leaveAccount } from '@/lib/backend/sync';
 import type { MsgId } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { setAuthBusy, setAuthNotice } from '@/lib/store/authSlice';
-import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 import { fonts, radius, useThemedStyles, type ThemeColors } from '@/lib/theme';
 
-type AuthPrompt = 'send' | 'verify' | 'link' | 'out';
+type AuthPrompt = 'send' | 'verify' | 'link' | 'out' | 'google';
 
 const PROMPT_COPY: Record<AuthPrompt, { title: MsgId; body: MsgId }> = {
   send: { title: 'auth.explain.send.title', body: 'auth.explain.send.body' },
   verify: { title: 'auth.explain.verify.title', body: 'auth.explain.verify.body' },
   link: { title: 'auth.explain.link.title', body: 'auth.explain.link.body' },
   out: { title: 'auth.explain.out.title', body: 'auth.explain.out.body' },
+  google: { title: 'auth.explain.google.title', body: 'auth.explain.google.body' },
 };
 
 function digitsOnly(value: string, length: number) {
@@ -31,6 +32,9 @@ function noticeFromError(error: unknown, t: (id: MsgId) => string) {
   if (/already been registered/i.test(raw)) return t('auth.emailTaken');
   if (/expired|invalid/i.test(raw)) return t('auth.codeInvalid');
   if (/sending magic link|error sending/i.test(raw)) return t('auth.sendFailed');
+  if (/unsupported provider|provider is not enabled|validation_failed|Unable to exchange/i.test(raw)) {
+    return t('auth.googleFailed');
+  }
   if (isDroppedAuthFetch(error) || /fetch failed/i.test(raw)) return t('auth.dropped');
   return raw || t('auth.error');
 }
@@ -38,6 +42,7 @@ function noticeFromError(error: unknown, t: (id: MsgId) => string) {
 export function AccountCard() {
   const t = useT();
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(accountStyles);
   const auth = useAppSelector((state) => state.auth);
@@ -52,6 +57,10 @@ export function AccountCard() {
       setEmail(auth.email);
       setAwaitingCode(false);
       setCode('');
+    } else if (!auth.email && prevAuthEmail.current) {
+      setEmail('');
+      setAwaitingCode(false);
+      setCode('');
     }
     prevAuthEmail.current = auth.email;
   }, [auth.email]);
@@ -63,6 +72,10 @@ export function AccountCard() {
         await fn();
         dispatch(setAuthNotice(notice));
       } catch (error) {
+        if (isAuthCancelled(error)) {
+          dispatch(setAuthNotice(''));
+          return;
+        }
         dispatch(setAuthNotice(noticeFromError(error, t)));
       }
     },
@@ -95,13 +108,21 @@ export function AccountCard() {
       run(() => linkEmail(email.trim()), t('auth.sent'));
       return;
     }
+    if (next === 'google') {
+      run(async () => {
+        await signInWithGoogle();
+        setAwaitingCode(false);
+        setCode('');
+      }, t('auth.linked'));
+      return;
+    }
     run(async () => {
-      resetPushCache();
-      await signOutAccount();
+      await leaveAccount(dispatch, () => store.getState());
       setAwaitingCode(false);
       setCode('');
+      setEmail('');
     }, t('auth.guest'));
-  }, [code, email, prompt, run, t]);
+  }, [code, dispatch, email, prompt, run, store, t]);
 
   if (!auth.configured) {
     return (
@@ -125,6 +146,7 @@ export function AccountCard() {
       <Text style={formStyles.lead}>
         {signedIn ? t('auth.signedIn', { email: auth.email ?? '' }) : anonymous ? t('auth.anonymous') : t('auth.guest')}
       </Text>
+      {guest ? <Text style={formStyles.lead}>{t('auth.lead')}</Text> : null}
 
       {guest || anonymous || signedIn ? (
         <FormField
@@ -150,6 +172,14 @@ export function AccountCard() {
           }}
           style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
           <Text style={formStyles.primaryText}>{signedIn ? t('auth.switchEmail') : t('auth.sendCode')}</Text>
+        </Pressable>
+      ) : null}
+
+      {guest && !awaitingCode ? (
+        <Pressable
+          onPress={() => setPrompt('google')}
+          style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
+          <Text style={formStyles.secondaryText}>{t('auth.google')}</Text>
         </Pressable>
       ) : null}
 

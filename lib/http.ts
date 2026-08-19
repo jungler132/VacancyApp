@@ -1,6 +1,7 @@
 import { SUPPORT_EMAIL } from '@/lib/support';
 
 const UA = `WorklyJobs/1.0 (${SUPPORT_EMAIL})`;
+const MAX_JSON_BYTES = 2_000_000;
 
 function combineSignals(timeoutSignal: AbortSignal, external?: AbortSignal): AbortSignal {
   const merged = new AbortController();
@@ -41,6 +42,10 @@ export async function fetchJson<T>(
     });
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
+    }
+    const length = Number(res.headers.get('content-length'));
+    if (Number.isFinite(length) && length > MAX_JSON_BYTES) {
+      throw new Error('too large');
     }
     return (await res.json()) as T;
   } catch (error) {

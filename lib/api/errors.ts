@@ -6,6 +6,7 @@ export function describeSourceError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (message === 'aborted') return 'отменено';
   if (message === 'timeout' || /timeout|timed out/i.test(message)) return 'нет ответа';
+  if (message === 'too large') return 'ответ слишком большой';
   if (/HTTP 403/.test(message) || /forbidden/i.test(message)) return 'доступ закрыт';
   if (/HTTP 429/.test(message)) return 'слишком много запросов';
   if (/HTTP 5\d\d/.test(message)) return 'сервер источника недоступен';

@@ -5,6 +5,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { EmptyState } from '@/components/EmptyState';
 import { useFormStyles } from '@/components/FormField';
 import { ReportSheet } from '@/components/ReportSheet';
+import { SaveStar } from '@/components/SaveStar';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { ServiceOfferCard } from '@/components/ServiceOfferCard';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
@@ -14,19 +15,26 @@ import { useT } from '@/lib/i18n/useT';
 import { offerEditorHref, offerViewHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { formatServiceSchedule } from '@/lib/services/hours';
 import { useLimits } from '@/lib/hooks/useLimits';
-import { useAppSelector } from '@/lib/store/hooks';
-import { selectMasterById } from '@/lib/store/selectors';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { toSavedMaster, toggleSavedService } from '@/lib/store/savedServicesSlice';
+import { selectIsServiceSaved, selectMasterById } from '@/lib/store/selectors';
 import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function ServicePublicScreen() {
   const t = useT();
   const router = useRouter();
   const navigation = useNavigation();
+  const dispatch = useAppDispatch();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(servicePublicStyles);
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const profileId = Array.isArray(id) ? id.join('/') : String(id ?? '');
   const master = useAppSelector((state) => selectMasterById(state, profileId));
+  const savedRef = useMemo(
+    () => ({ kind: 'master' as const, id: profileId, profileId }),
+    [profileId],
+  );
+  const saved = useAppSelector(selectIsServiceSaved(savedRef));
   const signedIn = useAppSelector((state) => Boolean(state.auth.userId && state.auth.email && !state.auth.anonymous));
   const [reportOpen, setReportOpen] = useState(false);
   const limits = useLimits();
@@ -62,6 +70,9 @@ export default function ServicePublicScreen() {
   const openOffer = useCallback((offerId: string) => router.push(offerViewHref(offerId)), [router]);
   const openReport = useCallback(() => setReportOpen(true), []);
   const closeReport = useCallback(() => setReportOpen(false), []);
+  const onToggleSave = useCallback(() => {
+    if (master && !master.mine) dispatch(toggleSavedService(toSavedMaster(master)));
+  }, [dispatch, master]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: master?.displayName || t('nav.master') });
@@ -80,7 +91,10 @@ export default function ServicePublicScreen() {
       <View style={styles.head}>
         <ServiceAvatar uri={master.avatarUri} name={master.displayName} size={72} />
         <View style={styles.headBody}>
-          <Text style={styles.name}>{master.displayName}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{master.displayName}</Text>
+            {master.mine ? null : <SaveStar saved={saved} onToggle={onToggleSave} />}
+          </View>
           {kinds ? <Text style={styles.meta}>{kinds}</Text> : null}
           {hours ? <Text style={styles.meta}>{t('master.hours', { value: hours })}</Text> : null}
           {master.mine ? <Text style={styles.mine}>{t('master.mine')}</Text> : null}
@@ -141,7 +155,8 @@ function servicePublicStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
     head: { flexDirection: 'row' as const, gap: 14, alignItems: 'center' as const },
     headBody: { flex: 1, minWidth: 0 },
-    name: { color: colors.text, fontFamily: fonts.bold, fontSize: 22 },
+    nameRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
+    name: { flex: 1, color: colors.text, fontFamily: fonts.bold, fontSize: 22 },
     meta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13, marginTop: 2 },
     mine: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 12, marginTop: 6 },
     bio: { color: colors.text, fontFamily: fonts.regular, fontSize: 16, lineHeight: 24, marginTop: 8 },

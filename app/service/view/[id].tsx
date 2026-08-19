@@ -8,18 +8,21 @@ import { EmptyState } from '@/components/EmptyState';
 import { useFormStyles } from '@/components/FormField';
 import { PremiumBadge } from '@/components/PremiumBadge';
 import { ReportSheet } from '@/components/ReportSheet';
+import { SaveStar } from '@/components/SaveStar';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { offerContact, offerEditorHref, offerKindLabel, offerPriceLabel } from '@/lib/services/catalog';
-import { useAppSelector } from '@/lib/store/hooks';
-import { selectOfferView } from '@/lib/store/selectors';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { toSavedOffer, toggleSavedService } from '@/lib/store/savedServicesSlice';
+import { selectIsServiceSaved, selectOfferView } from '@/lib/store/selectors';
 import { fonts, premiumGlow, premiumSurface, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function ServiceOfferViewScreen() {
   const t = useT();
   const router = useRouter();
   const navigation = useNavigation();
+  const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(offerViewStyles);
@@ -30,6 +33,11 @@ export default function ServiceOfferViewScreen() {
   const [reportOpen, setReportOpen] = useState(false);
   const offer = view?.offer;
   const master = view?.master;
+  const savedRef = useMemo(
+    () => ({ kind: 'offer' as const, id: offerId, profileId: master?.id ?? '' }),
+    [master?.id, offerId],
+  );
+  const saved = useAppSelector(selectIsServiceSaved(savedRef));
   const contact = useMemo(
     () => (offer && master ? offerContact(offer, master) : { phone: '', address: '' }),
     [master, offer],
@@ -50,6 +58,9 @@ export default function ServiceOfferViewScreen() {
   }, [offer, router]);
   const openReport = useCallback(() => setReportOpen(true), []);
   const closeReport = useCallback(() => setReportOpen(false), []);
+  const onToggleSave = useCallback(() => {
+    if (offer && master && !master.mine) dispatch(toggleSavedService(toSavedOffer(offer, master)));
+  }, [dispatch, master, offer]);
 
   if (!offer || !master) {
     return (
@@ -75,6 +86,7 @@ export default function ServiceOfferViewScreen() {
       ))}
       <View style={styles.titleRow}>
         <Text style={styles.title}>{offer.title}</Text>
+        {master.mine ? null : <SaveStar saved={saved} onToggle={onToggleSave} />}
       </View>
       <Text style={styles.price}>{offerPriceLabel(offer, t('services.priceNegotiable'))}</Text>
       {kind ? <Text style={styles.kind}>{kind}</Text> : null}

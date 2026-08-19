@@ -1,13 +1,18 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppImage } from '@/components/AppImage';
+import { SaveStar } from '@/components/SaveStar';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { PremiumBadge } from '@/components/PremiumBadge';
 import { Text } from '@/components/AppText';
 import { offerContact, offerKindLabel, offerPriceLabel } from '@/lib/services/catalog';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
+import { OWN_PROFILE_ID } from '@/lib/store/freelanceSlice';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { toSavedOffer, toggleSavedService } from '@/lib/store/savedServicesSlice';
+import { selectIsServiceSaved } from '@/lib/store/selectors';
 import type { ServiceOffer, ServiceProfile } from '@/lib/services/types';
 import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
@@ -21,11 +26,21 @@ export const ServiceOfferCard = memo(function ServiceOfferCard({
   onPress?: (id: string) => void;
 }) {
   const t = useT();
+  const dispatch = useAppDispatch();
   const styles = useThemedStyles(serviceOfferCardStyles);
   const contact = offerContact(offer, profile);
   const kind = offerKindLabel(offer, (id) => t(keyOf('kind', id)));
   const extras = offer.images.slice(1);
+  const canSave = profile.id !== OWN_PROFILE_ID;
+  const savedRef = useMemo(
+    () => ({ kind: 'offer' as const, id: offer.id, profileId: profile.id }),
+    [offer.id, profile.id],
+  );
+  const saved = useAppSelector(selectIsServiceSaved(savedRef));
   const press = useCallback(() => onPress?.(offer.id), [offer.id, onPress]);
+  const onToggle = useCallback(() => {
+    dispatch(toggleSavedService(toSavedOffer(offer, profile)));
+  }, [dispatch, offer, profile]);
 
   return (
     <Pressable
@@ -36,6 +51,7 @@ export const ServiceOfferCard = memo(function ServiceOfferCard({
       <View style={styles.titleRow}>
         <Text style={styles.title}>{offer.title}</Text>
         {offer.featured ? <PremiumBadge compact /> : null}
+        {canSave ? <SaveStar saved={saved} onToggle={onToggle} /> : null}
       </View>
       <Text style={styles.price}>{offerPriceLabel(offer, t('services.priceNegotiable'))}</Text>
       <Text style={styles.kind}>{kind}</Text>

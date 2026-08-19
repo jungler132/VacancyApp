@@ -6,6 +6,7 @@ import { replaceLocalJobs } from '@/lib/store/localJobsSlice';
 import { replaceAppearance } from '@/lib/store/appearanceSlice';
 import { replaceSaved } from '@/lib/store/savedSlice';
 import { replaceSavedCatalog } from '@/lib/store/savedCatalogSlice';
+import { replaceSavedServices } from '@/lib/store/savedServicesSlice';
 import { replaceFilters } from '@/lib/store/filtersSlice';
 import { replaceAlerts } from '@/lib/store/alertsSlice';
 import { replaceDisabledSources } from '@/lib/store/sourcesSlice';
@@ -19,6 +20,7 @@ import { setAuthNotice } from '@/lib/store/authSlice';
 import type { Job } from '@/lib/types';
 import type { ServiceOffer, ServiceProfile } from '@/lib/services/types';
 import { collectAccountState, parseAccountState, type AccountStateBlob } from './accountState';
+import { signOutAccount } from './auth';
 import { readBoundEmail, writeBoundEmail } from './boundEmail';
 import { fetchOwnRows, fetchPublicCatalog, fetchPublicJobs, jobFromRow, offerFromRow, profileFromRow } from './rows';
 import { isRemoteUri } from './merge';
@@ -33,6 +35,7 @@ type SyncState = {
   appearance: AccountStateBlob['appearance'];
   saved: AccountStateBlob['saved'];
   savedCatalog: { items: AccountStateBlob['savedCatalog'] };
+  savedServices: { items: AccountStateBlob['savedServices'] };
   filters: AccountStateBlob['filters'];
   alerts: { items: AccountStateBlob['alerts'] };
   sources: { disabledIds: string[] };
@@ -44,6 +47,7 @@ function deviceBlob(state: SyncState): AccountStateBlob {
     appearance: state.appearance,
     saved: state.saved,
     savedCatalog: state.savedCatalog.items,
+    savedServices: state.savedServices.items,
     filters: state.filters,
     alerts: state.alerts.items,
     sources: state.sources,
@@ -55,6 +59,7 @@ function applyDeviceBlob(dispatch: Dispatch, blob: AccountStateBlob) {
   dispatch(replaceAppearance(blob.appearance));
   dispatch(replaceSaved(blob.saved));
   dispatch(replaceSavedCatalog(blob.savedCatalog));
+  dispatch(replaceSavedServices(blob.savedServices));
   dispatch(replaceFilters(blob.filters));
   dispatch(replaceAlerts(blob.alerts));
   dispatch(replaceDisabledSources(blob.sources));
@@ -84,9 +89,19 @@ export function clearLocalAccount(dispatch: Dispatch) {
     dispatch(resetIdentity());
     dispatch(replaceSaved({ items: [], statuses: {}, statusAt: {} }));
     dispatch(replaceSavedCatalog([]));
+    dispatch(replaceSavedServices([]));
     dispatch(replaceAlerts([]));
     dispatch(replaceVisits([]));
   });
+}
+
+/** Flush to cloud, drop the session, then wipe this phone. Cloud stays. */
+export async function leaveAccount(dispatch: Dispatch, getState: () => SyncState) {
+  await flushAccount(getState, dispatch);
+  resetPushCache();
+  await signOutAccount();
+  clearLocalAccount(dispatch);
+  await writeBoundEmail(null);
 }
 
 export async function refreshPublic(dispatch: Dispatch, userId?: string | null) {

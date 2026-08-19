@@ -263,19 +263,19 @@ export function inferCatalogMeta(item: CatalogLink): {
 } {
   const hay = `${item.id} ${item.title} ${item.note ?? ''} ${item.handle ?? ''} ${item.url}`.toLowerCase();
   let focus: CatalogFocus = 'all';
-  if (/olx|lalafo|list\.am|999\.md|somon|avito|subito|trademe/.test(hay)) focus = 'classifieds';
+  if (/olx|lalafo|list\.am|999\.md|somon|avito|subito|trademe|tap\.az/.test(hay)) focus = 'classifieds';
   else if (/junior|стаж|intern|young|авоськ/.test(hay)) focus = 'junior';
-  else if (/flexjobs|we work remotely|remoteok|remotive|himalayas|jobicy|workingnomads|arbeitnow|удалён/.test(hay)) {
+  else if (/flexjobs|we work remotely|remoteok|remotive|himalayas|jobicy|workingnomads|arbeitnow|удалён|remote\.co|nodesk|authentic jobs|jsremotely/.test(hay)) {
     focus = 'remote';
   } else if (
-    /trudvsem|enbek|usajobs|gov\.uk|arbeitsagentur|francetravail|jobbank|mycareersfuture|arbetsformedlingen|werk\.nl|vdab/.test(
+    /trudvsem|enbek|usajobs|gov\.uk|arbeitsagentur|francetravail|jobbank|mycareersfuture|arbetsformedlingen|werk\.nl|vdab|eures/.test(
       hay,
     )
   ) {
     focus = 'gov';
-  }   else if (/startupjobs|wellfound/.test(hay)) focus = 'startup';
+  }   else if (/startupjobs|wellfound|otta|builtin/.test(hay)) focus = 'startup';
   else if (
-    /habr|geek|djinni|dou|devby|justjoin|nofluff|dice|getmatch|tproger|devit|green-japan|cwjobs|jobitt|it.?jobs|it.?digital|it-ваканси|it & digital/.test(
+    /habr|geek|djinni|dou|devby|justjoin|nofluff|dice|getmatch|tproger|devit|green-japan|cwjobs|jobitt|it.?jobs|it.?digital|it-ваканси|it & digital|jsremotely/.test(
       hay,
     )
   ) {
@@ -362,6 +362,9 @@ export const JOB_SITES: CatalogLink[] = [
   site('az', 'azvak', 'AzVak.az', 'https://azvak.az'),
   site('az', 'glorri', 'Glorri', 'https://glorri.com'),
   site('az', 'olx-az', 'OLX — İş elanları', 'https://www.olx.az/is-elanlari/'),
+  site('az', 'tap-az', 'Tap.az — İş', 'https://tap.az/elanlar/is-elanlari'),
+  site('az', 'ejob', 'e-Job.az', 'https://www.e-job.az'),
+  site('az', 'vakansiya-az', 'Vakansiya.az', 'https://vakansiya.az'),
 
   site('ru', 'hhru', 'HeadHunter', 'https://hh.ru'),
   site('ru', 'superjob', 'SuperJob', 'https://www.superjob.ru'),
@@ -376,6 +379,11 @@ export const JOB_SITES: CatalogLink[] = [
   site('ru', 'getmatch', 'GetMatch', 'https://getmatch.ru'),
   site('ru', 'tproger-jobs', 'Tproger Jobs', 'https://tproger.ru/jobs'),
   site('ru', 'joblab', 'JobLab', 'https://joblab.ru'),
+  site('ru', 'dreamjob', 'Dream Job', 'https://dreamjob.ru'),
+  site('ru', 'trudcom', 'Trud.com', 'https://www.trud.com'),
+  site('ru', 'kwork', 'Kwork', 'https://kwork.ru'),
+  site('ru', 'flru', 'FL.ru', 'https://www.fl.ru'),
+  site('ru', 'profi', 'Профи.ру', 'https://profi.ru'),
 
   site('ua', 'workua', 'Work.ua', 'https://www.work.ua'),
   site('ua', 'rabotaua', 'Robota.ua', 'https://robota.ua'),
@@ -394,11 +402,13 @@ export const JOB_SITES: CatalogLink[] = [
   site('kz', 'enbek', 'Enbek.kz', 'https://www.enbek.kz'),
   site('kz', 'olx-kz', 'OLX Жұмыс', 'https://www.olx.kz/rabota/'),
   site('kz', 'qsamruk', 'Samruk-Kazyna Career', 'https://qsamruk.kz'),
+  site('kz', 'rabotakz', 'Rabota.kz', 'https://www.rabota.kz'),
 
   site('uz', 'hhuz', 'HeadHunter UZ', 'https://hh.uz'),
   site('uz', 'olx-uz', 'OLX Ish', 'https://www.olx.uz/rabota/'),
   site('uz', 'ishuz', 'Ish.uz', 'https://ish.uz'),
   site('uz', 'lalafo-uz', 'Lalafo Работа', 'https://lalafo.uz/rabota'),
+  site('uz', 'ishkop', 'Ishkop.uz', 'https://ishkop.uz'),
 
   site('am', 'staffam', 'Staff.am', 'https://staff.am'),
   site('am', 'hham', 'HeadHunter AM', 'https://hh.am'),
@@ -491,6 +501,10 @@ export const JOB_SITES: CatalogLink[] = [
   site('us', 'dice', 'Dice', 'https://www.dice.com'),
   site('us', 'wellfound', 'Wellfound', 'https://wellfound.com'),
   site('us', 'monster-us', 'Monster', 'https://www.monster.com'),
+  site('us', 'simplyhired', 'SimplyHired', 'https://www.simplyhired.com'),
+  site('us', 'careerbuilder', 'CareerBuilder', 'https://www.careerbuilder.com'),
+  site('us', 'otta', 'Otta', 'https://otta.com'),
+  site('us', 'builtin', 'Built In', 'https://builtin.com'),
 
   site('ca', 'indeed-ca', 'Indeed Канада', 'https://ca.indeed.com'),
   site('ca', 'jobbank', 'Job Bank', 'https://www.jobbank.gc.ca'),
@@ -503,6 +517,8 @@ export const JOB_SITES: CatalogLink[] = [
 
   site('tr', 'kariyer', 'Kariyer.net', 'https://www.kariyer.net'),
   site('tr', 'yenibiris', 'Yenibiris', 'https://www.yenibiris.com'),
+  site('tr', 'secretcv', 'SecretCV', 'https://www.secretcv.com'),
+  site('tr', 'eleman', 'Eleman.net', 'https://www.eleman.net'),
   site('ae', 'bayt', 'Bayt', 'https://www.bayt.com'),
   site('ae', 'gulftalent', 'GulfTalent', 'https://www.gulftalent.com'),
   site('ae', 'naukrigulf', 'NaukriGulf', 'https://www.naukrigulf.com'),
@@ -521,6 +537,16 @@ export const JOB_SITES: CatalogLink[] = [
   site('remote', 'workingnomads', 'Working Nomads', 'https://www.workingnomads.com'),
   site('remote', 'flexjobs', 'FlexJobs', 'https://www.flexjobs.com'),
   site('remote', 'arbeitnow', 'Arbeitnow', 'https://www.arbeitnow.com'),
+  site('remote', 'remoteco', 'Remote.co', 'https://remote.co'),
+  site('remote', 'nodesk', 'NoDesk', 'https://nodesk.co'),
+  site('remote', 'authenticjobs', 'Authentic Jobs', 'https://authenticjobs.com'),
+  site('remote', 'jsremotely', 'JS Remotely', 'https://jsremotely.com'),
+  site('intl', 'talent', 'Talent.com', 'https://www.talent.com'),
+  site('intl', 'jobrapido', 'Jobrapido', 'https://www.jobrapido.com'),
+  site('intl', 'careerjet', 'Careerjet', 'https://www.careerjet.com'),
+  site('intl', 'eures', 'EURES', 'https://eures.europa.eu'),
+  site('intl', 'upwork', 'Upwork', 'https://www.upwork.com'),
+  site('intl', 'freelancer', 'Freelancer', 'https://www.freelancer.com'),
 
   site('intl', 'linkedin', 'LinkedIn', 'https://www.linkedin.com/jobs'),
   site('intl', 'indeed', 'Indeed', 'https://www.indeed.com'),

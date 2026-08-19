@@ -21,7 +21,7 @@ export function jobAgeDays(iso?: string): number | null {
 
 export function isFreshJob(job: Pick<Job, 'publishedAt'>, maxAgeDays = MAX_JOB_AGE_DAYS): boolean {
   const time = publishedMs(job.publishedAt);
-  if (time == null) return false;
+  if (time == null) return true;
   return Date.now() - time <= maxAgeDays * DAY_MS;
 }
 

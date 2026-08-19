@@ -14,6 +14,8 @@ import { searchHimalayas } from './providers/himalayas';
 import { searchAdzuna } from './providers/adzuna';
 import { searchJooble } from './providers/jooble';
 import { searchUsaJobs } from './providers/usajobs';
+import { searchTheMuse } from './providers/themuse';
+import { searchWorkingNomads } from './providers/workingnomads';
 
 type Provider = {
   id: string;
@@ -38,6 +40,8 @@ const PROVIDERS: Provider[] = [
   { id: 'adzuna', run: searchAdzuna, regions: ['all', 'cis', 'europe', 'west', 'asia', 'remote'], paginated: true, pageSize: 20 },
   { id: 'jooble', run: searchJooble, regions: ['any'], paginated: true, pageSize: 20 },
   { id: 'usajobs', run: searchUsaJobs, regions: ['all', 'west', 'remote'] },
+  { id: 'muse', run: searchTheMuse, regions: ['all', 'europe', 'west', 'asia', 'remote'], paginated: true, pageSize: 20 },
+  { id: 'workingnomads', run: searchWorkingNomads, regions: ['all', 'europe', 'west', 'asia', 'remote'] },
 ];
 
 export const SOURCES: SourceInfo[] = [
@@ -53,8 +57,10 @@ export const SOURCES: SourceInfo[] = [
   { id: 'adzuna', name: 'Adzuna', regionLabel: 'EU / US / Asia', status: 'key', note: 'Ключ подключен, если задан в .env' },
   { id: 'jooble', name: 'Jooble', regionLabel: '70+ стран', status: 'key', note: 'Ключ подключен, если задан в .env' },
   { id: 'usajobs', name: 'USAJobs', regionLabel: 'США', status: 'key', note: 'Нужны KEY и EMAIL' },
+  { id: 'muse', name: 'The Muse', regionLabel: 'США / EU', status: 'live', note: 'Публичный API, переход на вакансию' },
+  { id: 'workingnomads', name: 'Working Nomads', regionLabel: 'Удалёнка', status: 'live', note: 'Remote JSON, мало полей — всё равно в ленте' },
+  { id: 'nofluff', name: 'No Fluff Jobs', regionLabel: 'Европа', status: 'soon', note: 'Сайт в ресурсах, лента API слишком тяжёлая' },
   { id: 'reed', name: 'Reed', regionLabel: 'Великобритания', status: 'soon', note: 'Подключим позже' },
-  { id: 'muse', name: 'The Muse', regionLabel: 'США / EU', status: 'soon', note: 'Нужен ключ' },
 ];
 
 export function availableSourceIds(): string[] {

@@ -154,6 +154,17 @@ describe('searchJobs', () => {
     );
   });
 
+  it('оставляет вакансию без даты — ссылка на источник всё равно есть', async () => {
+    const result = await searchJobs(params({ enabledSources: ['a'] }), [
+      provider('a', async () => [
+        job({ id: 'bare', title: 'Bare job', publishedAt: undefined, excerpt: '', company: '' }),
+      ]),
+    ]);
+    assert.equal(result.jobs.length, 1);
+    assert.equal(result.jobs[0]?.id, 'bare');
+    assert.equal(result.jobs[0]?.url, 'https://example.com');
+  });
+
   it('hasMore=false и exhausted, если страница короче pageSize', async () => {
     const result = await searchJobs(params({ enabledSources: ['page'] }), [
       provider('page', async () => [job({ id: '1', title: 'Only' })], { paginated: true, pageSize: 3 }),
