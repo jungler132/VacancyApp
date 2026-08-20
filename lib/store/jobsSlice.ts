@@ -4,7 +4,7 @@ import { searchJobs } from '@/lib/api/aggregator';
 import { fetchHeadHunterDetails, hhVacancyId, isHhJobId } from '@/lib/api/providers/hh';
 import { isAbortError } from '@/lib/api/errors';
 import { feedLog } from '@/lib/feedLog';
-import { makeFeedKey } from '@/lib/feedKey';
+import { feedKeyOf, makeFeedKey } from '@/lib/feedKey';
 import { compareJobsByDate } from '@/lib/freshness';
 import type { CategoryId, Job, RegionId, SourceError } from '@/lib/types';
 
@@ -34,6 +34,7 @@ export type FetchFeedArgs = {
   enabledSources: string[];
   page: number;
   mode: 'replace' | 'append' | 'refresh';
+  placeId?: string;
 };
 
 export type FeedBatchPayload = {
@@ -154,13 +155,14 @@ export const fetchFeed = createAsyncThunk(
   'jobs/fetchFeed',
   async (args: FetchFeedArgs, { signal, getState, dispatch, requestId }) => {
     const jobsState = (getState() as { jobs: JobsState }).jobs;
-    const key = makeFeedKey(args.query, args.region, args.category, args.enabledSources);
+    const key = feedKeyOf(args);
     feedLog('fetch', {
       id: requestId.slice(0, 8),
       mode: args.mode,
       region: args.region,
       category: args.category,
       query: args.query.trim() || '-',
+      place: args.placeId || '-',
       page: args.page,
       sources: args.enabledSources,
     });
@@ -175,6 +177,7 @@ export const fetchFeed = createAsyncThunk(
         exhaustedSources: exhausted,
         signal,
         bypassCache: args.mode === 'refresh',
+        placeId: args.placeId,
       },
       undefined,
       (batch) => {
@@ -215,7 +218,7 @@ export const fetchFeed = createAsyncThunk(
   {
     condition: (args, { getState }) => {
       const state = (getState() as { jobs: JobsState }).jobs;
-      const key = makeFeedKey(args.query, args.region, args.category, args.enabledSources);
+      const key = feedKeyOf(args);
       const feed = state.feeds[key];
       const ok = shouldFetchFeed(feed, args.mode);
       if (!ok) {
@@ -295,8 +298,8 @@ const jobsSlice = createSlice({
         sortFeedIds(state, feed);
       })
       .addCase(fetchFeed.pending, (state, action) => {
-        const { query, region, category, enabledSources, mode } = action.meta.arg;
-        const key = makeFeedKey(query, region, category, enabledSources);
+        const { query, region, category, enabledSources, mode, placeId } = action.meta.arg;
+        const key = makeFeedKey(query, region, category, enabledSources, placeId);
         const current = state.feeds[key];
         const status: FeedStatus = mode === 'append' ? 'loadingMore' : mode === 'refresh' ? 'refreshing' : 'loading';
         state.feeds[key] = {
@@ -341,8 +344,8 @@ const jobsSlice = createSlice({
         touchLru(state, key);
       })
       .addCase(fetchFeed.rejected, (state, action) => {
-        const { query, region, category, enabledSources } = action.meta.arg;
-        const key = makeFeedKey(query, region, category, enabledSources);
+        const { query, region, category, enabledSources, placeId } = action.meta.arg;
+        const key = makeFeedKey(query, region, category, enabledSources, placeId);
         const current = state.feeds[key];
         if (!current || current.requestId !== action.meta.requestId) return;
         if (isAbortError(action.error)) {

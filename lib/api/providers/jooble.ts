@@ -2,6 +2,7 @@ import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
 import { annotateSalary, excerptOf, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
+import { joobleCurrency, joobleLang, joobleLocation } from '../../placeQuery';
 
 type JoobleJob = {
   title?: string;
@@ -16,42 +17,20 @@ type JoobleJob = {
 
 type JoobleResponse = { jobs?: JoobleJob[] };
 
-const REGION_LOCATION: Record<string, string> = {
-  cis: 'Russia',
-  az: 'Azerbaijan',
-  europe: 'Germany',
-  west: 'United States',
-  asia: 'Singapore',
-  all: '',
-  remote: 'Remote',
-};
-
-function joobleCurrency(region: SearchParams['region']): string | undefined {
-  if (region === 'az') return 'AZN';
-  if (region === 'cis') return 'RUB';
-  if (region === 'europe') return 'EUR';
-  if (region === 'west') return 'USD';
-  return undefined;
-}
-
-function joobleLang(region: SearchParams['region']) {
-  if (region === 'az') return 'az' as const;
-  if (region === 'cis') return 'ru' as const;
-  return 'en' as const;
-}
-
 export async function searchJooble(params: SearchParams): Promise<Job[]> {
   const key = process.env.EXPO_PUBLIC_JOOBLE_KEY;
   if (!key) return [];
 
-  const keywords = buildQuery(params.query, params.category, joobleLang(params.region)) || (params.region === 'az' ? 'vakansiya' : 'job');
+  const lang = joobleLang(params.placeId, params.region);
+  const location = joobleLocation(params.placeId, params.region);
+  const keywords = buildQuery(params.query, params.category, lang) || (lang === 'az' ? 'vakansiya' : 'job');
   const data = await fetchJson<JoobleResponse>(`https://jooble.org/api/${key}`, {
     signal: params.signal,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       keywords,
-      location: REGION_LOCATION[params.region] ?? '',
+      location,
       page: String(params.page + 1),
     }),
   });
@@ -62,9 +41,9 @@ export async function searchJooble(params: SearchParams): Promise<Job[]> {
     sourceName: 'Jooble',
     title: job.title ?? 'Job',
     company: job.company ?? 'Company',
-    location: job.location || (params.region === 'az' ? 'Azerbaijan' : ''),
+    location: job.location || location,
     remote: /remote|удал/i.test(`${job.location} ${job.type}`),
-    salary: annotateSalary(job.salary, joobleCurrency(params.region)),
+    salary: annotateSalary(job.salary, joobleCurrency(params.placeId, params.region)),
     employment: job.type,
     publishedAt: toPublishedAt(job.updated),
     url: job.link ?? 'https://jooble.org',

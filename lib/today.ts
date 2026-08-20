@@ -15,6 +15,7 @@ export type TodayAlert = {
   enabled: boolean;
   pendingNew: number;
   pendingNewIds?: string[];
+  pendingJobs?: Job[];
   query: string;
   region: RegionId;
   categories: CategoryId[];
@@ -91,8 +92,11 @@ export function collectNewJobs(input: {
   const enabled = input.alerts.filter((item) => item.enabled);
 
   for (const alert of enabled) {
+    const pendingMap = alert.pendingJobs?.length
+      ? new Map(alert.pendingJobs.map((job) => [job.id, job]))
+      : undefined;
     for (const id of alert.pendingNewIds ?? []) {
-      pushJob(out, seen, jobById(id, input.jobsById, cachedMap));
+      pushJob(out, seen, jobById(id, input.jobsById, cachedMap) ?? pendingMap?.get(id));
     }
   }
 

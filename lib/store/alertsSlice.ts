@@ -50,6 +50,7 @@ const alertsSlice = createSlice({
         createdAt: Date.now(),
         pendingNew: 0,
         pendingNewIds: [],
+        pendingJobs: [],
       };
       state.items = [next, ...state.items].slice(0, MAX_ALERTS);
     },
@@ -67,6 +68,7 @@ const alertsSlice = createSlice({
       item.lastCheckedAt = Date.now();
       item.pendingNew = 0;
       item.pendingNewIds = [];
+      item.pendingJobs = [];
       if (action.payload.notified) item.lastNotifiedAt = Date.now();
     },
     clearPendingNew(state, action: PayloadAction<string>) {
@@ -74,6 +76,7 @@ const alertsSlice = createSlice({
       if (!item) return;
       item.pendingNew = 0;
       item.pendingNewIds = [];
+      item.pendingJobs = [];
     },
     replaceAlerts(state, action: PayloadAction<SavedSearch[]>) {
       state.items = action.payload;

@@ -169,7 +169,7 @@ listener.startListening({
     const state = listenerApi.getState() as RootState;
     const key = makeAlertKey(state.filters);
     const alert = state.alerts.items.find((item) => item.enabled && makeAlertKey(item) === key);
-    if (alert?.pendingNew) listenerApi.dispatch(clearPendingNew(alert.id));
+    if (alert?.pendingNew || alert?.pendingNewIds?.length) listenerApi.dispatch(clearPendingNew(alert.id));
   },
 });
 

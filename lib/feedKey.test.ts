@@ -19,4 +19,9 @@ describe('makeFeedKey', () => {
     assert.notEqual(makeFeedKey('', 'cis', 'all'), makeFeedKey('', 'az', 'all'));
     assert.notEqual(makeFeedKey('', 'cis', 'it'), makeFeedKey('', 'cis', 'all'));
   });
+
+  it('различает город, пустой город совпадает с без места', () => {
+    assert.notEqual(makeFeedKey('', 'all', 'all', [], 'baku'), makeFeedKey('', 'all', 'all', [], 'moscow'));
+    assert.equal(makeFeedKey('', 'all', 'all', []), makeFeedKey('', 'all', 'all', [], ''));
+  });
 });

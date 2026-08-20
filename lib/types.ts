@@ -51,6 +51,7 @@ export type SearchParams = {
   region: RegionId;
   category: CategoryId;
   page: number;
+  placeId?: string;
   enabledSources?: string[];
   exhaustedSources?: string[];
   signal?: AbortSignal;

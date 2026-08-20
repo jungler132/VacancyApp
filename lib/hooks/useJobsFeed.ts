@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { apiCategory } from '@/lib/catalog';
-import { makeFeedKey } from '@/lib/feedKey';
+import { feedKeyOf, makeFeedKey } from '@/lib/feedKey';
 import {
   closeFilters,
   openFilters,
@@ -30,7 +30,7 @@ function launchFeed(
   dispatch: ReturnType<typeof useAppDispatch>,
   args: FetchFeedArgs,
 ) {
-  const key = makeFeedKey(args.query, args.region, args.category, args.enabledSources);
+  const key = feedKeyOf(args);
   if (args.mode === 'replace' && feedInFlight?.key === key) {
     feedLog('launch:reuse', { mode: args.mode });
     return;
@@ -59,6 +59,7 @@ export function useJobsQuery() {
   const sourcesReady = useAppSelector((state) => state.sources.ready);
   const filtersReady = useAppSelector((state) => state.filters.ready);
   const category = apiCategory(categories);
+  const placeId = useAppSelector((state) => state.filters.extra.placeId);
   const feedStatus = useAppSelector((state) => selectActiveFeed(state).status);
 
   useEffect(() => {
@@ -66,7 +67,7 @@ export function useJobsQuery() {
       feedLog('query:wait', { sourcesReady: Number(sourcesReady), filtersReady: Number(filtersReady) });
       return;
     }
-    const key = makeFeedKey(query, region, category, enabledSources);
+    const key = makeFeedKey(query, region, category, enabledSources, placeId);
     if (feedInFlight?.key === key) {
       feedLog('query:inflight', { status: feedStatus });
       return;
@@ -79,7 +80,7 @@ export function useJobsQuery() {
       feedLog('query:done', { status: feedStatus });
       return;
     }
-    feedLog('query:start', { status: feedStatus, region, category, query: query.trim() || '-' });
+    feedLog('query:start', { status: feedStatus, region, category, query: query.trim() || '-', place: placeId || '-' });
     launchFeed(dispatch, {
       query,
       region,
@@ -87,8 +88,9 @@ export function useJobsQuery() {
       enabledSources,
       page: 0,
       mode: 'replace',
+      placeId,
     });
-  }, [dispatch, query, region, category, enabledSources, sourcesReady, filtersReady, feedStatus]);
+  }, [dispatch, query, region, category, enabledSources, placeId, sourcesReady, filtersReady, feedStatus]);
 }
 
 export function useFilterSheet() {
@@ -125,6 +127,7 @@ export function useJobsFeed() {
   const visibleIds = useAppSelector(selectVisibleIds);
   const filtersActive = useAppSelector(selectFiltersActive);
   const category = apiCategory(categories);
+  const placeId = useAppSelector((state) => state.filters.extra.placeId);
 
   const ids = feed.ids;
   const status = feed.status;
@@ -146,8 +149,9 @@ export function useJobsFeed() {
       enabledSources,
       page: 0,
       mode: 'refresh',
+      placeId,
     });
-  }, [dispatch, query, region, category, enabledSources]);
+  }, [dispatch, query, region, category, enabledSources, placeId]);
 
   const loadMore = useCallback(() => {
     if (endLock.current || !hasMore || status !== 'ready') return;
@@ -159,10 +163,11 @@ export function useJobsFeed() {
       enabledSources,
       page: page + 1,
       mode: 'append',
+      placeId,
     })?.finally(() => {
       endLock.current = false;
     });
-  }, [dispatch, query, region, category, enabledSources, hasMore, page, status]);
+  }, [dispatch, query, region, category, enabledSources, placeId, hasMore, page, status]);
 
   const resetCache = useCallback(() => {
     dispatch(clearJobsCache());
@@ -173,8 +178,9 @@ export function useJobsFeed() {
       enabledSources,
       page: 0,
       mode: 'refresh',
+      placeId,
     });
-  }, [dispatch, query, region, category, enabledSources]);
+  }, [dispatch, query, region, category, enabledSources, placeId]);
 
   return {
     query,

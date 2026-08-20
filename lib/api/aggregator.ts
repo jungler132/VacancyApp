@@ -157,6 +157,7 @@ function searchDedupeKey(params: SearchParams, list: JobProvider[]): string {
     params.region,
     params.category,
     params.query.trim().toLowerCase(),
+    params.placeId ?? '',
     String(params.page),
     [...(params.enabledSources ?? [])].sort().join(','),
     [...(params.exhaustedSources ?? [])].sort().join(','),

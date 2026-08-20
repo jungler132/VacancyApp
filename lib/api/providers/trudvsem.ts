@@ -2,6 +2,7 @@ import type { Job, SearchParams } from '../../types';
 import { buildQuery } from '../../catalog';
 import { annotateSalary, excerptOf, formatSalary, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
+import { trudvsemPlace } from '../../placeQuery';
 
 type TrudVacancy = {
   vacancy?: {
@@ -27,8 +28,12 @@ type TrudResponse = {
 };
 
 export async function searchTrudvsem(params: SearchParams): Promise<Job[]> {
+  const place = trudvsemPlace(params.placeId);
+  if (place.kind === 'skip') return [];
+
   const text = buildQuery(params.query, params.category, 'ru');
-  const url = new URL('https://opendata.trudvsem.ru/api/v1/vacancies');
+  const path = place.kind === 'region' ? `/region/${place.code}` : '';
+  const url = new URL(`https://opendata.trudvsem.ru/api/v1/vacancies${path}`);
   if (text) url.searchParams.set('text', text);
   url.searchParams.set('offset', String(params.page));
   url.searchParams.set('limit', '20');

@@ -1,105 +1,35 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import {
+  ALERTS_KEY,
+  alertLabel,
+  makeAlertKey,
+  mergeAlertHits,
+  normalizeAlerts,
+  type SavedSearch,
+} from '@/lib/alertModel';
 import { enabledSourceIds, searchJobs } from '@/lib/api/aggregator';
 import { apiCategory } from '@/lib/catalog';
-import { DEFAULT_EXTRA_FILTERS, filterFeedIds, parseExtraFilters, type ExtraFilters } from '@/lib/filters';
-import { keyOf, t } from '@/lib/i18n';
-import { DEFAULT_LOCALE, type AppLocale } from '@/lib/i18n/locale';
-import { placeLabel } from '@/lib/places';
+import { filterFeedIds } from '@/lib/filters';
 import { notifyNewJobs } from '@/lib/notifications';
 import { readStoredLocale } from '@/lib/store/appearanceSlice';
 import { DISABLED_SOURCES_KEY } from '@/lib/store/sourcesSlice';
-import type { CategoryId, Job, RegionId } from '@/lib/types';
+import type { Job } from '@/lib/types';
 
-export const ALERTS_KEY = 'workly:saved-searches';
-export const MAX_ALERTS = 6;
-const MAX_SEEN = 250;
+export {
+  ALERTS_KEY,
+  MAX_ALERTS,
+  alertLabel,
+  makeAlertKey,
+  mergeAlertHits,
+  normalizeAlerts,
+  slimJob,
+  type SavedSearch,
+  type SearchSnapshot,
+} from '@/lib/alertModel';
+
 const CHECK_COOLDOWN_MS = 8 * 60 * 1000;
 const NOTIFY_COOLDOWN_MS = 40 * 60 * 1000;
-
-export type SavedSearch = {
-  id: string;
-  query: string;
-  region: RegionId;
-  categories: CategoryId[];
-  extra: ExtraFilters;
-  enabled: boolean;
-  lastSeenIds: string[];
-  lastCheckedAt: number;
-  lastNotifiedAt: number;
-  createdAt: number;
-  pendingNew: number;
-  pendingNewIds: string[];
-};
-
-export type SearchSnapshot = {
-  query: string;
-  region: RegionId;
-  categories: CategoryId[];
-  extra: ExtraFilters;
-};
-
-export function makeAlertKey(search: SearchSnapshot): string {
-  const extra = search.extra ?? DEFAULT_EXTRA_FILTERS;
-  return [
-    search.region,
-    [...search.categories].sort().join(','),
-    search.query.trim().toLowerCase(),
-    extra.format,
-    extra.employment,
-    extra.maxAgeDays,
-    extra.placeId || '',
-  ].join('|');
-}
-
-export function alertLabel(search: SearchSnapshot, locale: AppLocale = DEFAULT_LOCALE): string {
-  const extra = search.extra ?? DEFAULT_EXTRA_FILTERS;
-  const parts: string[] = [];
-  const q = search.query.trim();
-  if (q) parts.push(q);
-  parts.push(t(locale, keyOf('region', search.region)));
-  const cats = search.categories.filter((id) => id !== 'all');
-  if (cats.length) {
-    parts.push(cats.map((id) => t(locale, keyOf('category', id))).join(', '));
-  }
-  if (extra.maxAgeDays !== 90) {
-    parts.push(t(locale, keyOf('filters.age', extra.maxAgeDays)));
-  }
-  if (extra.format === 'remote') parts.push(t(locale, 'filters.format.remote'));
-  if (extra.format === 'office') parts.push(t(locale, 'filters.format.office'));
-  if (extra.placeId) parts.push(placeLabel(extra.placeId, locale) || extra.placeId);
-  return parts.slice(0, 4).join(' · ') || t(locale, 'alerts.all');
-}
-
-export function normalizeAlerts(raw: unknown): SavedSearch[] {
-  if (!Array.isArray(raw)) return [];
-  const out: SavedSearch[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue;
-    const row = item as Partial<SavedSearch>;
-    if (typeof row.id !== 'string' || typeof row.region !== 'string') continue;
-    out.push({
-      id: row.id,
-      query: typeof row.query === 'string' ? row.query : '',
-      region: row.region as RegionId,
-      categories: Array.isArray(row.categories) ? (row.categories as CategoryId[]) : ['all'],
-      extra: parseExtraFilters(row.extra),
-      enabled: row.enabled !== false,
-      lastSeenIds: Array.isArray(row.lastSeenIds) ? row.lastSeenIds.filter((id) => typeof id === 'string') : [],
-      lastCheckedAt: typeof row.lastCheckedAt === 'number' ? row.lastCheckedAt : 0,
-      lastNotifiedAt: typeof row.lastNotifiedAt === 'number' ? row.lastNotifiedAt : 0,
-      createdAt: typeof row.createdAt === 'number' ? row.createdAt : Date.now(),
-      pendingNew:
-        typeof row.pendingNew === 'number' && Number.isFinite(row.pendingNew)
-          ? Math.min(999, Math.max(0, Math.floor(row.pendingNew)))
-          : 0,
-      pendingNewIds: Array.isArray(row.pendingNewIds)
-        ? row.pendingNewIds.filter((id): id is string => typeof id === 'string').slice(0, 80)
-        : [],
-    });
-  }
-  return out.slice(0, MAX_ALERTS);
-}
 
 export async function loadAlerts(): Promise<SavedSearch[]> {
   const raw = await AsyncStorage.getItem(ALERTS_KEY);
@@ -115,38 +45,40 @@ export async function persistAlerts(items: SavedSearch[]): Promise<void> {
   await AsyncStorage.setItem(ALERTS_KEY, JSON.stringify(items)).catch(() => undefined);
 }
 
-function trimSeen(ids: string[]): string[] {
-  return ids.length > MAX_SEEN ? ids.slice(0, MAX_SEEN) : ids;
-}
-
-async function loadDisabledSources(): Promise<string[]> {
-  const raw = await AsyncStorage.getItem(DISABLED_SOURCES_KEY);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-export async function checkSavedSearches(options?: {
+export type CheckSavedSearchesOptions = {
   notify?: boolean;
   skipKey?: string;
   force?: boolean;
-}): Promise<SavedSearch[]> {
+  alerts?: SavedSearch[];
+  persist?: boolean;
+};
+
+export type CheckSavedSearchesResult = {
+  alerts: SavedSearch[];
+  jobs: Job[];
+  changed: boolean;
+};
+
+export async function checkSavedSearches(
+  options?: CheckSavedSearchesOptions,
+): Promise<CheckSavedSearchesResult> {
   const notify = options?.notify !== false;
-  const alerts = await loadAlerts();
+  const persist = options?.persist !== false;
+  const alerts = options?.alerts ? normalizeAlerts(options.alerts) : await loadAlerts();
   const enabled = alerts.filter((item) => item.enabled);
-  if (!enabled.length) return alerts;
+  if (!enabled.length) return { alerts, jobs: [], changed: false };
 
   const sources = enabledSourceIds(await loadDisabledSources());
   const locale = await readStoredLocale();
   const now = Date.now();
   let changed = false;
+  const found: Job[] = [];
 
   for (const alert of enabled) {
-    if (!options?.force && alert.lastCheckedAt && now - alert.lastCheckedAt < CHECK_COOLDOWN_MS) continue;
+    if (!options?.force && alert.lastCheckedAt && now - alert.lastCheckedAt < CHECK_COOLDOWN_MS) {
+      found.push(...(alert.pendingJobs ?? []));
+      continue;
+    }
     try {
       const result = await searchJobs({
         query: alert.query,
@@ -154,6 +86,7 @@ export async function checkSavedSearches(options?: {
         category: apiCategory(alert.categories),
         enabledSources: sources,
         page: 0,
+        placeId: alert.extra?.placeId,
       });
       const byId: Record<string, Job> = {};
       for (const job of result.jobs) byId[job.id] = job;
@@ -163,22 +96,15 @@ export async function checkSavedSearches(options?: {
         alert.categories,
         alert.extra,
       );
-      alert.lastCheckedAt = now;
+      const { fresh, seeded } = mergeAlertHits(
+        alert,
+        ids,
+        ids.map((id) => byId[id]).filter((job): job is Job => Boolean(job)),
+        now,
+      );
       changed = true;
-
-      if (!alert.lastSeenIds.length) {
-        alert.lastSeenIds = trimSeen(ids);
-        continue;
-      }
-
-      const seen = new Set(alert.lastSeenIds);
-      const fresh = ids.filter((id) => !seen.has(id));
-      alert.lastSeenIds = trimSeen([...fresh, ...alert.lastSeenIds]);
-      if (fresh.length) {
-        alert.pendingNew = Math.min(999, (alert.pendingNew ?? 0) + fresh.length);
-        const prev = Array.isArray(alert.pendingNewIds) ? alert.pendingNewIds : [];
-        alert.pendingNewIds = [...fresh, ...prev.filter((id) => !fresh.includes(id))].slice(0, 80);
-      }
+      found.push(...(alert.pendingJobs ?? []), ...fresh);
+      if (seeded) continue;
 
       const skip = options?.skipKey && options.skipKey === makeAlertKey(alert);
       const cooled = now - alert.lastNotifiedAt < NOTIFY_COOLDOWN_MS;
@@ -192,6 +118,17 @@ export async function checkSavedSearches(options?: {
     }
   }
 
-  if (changed) await persistAlerts(alerts);
-  return alerts;
+  if (persist && changed) await persistAlerts(alerts);
+  return { alerts, jobs: found, changed };
+}
+
+async function loadDisabledSources(): Promise<string[]> {
+  const raw = await AsyncStorage.getItem(DISABLED_SOURCES_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
 }

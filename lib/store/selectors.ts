@@ -39,8 +39,10 @@ export const selectFeedKey = createSelector(
     (state: RootState) => state.filters.region,
     (state: RootState) => state.filters.categories,
     selectEnabledSources,
+    (state: RootState) => state.filters.extra.placeId,
   ],
-  (query, region, categories, sources) => makeFeedKey(query, region, apiCategory(categories), sources),
+  (query, region, categories, sources, placeId) =>
+    makeFeedKey(query, region, apiCategory(categories), sources, placeId),
 );
 
 export const selectActiveFeed = createSelector(

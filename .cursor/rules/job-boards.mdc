@@ -1,0 +1,39 @@
+---
+description: Как Workly ходит в площадки вакансий — волны, фильтры, ключи, HH
+globs: lib/api/**/*.ts,lib/placeQuery.ts,lib/http.ts,lib/feedKey.ts,lib/alerts.ts,lib/alertModel.ts,lib/hooks/useJobsFeed.ts
+alwaysApply: false
+---
+
+# Запросы к площадкам
+
+Телефон бьёт в чужие API сам (`lib/http.ts` → `fetchJson`). Это не Supabase. Таймаут 12 с, UA `WorklyJobs/1.0`. Не скрейпить сайты и не обходить 403.
+
+Поток: фильтры → `fetchFeed` → `searchJobs` → провайдер. Город: `placeId` в `SearchParams` и в `makeFeedKey` (`v7|...|placeId`). Ключ расширять только вместе с реальным параметром API.
+
+`searchJobs`: волна 1 — до 4 быстрых; волна 2 — дампы concurrency 2. In-flight общий с алертами. Refresh: `bypassCache`. Abort на unmount запрещён — только смена ключа / refresh.
+
+Клиентский `jobMatchesExtra` остаётся даже если API уже сузил выдачу.
+
+## Живые (параметры в URL/body)
+
+| id | Запрос | Город / место | Ключ |
+|---|---|---|---|
+| `hh` / `hhaz` | GET `api.hh.ru/vacancies` | area id. **Не трогать**, пока нет OAuth: анонимный поиск → 403 | — |
+| `jooble` | POST `jooble.org/api/{key}` | `location` из `joobleLocation` (Baku, Moscow, Azerbaijan) | `EXPO_PUBLIC_JOOBLE_KEY` |
+| `adzuna` | GET `api.adzuna.com/.../jobs/{cc}/search` | страна + `where`. Нет RU/AZ — `adzunaTarget` = null, не звать | Adzuna app id/key |
+| `trudvsem` | GET `opendata.trudvsem.ru/.../vacancies[/region/{код}]` | только РФ; иначе skip | — |
+| `remotive` / `jobicy` / `himalayas` / `muse` | GET, query/tag/country | регион грубо; город на клиенте | — |
+| `usajobs` | GET `data.usajobs.gov` | запад / all / remote | KEY + EMAIL |
+
+Маппинг места: `lib/placeQuery.ts`, не копировать строки в провайдер.
+
+## Дампы (весь JSON, режем у себя)
+
+`remoteok`, `birjob`, `workingnomads`, `arbeitnow` — TTL 8 мин, `bypassCache` на refresh. Не пихать `placeId` в URL: его там нет. Не ставить в волну 1.
+
+## Нельзя
+
+- Передавать город во все 14 API «для единообразия».
+- Менять `makeFeedKey` без изменения запроса.
+- Парсить HH / чужие HTML.
+- Класть секреты в git; `EXPO_PUBLIC_*` попадают в APK.

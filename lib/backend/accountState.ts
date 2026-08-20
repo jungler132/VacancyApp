@@ -1,6 +1,6 @@
 import { DEFAULT_FONT_SIZE, parseFontSize, type FontSizeId } from '@/lib/fontScale';
 import { DEFAULT_LOCALE, parseLocale, type AppLocale } from '@/lib/i18n/locale';
-import { MAX_ALERTS, type SavedSearch } from '@/lib/alerts';
+import { normalizeAlerts, type SavedSearch } from '@/lib/alertModel';
 import { MAX_PIPELINE } from '@/lib/limits';
 import { DEFAULT_THEME_PREF, parseThemePref, type ThemePreference } from '@/lib/theme';
 import { parsePersistedFilters, type PersistedFilters } from '@/lib/store/filtersSlice';
@@ -62,7 +62,7 @@ export function collectAccountState(state: AccountStateInput): AccountStateBlob 
     savedCatalog: parseSavedCatalog(state.savedCatalog).slice(0, 80),
     savedServices: parseSavedServices(state.savedServices).slice(0, MAX_SAVED_SERVICES),
     filters: parsePersistedFilters(state.filters),
-    alerts: (Array.isArray(state.alerts) ? state.alerts : []).slice(0, MAX_ALERTS),
+    alerts: normalizeAlerts(state.alerts),
     sources: state.sources.disabledIds.filter((id) => typeof id === 'string' && id).slice(0, 80),
     visits: parseVisits(state.visits.items).slice(0, VISITS_LIMIT),
   };
@@ -83,7 +83,7 @@ export function parseAccountState(raw: unknown): AccountStateBlob {
     savedCatalog: parseSavedCatalog(row.savedCatalog),
     savedServices: parseSavedServices(row.savedServices),
     filters: parsePersistedFilters(row.filters),
-    alerts: Array.isArray(row.alerts) ? row.alerts.slice(0, MAX_ALERTS) : [],
+    alerts: normalizeAlerts(row.alerts),
     sources: Array.isArray(row.sources) ? row.sources.filter((id): id is string => typeof id === 'string') : [],
     visits: parseVisits(row.visits),
   };

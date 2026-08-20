@@ -325,4 +325,21 @@ describe('searchJobs', () => {
     assert.equal(calls, 1);
     assert.equal(result.jobs[0]?.id, '1');
   });
+
+  it('поиск с другим городом не шарит in-flight', async () => {
+    const seen: Array<string | undefined> = [];
+    const providers = [
+      provider('a', async (search) => {
+        seen.push(search.placeId);
+        return [job({ id: search.placeId ?? 'none', title: search.placeId ?? 'none' })];
+      }),
+    ];
+    const [baku, moscow] = await Promise.all([
+      searchJobs(params({ enabledSources: ['a'], placeId: 'baku' }), providers),
+      searchJobs(params({ enabledSources: ['a'], placeId: 'moscow' }), providers),
+    ]);
+    assert.deepEqual(seen.sort(), ['baku', 'moscow']);
+    assert.equal(baku.jobs[0]?.id, 'baku');
+    assert.equal(moscow.jobs[0]?.id, 'moscow');
+  });
 });
