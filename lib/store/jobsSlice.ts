@@ -1,9 +1,11 @@
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createAction, createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { searchJobs } from '@/lib/api/aggregator';
 import { fetchHeadHunterDetails, hhVacancyId, isHhJobId } from '@/lib/api/providers/hh';
 import { isAbortError } from '@/lib/api/errors';
+import { feedLog } from '@/lib/feedLog';
 import { makeFeedKey } from '@/lib/feedKey';
+import { compareJobsByDate } from '@/lib/freshness';
 import type { CategoryId, Job, RegionId, SourceError } from '@/lib/types';
 
 export { makeFeedKey } from '@/lib/feedKey';
@@ -21,11 +23,33 @@ export type FeedCache = {
   errors: SourceError[];
   fetchedAt: number;
   status: FeedStatus;
+  requestId?: string;
+  replacePending?: boolean;
+};
+
+export type FetchFeedArgs = {
+  query: string;
+  region: RegionId;
+  category: CategoryId;
+  enabledSources: string[];
+  page: number;
+  mode: 'replace' | 'append' | 'refresh';
+};
+
+export type FeedBatchPayload = {
+  key: string;
+  requestId: string;
+  mode: FetchFeedArgs['mode'];
+  jobs: Job[];
+  error?: SourceError;
+  exhausted?: boolean;
+  pageFull?: boolean;
+  sourceId?: string;
 };
 
 export function shouldFetchFeed(
   feed: FeedCache | undefined,
-  mode: 'replace' | 'append' | 'refresh',
+  mode: FetchFeedArgs['mode'],
   now = Date.now(),
 ): boolean {
   if (!feed) return true;
@@ -115,36 +139,72 @@ function mergeExhausted(prev: string[] | undefined, next: string[]): string[] {
   return out;
 }
 
+function sortFeedIds(state: JobsState, feed: FeedCache) {
+  feed.ids.sort((a, b) => {
+    const left = state.byId[a];
+    const right = state.byId[b];
+    if (!left || !right) return 0;
+    return compareJobsByDate(left, right);
+  });
+}
+
+export const ingestFeedBatch = createAction<FeedBatchPayload>('jobs/ingestFeedBatch');
+
 export const fetchFeed = createAsyncThunk(
   'jobs/fetchFeed',
-  async (
-    args: {
-      query: string;
-      region: RegionId;
-      category: CategoryId;
-      enabledSources: string[];
-      page: number;
-      mode: 'replace' | 'append' | 'refresh';
-    },
-    { signal, getState },
-  ) => {
+  async (args: FetchFeedArgs, { signal, getState, dispatch, requestId }) => {
     const jobsState = (getState() as { jobs: JobsState }).jobs;
     const key = makeFeedKey(args.query, args.region, args.category, args.enabledSources);
-    const exhausted = args.mode === 'append' ? jobsState.feeds[key]?.exhaustedSources : undefined;
-    const result = await searchJobs({
-      query: args.query,
+    feedLog('fetch', {
+      id: requestId.slice(0, 8),
+      mode: args.mode,
       region: args.region,
       category: args.category,
-      enabledSources: args.enabledSources,
+      query: args.query.trim() || '-',
       page: args.page,
-      exhaustedSources: exhausted,
-      signal,
+      sources: args.enabledSources,
     });
+    const exhausted = args.mode === 'append' ? jobsState.feeds[key]?.exhaustedSources : undefined;
+    const result = await searchJobs(
+      {
+        query: args.query,
+        region: args.region,
+        category: args.category,
+        enabledSources: args.enabledSources,
+        page: args.page,
+        exhaustedSources: exhausted,
+        signal,
+        bypassCache: args.mode === 'refresh',
+      },
+      undefined,
+      (batch) => {
+        if (signal.aborted) return;
+        dispatch(
+          ingestFeedBatch({
+            key,
+            requestId,
+            mode: args.mode,
+            jobs: batch.jobs,
+            error: batch.error,
+            exhausted: batch.exhausted,
+            pageFull: batch.pageFull,
+            sourceId: batch.sourceId,
+          }),
+        );
+      },
+    );
     if (signal.aborted) {
+      feedLog('fetch:abort', { id: requestId.slice(0, 8), mode: args.mode });
       const error = new Error('aborted');
       error.name = 'AbortError';
       throw error;
     }
+    feedLog('fetch:done', {
+      id: requestId.slice(0, 8),
+      mode: args.mode,
+      jobs: result.jobs.length,
+      errors: result.errors.length,
+    });
     return {
       ...result,
       key,
@@ -156,7 +216,16 @@ export const fetchFeed = createAsyncThunk(
     condition: (args, { getState }) => {
       const state = (getState() as { jobs: JobsState }).jobs;
       const key = makeFeedKey(args.query, args.region, args.category, args.enabledSources);
-      return shouldFetchFeed(state.feeds[key], args.mode);
+      const feed = state.feeds[key];
+      const ok = shouldFetchFeed(feed, args.mode);
+      if (!ok) {
+        feedLog('fetch:skip', {
+          mode: args.mode,
+          status: feed?.status ?? 'none',
+          ids: feed?.ids.length ?? 0,
+        });
+      }
+      return ok;
     },
   },
 );
@@ -200,6 +269,31 @@ const jobsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(ingestFeedBatch, (state, action) => {
+        const { key, requestId, mode, jobs, error, exhausted, pageFull, sourceId } = action.payload;
+        const feed = state.feeds[key];
+        if (!feed || feed.requestId !== requestId) return;
+        upsertJobs(state, jobs, mode === 'append');
+        if (error) {
+          if (!feed.errors.some((item) => item.sourceId === error.sourceId && item.message === error.message)) {
+            feed.errors.push(error);
+          }
+        }
+        if (exhausted && sourceId) feed.exhaustedSources = mergeExhausted(feed.exhaustedSources, [sourceId]);
+        if (pageFull) feed.hasMore = true;
+        if (!jobs.length) return;
+        if (feed.replacePending) {
+          feed.ids = [];
+          feed.replacePending = false;
+        }
+        const seen = new Set(feed.ids);
+        for (const job of jobs) {
+          if (seen.has(job.id)) continue;
+          seen.add(job.id);
+          feed.ids.push(job.id);
+        }
+        sortFeedIds(state, feed);
+      })
       .addCase(fetchFeed.pending, (state, action) => {
         const { query, region, category, enabledSources, mode } = action.meta.arg;
         const key = makeFeedKey(query, region, category, enabledSources);
@@ -210,17 +304,20 @@ const jobsSlice = createSlice({
           page: current?.page ?? 0,
           hasMore: current?.hasMore ?? true,
           exhaustedSources: mode === 'append' ? (current?.exhaustedSources ?? []) : [],
-          errors: current?.errors ?? [],
+          errors: mode === 'append' ? (current?.errors ?? []) : [],
           fetchedAt: current?.fetchedAt ?? 0,
           status,
+          requestId: action.meta.requestId,
+          replacePending: mode !== 'append',
         };
         touchLru(state, key);
       })
       .addCase(fetchFeed.fulfilled, (state, action) => {
         const { key, jobs, errors, hasMore, exhaustedSources, page, mode } = action.payload;
-        upsertJobs(state, jobs, mode === 'append');
         const current = state.feeds[key];
-        const prevIds = mode === 'append' ? (current?.ids ?? []) : [];
+        if (!current || current.requestId !== action.meta.requestId) return;
+        upsertJobs(state, jobs, mode === 'append');
+        const prevIds = mode === 'append' ? (current.ids ?? []) : [];
         const seen = new Set(prevIds);
         const ids = [...prevIds];
         for (const job of jobs) {
@@ -234,10 +331,12 @@ const jobsSlice = createSlice({
           page,
           hasMore: mode === 'append' && added === 0 ? false : hasMore,
           exhaustedSources:
-            mode === 'append' ? mergeExhausted(current?.exhaustedSources, exhaustedSources) : exhaustedSources,
+            mode === 'append' ? mergeExhausted(current.exhaustedSources, exhaustedSources) : exhaustedSources,
           errors,
           fetchedAt: Date.now(),
           status: ids.length === 0 && errors.length > 0 ? 'error' : 'ready',
+          requestId: action.meta.requestId,
+          replacePending: false,
         };
         touchLru(state, key);
       })
@@ -245,9 +344,10 @@ const jobsSlice = createSlice({
         const { query, region, category, enabledSources } = action.meta.arg;
         const key = makeFeedKey(query, region, category, enabledSources);
         const current = state.feeds[key];
-        if (!current) return;
+        if (!current || current.requestId !== action.meta.requestId) return;
         if (isAbortError(action.error)) {
           current.status = current.ids.length ? 'ready' : 'idle';
+          current.replacePending = false;
           return;
         }
         current.errors = [
@@ -258,6 +358,7 @@ const jobsSlice = createSlice({
           },
         ];
         current.status = current.ids.length ? 'ready' : 'error';
+        current.replacePending = false;
       })
       .addCase(hydrateJob.fulfilled, (state, action) => {
         if (!action.payload) return;

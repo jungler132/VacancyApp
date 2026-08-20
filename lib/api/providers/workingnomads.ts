@@ -19,6 +19,7 @@ export async function searchWorkingNomads(params: SearchParams): Promise<Job[]> 
   const rows = await fetchJson<NomadJob[]>('https://www.workingnomads.com/api/exposed_jobs/', {
     signal: params.signal,
     cacheTtlMs: DUMP_CACHE_MS,
+    bypassCache: params.bypassCache,
   });
   return (Array.isArray(rows) ? rows : [])
     .filter((job) => {

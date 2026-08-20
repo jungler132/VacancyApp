@@ -45,6 +45,32 @@ describe('fetchJson', () => {
     }
   });
 
+  it('refresh обходит дамп-кэш и пишет свежий ответ', async () => {
+    const original = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return new Response(JSON.stringify({ n: calls }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as typeof fetch;
+    try {
+      const cached = await fetchJson<{ n: number }>('https://example.com/bypass', { cacheTtlMs: DUMP_CACHE_MS });
+      const fresh = await fetchJson<{ n: number }>('https://example.com/bypass', {
+        cacheTtlMs: DUMP_CACHE_MS,
+        bypassCache: true,
+      });
+      const after = await fetchJson<{ n: number }>('https://example.com/bypass', { cacheTtlMs: DUMP_CACHE_MS });
+      assert.equal(cached.n, 1);
+      assert.equal(fresh.n, 2);
+      assert.equal(after.n, 2);
+      assert.equal(calls, 2);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
   it('abort не кладёт дамп в кэш', async () => {
     const original = globalThis.fetch;
     let calls = 0;

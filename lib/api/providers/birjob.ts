@@ -35,6 +35,7 @@ export async function searchBirJob(params: SearchParams): Promise<Job[]> {
   const data = await fetchJson<BirJobResponse>('https://www.birjob.com/api/llm/jobs', {
     signal: params.signal,
     cacheTtlMs: DUMP_CACHE_MS,
+    bypassCache: params.bypassCache,
   });
 
   return (data.jobs ?? [])

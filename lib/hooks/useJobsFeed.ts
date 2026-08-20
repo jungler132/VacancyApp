@@ -11,7 +11,8 @@ import {
   setRegion,
   toggleFilterCategory,
 } from '@/lib/store/filtersSlice';
-import { CACHE_TTL_MS, clearJobsCache, dismissFeedErrors, fetchFeed } from '@/lib/store/jobsSlice';
+import { CACHE_TTL_MS, clearJobsCache, dismissFeedErrors, fetchFeed, type FetchFeedArgs } from '@/lib/store/jobsSlice';
+import { feedLog } from '@/lib/feedLog';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import {
   selectActiveFeed,
@@ -25,6 +26,30 @@ import type { CategoryId, RegionId } from '@/lib/types';
 
 let feedInFlight: { key: string; abort: () => void } | null = null;
 
+function launchFeed(
+  dispatch: ReturnType<typeof useAppDispatch>,
+  args: FetchFeedArgs,
+) {
+  const key = makeFeedKey(args.query, args.region, args.category, args.enabledSources);
+  if (args.mode === 'replace' && feedInFlight?.key === key) {
+    feedLog('launch:reuse', { mode: args.mode });
+    return;
+  }
+  if (args.mode !== 'append' && feedInFlight) {
+    feedLog('launch:abort-prev', { mode: args.mode });
+    feedInFlight.abort();
+    feedInFlight = null;
+  }
+  const action = dispatch(fetchFeed(args));
+  if (args.mode === 'append') return action;
+  const handle = { key, abort: () => action.abort() };
+  feedInFlight = handle;
+  void action.finally(() => {
+    if (feedInFlight === handle) feedInFlight = null;
+  });
+  return action;
+}
+
 export function useJobsQuery() {
   const dispatch = useAppDispatch();
   const query = useAppSelector((state) => state.filters.query);
@@ -37,25 +62,31 @@ export function useJobsQuery() {
   const feedStatus = useAppSelector((state) => selectActiveFeed(state).status);
 
   useEffect(() => {
-    if (!sourcesReady || !filtersReady) return;
+    if (!sourcesReady || !filtersReady) {
+      feedLog('query:wait', { sourcesReady: Number(sourcesReady), filtersReady: Number(filtersReady) });
+      return;
+    }
     const key = makeFeedKey(query, region, category, enabledSources);
-    if (feedInFlight?.key === key) return;
-    if (feedStatus === 'loading' || feedStatus === 'loadingMore' || feedStatus === 'refreshing') return;
-    if (feedStatus === 'ready' || feedStatus === 'error') return;
-    if (feedInFlight) feedInFlight.abort();
-    const action = dispatch(
-      fetchFeed({
-        query,
-        region,
-        category,
-        enabledSources,
-        page: 0,
-        mode: 'replace',
-      }),
-    );
-    feedInFlight = { key, abort: () => action.abort() };
-    void action.finally(() => {
-      if (feedInFlight?.key === key) feedInFlight = null;
+    if (feedInFlight?.key === key) {
+      feedLog('query:inflight', { status: feedStatus });
+      return;
+    }
+    if (feedStatus === 'loading' || feedStatus === 'loadingMore' || feedStatus === 'refreshing') {
+      feedLog('query:busy', { status: feedStatus });
+      return;
+    }
+    if (feedStatus === 'ready' || feedStatus === 'error') {
+      feedLog('query:done', { status: feedStatus });
+      return;
+    }
+    feedLog('query:start', { status: feedStatus, region, category, query: query.trim() || '-' });
+    launchFeed(dispatch, {
+      query,
+      region,
+      category,
+      enabledSources,
+      page: 0,
+      mode: 'replace',
     });
   }, [dispatch, query, region, category, enabledSources, sourcesReady, filtersReady, feedStatus]);
 }
@@ -100,54 +131,49 @@ export function useJobsFeed() {
   const hasMore = feed.hasMore;
   const page = feed.page;
   const loading = ids.length === 0 && (status === 'loading' || status === 'idle');
-  const waitingBoards = loading && visibleIds.length > 0;
+  const waitingBoards =
+    status === 'loading' || (status === 'idle' && ids.length === 0 && visibleIds.length > 0);
   const loadingMore = status === 'loadingMore';
   const refreshing = status === 'refreshing';
   const cacheAge = feed.fetchedAt ? Date.now() - feed.fetchedAt : 0;
   const fromCache = status === 'ready' && cacheAge > 1500 && cacheAge < CACHE_TTL_MS;
 
   const refresh = useCallback(() => {
-    dispatch(
-      fetchFeed({
-        query,
-        region,
-        category,
-        enabledSources,
-        page: 0,
-        mode: 'refresh',
-      }),
-    );
+    launchFeed(dispatch, {
+      query,
+      region,
+      category,
+      enabledSources,
+      page: 0,
+      mode: 'refresh',
+    });
   }, [dispatch, query, region, category, enabledSources]);
 
   const loadMore = useCallback(() => {
     if (endLock.current || !hasMore || status !== 'ready') return;
     endLock.current = true;
-    dispatch(
-      fetchFeed({
-        query,
-        region,
-        category,
-        enabledSources,
-        page: page + 1,
-        mode: 'append',
-      }),
-    ).finally(() => {
+    void launchFeed(dispatch, {
+      query,
+      region,
+      category,
+      enabledSources,
+      page: page + 1,
+      mode: 'append',
+    })?.finally(() => {
       endLock.current = false;
     });
   }, [dispatch, query, region, category, enabledSources, hasMore, page, status]);
 
   const resetCache = useCallback(() => {
     dispatch(clearJobsCache());
-    dispatch(
-      fetchFeed({
-        query,
-        region,
-        category,
-        enabledSources,
-        page: 0,
-        mode: 'refresh',
-      }),
-    );
+    launchFeed(dispatch, {
+      query,
+      region,
+      category,
+      enabledSources,
+      page: 0,
+      mode: 'refresh',
+    });
   }, [dispatch, query, region, category, enabledSources]);
 
   return {

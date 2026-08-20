@@ -54,6 +54,7 @@ export type SearchParams = {
   enabledSources?: string[];
   exhaustedSources?: string[];
   signal?: AbortSignal;
+  bypassCache?: boolean;
 };
 
 export type SourceError = {

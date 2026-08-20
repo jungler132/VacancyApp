@@ -21,6 +21,7 @@ export async function searchRemoteOK(params: SearchParams): Promise<Job[]> {
   const data = await fetchJson<RemoteOkJob[]>('https://remoteok.com/api', {
     signal: params.signal,
     cacheTtlMs: DUMP_CACHE_MS,
+    bypassCache: params.bypassCache,
   });
   const jobs = Array.isArray(data) ? data.slice(1) : [];
 

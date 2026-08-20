@@ -66,13 +66,13 @@ async function readJson<T>(
 
 export async function fetchJson<T>(
   url: string,
-  init: RequestInit & { timeoutMs?: number; cacheTtlMs?: number } = {},
+  init: RequestInit & { timeoutMs?: number; cacheTtlMs?: number; bypassCache?: boolean } = {},
 ): Promise<T> {
-  const { timeoutMs, headers, signal: externalSignal, cacheTtlMs = 0, ...rest } = init;
+  const { timeoutMs, headers, signal: externalSignal, cacheTtlMs = 0, bypassCache = false, ...rest } = init;
   const method = String(rest.method ?? 'GET').toUpperCase();
   const cacheable = cacheTtlMs > 0 && method === 'GET' && rest.body == null;
 
-  if (cacheable) {
+  if (cacheable && !bypassCache) {
     const hit = jsonCache.get(url);
     if (hit && Date.now() - hit.at < cacheTtlMs) {
       if (externalSignal?.aborted) throw abortError();

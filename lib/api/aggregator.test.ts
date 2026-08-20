@@ -232,4 +232,97 @@ describe('searchJobs', () => {
       ['1'],
     );
   });
+
+  it('отдаёт быстрый источник, не дожидаясь медленного', async () => {
+    const batches: string[] = [];
+    let releaseSlow: () => void = () => undefined;
+    const slowGate = new Promise<void>((resolve) => {
+      releaseSlow = resolve;
+    });
+    const done = searchJobs(
+      params({ enabledSources: ['slow', 'fast'] }),
+      [
+        provider('slow', async () => {
+          await slowGate;
+          return [job({ id: 's', title: 'Slow' })];
+        }),
+        provider('fast', async () => [job({ id: 'f', title: 'Fast' })]),
+      ],
+      (batch) => batches.push(batch.sourceId),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(batches, ['fast']);
+    releaseSlow();
+    await done;
+    assert.deepEqual(batches, ['fast', 'slow']);
+  });
+
+  it('дамп-источник стартует после быстрых', async () => {
+    const order: string[] = [];
+    await searchJobs(params({ region: 'all', enabledSources: ['hh', 'remoteok'] }), [
+      provider(
+        'hh',
+        async () => {
+          order.push('hh');
+          return [job({ id: 'h', title: 'HH job' })];
+        },
+        { regions: ['all', 'cis'] },
+      ),
+      {
+        id: 'remoteok',
+        regions: ['all'],
+        run: async () => {
+          order.push('remoteok');
+          return [];
+        },
+      },
+    ]);
+    assert.deepEqual(order, ['hh', 'remoteok']);
+  });
+
+  it('второй одинаковый поиск не дергает провайдеры повторно', async () => {
+    let calls = 0;
+    const providers = [
+      provider('a', async () => {
+        calls += 1;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return [job({ id: '1', title: 'Shared' })];
+      }),
+    ];
+    const [first, second] = await Promise.all([
+      searchJobs(params({ enabledSources: ['a'] }), providers),
+      searchJobs(params({ enabledSources: ['a'] }), providers),
+    ]);
+    assert.equal(calls, 1);
+    assert.equal(first.jobs[0]?.id, '1');
+    assert.equal(second.jobs[0]?.id, '1');
+  });
+
+  it('аборт одного подписчика не убивает чужой поиск', async () => {
+    let calls = 0;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const providers = [
+      provider('a', async (search) => {
+        calls += 1;
+        await gate;
+        if (search.signal?.aborted) {
+          throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+        }
+        return [job({ id: '1', title: 'Kept' })];
+      }),
+    ];
+    const controller = new AbortController();
+    const first = searchJobs(params({ enabledSources: ['a'], signal: controller.signal }), providers);
+    const second = searchJobs(params({ enabledSources: ['a'] }), providers);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    controller.abort();
+    release();
+    await assert.rejects(first, (error: unknown) => error instanceof Error && error.name === 'AbortError');
+    const result = await second;
+    assert.equal(calls, 1);
+    assert.equal(result.jobs[0]?.id, '1');
+  });
 });

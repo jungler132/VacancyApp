@@ -25,6 +25,7 @@ export async function searchArbeitnow(params: SearchParams): Promise<Job[]> {
   const data = await fetchJson<ArbeitnowResponse>(url.toString(), {
     signal: params.signal,
     cacheTtlMs: DUMP_CACHE_MS,
+    bypassCache: params.bypassCache,
   });
   return (data.data ?? [])
     .filter((job) => {
