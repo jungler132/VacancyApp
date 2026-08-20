@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
+import { AdBanner } from '@/components/AdBanner';
 import { EmptyState } from '@/components/EmptyState';
 import { JobCard } from '@/components/JobCard';
 import { JobSkeletonList } from '@/components/JobSkeleton';
@@ -19,6 +20,7 @@ export default function JobsScreen() {
   const endGuard = useRef(false);
   const feed = useJobsFeed();
   const tabBar = useTabBarLayout();
+  const [adH, setAdH] = useState(0);
 
   const renderItem = useCallback(({ item }: { item: string }) => <JobCard jobId={item} />, []);
   const keyExtractor = useCallback((item: string) => item, []);
@@ -50,7 +52,7 @@ export default function JobsScreen() {
         renderItem={renderItem}
         contentContainerStyle={[
           styles.list,
-          { paddingTop: headerH + 8, paddingBottom: tabBar.listPaddingBottom },
+          { paddingTop: headerH + 8, paddingBottom: tabBar.listPaddingBottom + adH },
         ]}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="none"
@@ -88,6 +90,11 @@ export default function JobsScreen() {
         }
       />
 
+      <View
+        style={[styles.adWrap, { bottom: tabBar.height }]}
+        onLayout={(event) => setAdH(event.nativeEvent.layout.height)}>
+        <AdBanner />
+      </View>
       <View style={styles.headerWrap} onLayout={(event) => onHeaderLayout(event.nativeEvent.layout.height)}>
         <JobsHeader
           query={feed.query}
@@ -106,5 +113,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
   list: { paddingHorizontal: 20 },
   headerWrap: { position: 'absolute', top: 0, left: 0, right: 0 },
+  adWrap: { position: 'absolute', left: 0, right: 0 },
   footer: { height: 48, alignItems: 'center', justifyContent: 'center' },
 });

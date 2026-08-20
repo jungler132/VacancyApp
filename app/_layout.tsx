@@ -16,8 +16,10 @@ import { PaperProvider } from 'react-native-paper';
 
 import { AlertsHost } from '@/components/AlertsHost';
 import { BackendHost } from '@/components/BackendHost';
-import { InterstitialHost } from '@/components/InterstitialOverlay';
+import { AdsHost } from '@/components/AdsHost';
+import { BillingHost } from '@/components/BillingHost';
 import { PaywallHost } from '@/components/PaywallSheet';
+import { OnboardingHost } from '@/components/OnboardingHost';
 import { SyncOverlayHost } from '@/components/SyncOverlay';
 import { FONT_SCALE, FontScaleContext, scaleFont, useFontScale } from '@/lib/fontScale';
 import { store } from '@/lib/store';
@@ -121,14 +123,17 @@ export default function RootLayout() {
     <Provider store={store}>
       <ThemeBridge>
         <AppShell>
-          <View style={{ flex: 1 }}>
-            <AlertsHost />
-            <BackendHost />
-            <InterstitialHost />
-            <PaywallHost />
-            <Navigation />
-            <SyncOverlayHost />
-          </View>
+          <BillingHost>
+            <View style={{ flex: 1 }}>
+              <AlertsHost />
+              <BackendHost />
+              <AdsHost />
+              <PaywallHost />
+              <Navigation />
+              <OnboardingHost />
+              <SyncOverlayHost />
+            </View>
+          </BillingHost>
         </AppShell>
       </ThemeBridge>
     </Provider>

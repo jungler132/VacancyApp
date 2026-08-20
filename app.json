@@ -82,12 +82,22 @@
             "enableBundleCompression": true,
             "useLegacyPackaging": true,
             "networkInspector": false,
-            "extraProguardRules": "-keep class com.swmansion.reanimated.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.horcrux.svg.** { *; }\n-keep class expo.modules.** { *; }\n-dontwarn expo.modules.**\n-dontwarn com.horcrux.svg.**"
+            "extraProguardRules": "-keep class com.swmansion.reanimated.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.horcrux.svg.** { *; }\n-keep class expo.modules.** { *; }\n-keep class com.google.android.gms.ads.** { *; }\n-keep class com.google.android.gms.internal.ads.** { *; }\n-keep class com.google.android.gms.internal.consent_sdk.** { *; }\n-dontwarn expo.modules.**\n-dontwarn com.horcrux.svg.**\n-dontwarn com.google.android.gms.**"
           }
         }
       ],
       "./plugins/withAndroidApkSize.js",
-      "expo-localization"
+      "./plugins/withPlayServicesAdsPin.js",
+      "expo-localization",
+      "expo-iap",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-6203993897795010~9453438867",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "delayAppMeasurementInit": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -4,6 +4,7 @@ import { useLockedNav } from '@/lib/hooks/useLockedNav';
 import { IconButton } from 'react-native-paper';
 
 import { AppHeader, FilterIconButton } from '@/components/AppHeader';
+import { CreateJobButton } from '@/components/CreateJobButton';
 import { SelectChip } from '@/components/FilterChips';
 import { SearchField } from '@/components/SearchField';
 import { TIER_FILTERS, type TierFilter } from '@/lib/tiers';
@@ -46,14 +47,7 @@ export const JobsHeader = memo(function JobsHeader({
       title={t('tab.jobs')}
       right={
         <View style={styles.actions}>
-          <IconButton
-            icon="plus"
-            size={20}
-            onPress={() => nav.push('/job/create')}
-            iconColor={colors.accent}
-            accessibilityLabel={t('jobs.createA11y')}
-            style={styles.icon}
-          />
+          <CreateJobButton onPress={() => nav.push('/job/create')} />
           <IconButton
             icon="refresh"
             size={20}

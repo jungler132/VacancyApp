@@ -9,8 +9,8 @@
     "ios": "node scripts/run-ios.cjs",
     "web": "expo start --web",
     "apk": "node scripts/build-apk.cjs",
-    "postinstall": "node scripts/patch-expo-modules-jsi.cjs && node scripts/patch-expo-cli-ios-launch.cjs",
-    "test": "tsx --test lib/http.test.ts lib/api/aggregator.test.ts lib/filters.test.ts lib/places.test.ts lib/placeQuery.test.ts lib/feedKey.test.ts lib/alerts.test.ts lib/telegramGroups.test.ts lib/format.test.ts lib/jobBody.test.ts lib/logo.test.ts lib/ads.test.ts lib/tiers.test.ts lib/store/savedCatalogSlice.test.ts lib/store/savedServicesSlice.test.ts lib/store/companySlice.test.ts lib/store/jobsSlice.test.ts lib/fontScale.test.ts lib/jobRoute.test.ts lib/services/catalog.test.ts lib/services/hours.test.ts lib/store/freelanceSlice.test.ts lib/i18n/i18n.test.ts lib/store/visitsSlice.test.ts lib/translate.test.ts lib/pipeline.test.ts lib/store/identitySlice.test.ts lib/navLock.test.ts lib/prefs.test.ts lib/limits.test.ts lib/backend/merge.test.ts lib/support.test.ts"
+    "postinstall": "node scripts/patch-expo-modules-jsi.cjs && node scripts/patch-expo-cli-ios-launch.cjs && node scripts/patch-admob-kotlin.cjs",
+    "test": "tsx --test lib/http.test.ts lib/api/aggregator.test.ts lib/filters.test.ts lib/places.test.ts lib/placeQuery.test.ts lib/feedKey.test.ts lib/alerts.test.ts lib/telegramGroups.test.ts lib/format.test.ts lib/jobBody.test.ts lib/logo.test.ts lib/ads.test.ts lib/billing.test.ts lib/tiers.test.ts lib/store/savedCatalogSlice.test.ts lib/store/savedServicesSlice.test.ts lib/store/companySlice.test.ts lib/store/jobsSlice.test.ts lib/fontScale.test.ts lib/jobRoute.test.ts lib/services/catalog.test.ts lib/services/hours.test.ts lib/store/freelanceSlice.test.ts lib/i18n/i18n.test.ts lib/i18n/locale.test.ts lib/store/visitsSlice.test.ts lib/translate.test.ts lib/pipeline.test.ts lib/store/identitySlice.test.ts lib/navLock.test.ts lib/prefs.test.ts lib/limits.test.ts lib/backend/merge.test.ts lib/support.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
@@ -25,6 +25,7 @@
     "expo-clipboard": "~57.0.1",
     "expo-constants": "~57.0.10",
     "expo-font": "~57.0.1",
+    "expo-iap": "^5.3.1",
     "expo-image-manipulator": "~57.0.11",
     "expo-image-picker": "~57.0.11",
     "expo-linear-gradient": "~57.0.1",
@@ -40,6 +41,7 @@
     "react-dom": "19.2.3",
     "react-native": "0.86.2",
     "react-native-gifted-charts": "^1.4.78",
+    "react-native-google-mobile-ads": "^16.5.0",
     "react-native-pager-view": "8.0.2",
     "react-native-paper": "^5.15.3",
     "react-native-reanimated": "4.5.1",

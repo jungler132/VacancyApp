@@ -36,6 +36,11 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Play upload keystore (never commit)
+keystore.properties
+*.keystore
+upload-keystore.jks
+
 # generated native folders
 /ios
 /android

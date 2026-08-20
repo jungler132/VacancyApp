@@ -21,7 +21,7 @@ export type AppearanceState = {
 
 const initialState: AppearanceState = {
   fontSize: DEFAULT_FONT_SIZE,
-  locale: DEFAULT_LOCALE,
+  locale: detectLocale(),
   theme: DEFAULT_THEME_PREF,
   ready: false,
 };

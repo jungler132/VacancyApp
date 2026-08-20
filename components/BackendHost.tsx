@@ -7,7 +7,6 @@ import { writeBoundEmail } from '@/lib/backend/boundEmail';
 import { clearLocalAccount, pullAccount, refreshPublic, resetPushCache, schedulePush } from '@/lib/backend/sync';
 import { getSupabase } from '@/lib/backend/supabase';
 import { hydrateAuth, setSession } from '@/lib/store/authSlice';
-import { clearPremiumStub } from '@/lib/store/premiumSlice';
 import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 
 export function BackendHost() {
@@ -77,7 +76,6 @@ export function BackendHost() {
         clearLocalAccount(dispatch);
         void writeBoundEmail(null);
       }
-      dispatch(clearPremiumStub());
       return;
     }
     pullAccount(dispatch, () => store.getState()).catch(() => undefined);

@@ -16,14 +16,9 @@ const initialState: PremiumState = {
 
 export const hydratePremium = createAsyncThunk('premium/hydrate', () => readPremium());
 
-export const purchasePremiumStub = createAsyncThunk('premium/purchaseStub', async () => {
+export const grantPremium = createAsyncThunk('premium/grant', async () => {
   await writePremium(true);
   return true;
-});
-
-export const clearPremiumStub = createAsyncThunk('premium/clearStub', async () => {
-  await writePremium(false);
-  return false;
 });
 
 const premiumSlice = createSlice({
@@ -46,12 +41,9 @@ const premiumSlice = createSlice({
       .addCase(hydratePremium.rejected, (state) => {
         state.ready = true;
       })
-      .addCase(purchasePremiumStub.fulfilled, (state) => {
+      .addCase(grantPremium.fulfilled, (state) => {
         state.isPremium = true;
         state.paywallOpen = false;
-      })
-      .addCase(clearPremiumStub.fulfilled, (state) => {
-        state.isPremium = false;
       });
   },
 });

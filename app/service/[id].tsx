@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 
@@ -10,6 +10,7 @@ import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { ServiceOfferCard } from '@/components/ServiceOfferCard';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { Text } from '@/components/AppText';
+import { requestInterstitial } from '@/lib/ads';
 import { keyOf } from '@/lib/i18n';
 import { useLocale, useT } from '@/lib/i18n/useT';
 import { formatPlaceLine } from '@/lib/places';
@@ -57,6 +58,11 @@ export default function ServicePublicScreen() {
     if (!master) return [];
     return master.mine ? master.offers : liveOffers(master.offers);
   }, [master]);
+
+  useEffect(() => {
+    if (!profileId || master?.mine) return;
+    requestInterstitial();
+  }, [master?.mine, profileId]);
 
   const call = useCallback(() => {
     const phone = master?.phone?.trim();

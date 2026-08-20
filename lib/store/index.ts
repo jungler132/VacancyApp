@@ -49,6 +49,7 @@ import appearanceReducer, {
   setLocale,
   setTheme,
 } from './appearanceSlice';
+import onboardingReducer, { hydrateOnboarding } from './onboardingSlice';
 import visitsReducer, { clearVisits, hydrateVisits, persistVisits, recordVisit, removeVisit, replaceVisits } from './visitsSlice';
 import freelanceReducer, {
   applyRemoteMedia,
@@ -323,6 +324,7 @@ export const store = configureStore({
     localJobs: localJobsReducer,
     premium: premiumReducer,
     appearance: appearanceReducer,
+    onboarding: onboardingReducer,
     freelance: freelanceReducer,
     servicesCatalog: servicesCatalogReducer,
     visits: visitsReducer,
@@ -349,6 +351,7 @@ store.dispatch(hydrateAlerts());
 store.dispatch(hydrateLocalJobs());
 store.dispatch(hydratePremium());
 store.dispatch(hydrateAppearance());
+store.dispatch(hydrateOnboarding());
 store.dispatch(hydrateFreelance());
 store.dispatch(hydrateVisits());
 store.dispatch(hydrateIdentity());

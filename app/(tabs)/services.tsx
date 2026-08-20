@@ -2,6 +2,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 import { useLockedNav } from '@/lib/hooks/useLockedNav';
 
+import { AdBanner } from '@/components/AdBanner';
 import { AppHeader, FilterIconButton } from '@/components/AppHeader';
 import { Text } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
@@ -44,6 +45,7 @@ export default function ServicesScreen() {
   const nav = useLockedNav();
   const styles = useThemedStyles(servicesStyles);
   const tabBar = useTabBarLayout();
+  const [adH, setAdH] = useState(0);
   const own = useAppSelector(selectOwnMaster);
   const masters = useAppSelector(selectCatalogMasters);
   const [query, setQuery] = useState('');
@@ -54,8 +56,8 @@ export default function ServicesScreen() {
   const visible = useMemo(() => filterServiceMasters(masters, query, kind, placeId), [masters, query, kind, placeId]);
   const filtersActive = kind !== 'all' || Boolean(placeId);
   const listPadding = useMemo(
-    () => [styles.content, { paddingBottom: tabBar.listPaddingBottom }],
-    [styles.content, tabBar.listPaddingBottom],
+    () => [styles.content, { paddingBottom: tabBar.listPaddingBottom + adH }],
+    [adH, styles.content, tabBar.listPaddingBottom],
   );
 
   const openSheet = useCallback(() => {
@@ -114,6 +116,11 @@ export default function ServicesScreen() {
         removeClippedSubviews
         showsVerticalScrollIndicator={false}
       />
+      <View
+        style={[styles.adWrap, { bottom: tabBar.height }]}
+        onLayout={(event) => setAdH(event.nativeEvent.layout.height)}>
+        <AdBanner />
+      </View>
       {sheetReady ? (
         <ServicesFiltersSheet
           open={sheetOpen}
@@ -149,5 +156,6 @@ function servicesStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
     createTitle: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 16 },
     createMeta: { color: colors.muted, fontFamily: fonts.medium, fontSize: 13, lineHeight: 18 },
     pressed: { opacity: 0.86 },
+    adWrap: { position: 'absolute' as const, left: 0, right: 0 },
   };
 }

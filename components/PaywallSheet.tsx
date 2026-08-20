@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/AppText';
 import { useT } from '@/lib/i18n/useT';
 import type { MsgId } from '@/lib/i18n';
-import { closePaywall, purchasePremiumStub } from '@/lib/store/premiumSlice';
+import { closePaywall } from '@/lib/store/premiumSlice';
+import { useBilling } from '@/lib/billingContext';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { fonts, radius, useThemedStyles, type ThemeColors } from '@/lib/theme';
 
@@ -15,13 +16,15 @@ const PERKS: MsgId[] = ['paywall.item1', 'paywall.item2', 'paywall.item3', 'payw
 export const PaywallHost = memo(function PaywallHost() {
   const dispatch = useAppDispatch();
   const open = useAppSelector((state) => state.premium.paywallOpen);
+  const billing = useBilling();
   return (
     <PaywallSheet
       open={open}
+      purchasing={billing.purchasing}
+      priceLabel={billing.priceLabel}
       onClose={() => dispatch(closePaywall())}
-      onPurchase={() => {
-        dispatch(purchasePremiumStub());
-      }}
+      onPurchase={billing.buy}
+      onRestore={billing.restore}
     />
   );
 });
@@ -29,13 +32,17 @@ export const PaywallHost = memo(function PaywallHost() {
 export const PaywallSheet = memo(function PaywallSheet({
   open,
   purchasing,
+  priceLabel,
   onClose,
   onPurchase,
+  onRestore,
 }: {
   open: boolean;
-  purchasing?: boolean;
+  purchasing: boolean;
+  priceLabel: string | null;
   onClose: () => void;
   onPurchase: () => void;
+  onRestore: () => void;
 }) {
   const t = useT();
   const insets = useSafeAreaInsets();
@@ -66,8 +73,13 @@ export const PaywallSheet = memo(function PaywallSheet({
           <Pressable
             onPress={purchasing ? undefined : onPurchase}
             disabled={purchasing}
-            style={({ pressed }) => [styles.buy, pressed && !purchasing && styles.pressed]}>
-            <Text style={styles.buyText}>{purchasing ? t('paywall.buying') : t('paywall.buy')}</Text>
+            style={({ pressed }) => [styles.buy, pressed && !purchasing && styles.pressed, purchasing && styles.buyOff]}>
+            <Text style={styles.buyText}>
+              {purchasing ? t('paywall.buying') : priceLabel ? t('paywall.buyPrice', { price: priceLabel }) : t('paywall.buy')}
+            </Text>
+          </Pressable>
+          <Pressable onPress={onRestore} style={styles.later}>
+            <Text style={styles.laterText}>{t('paywall.restore')}</Text>
           </Pressable>
           <Pressable onPress={close} style={styles.later}>
             <Text style={styles.laterText}>{t('paywall.later')}</Text>
@@ -121,6 +133,7 @@ function paywallSheetStyles(colors: ThemeColors) {
       alignItems: 'center' as const,
     },
     buyText: { color: '#ffffff', fontFamily: fonts.bold, fontSize: 16 },
+    buyOff: { opacity: 0.55 },
     later: { alignItems: 'center' as const, paddingVertical: 16 },
     laterText: { color: colors.onPrimaryContainer, fontFamily: fonts.semibold, fontSize: 15 },
     pressed: { opacity: 0.86 },

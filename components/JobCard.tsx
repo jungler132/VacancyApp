@@ -28,22 +28,35 @@ export const JobCard = memo(function JobCard({ jobId }: { jobId: string }) {
   const job = useAppSelector(selectJobById(jobId));
   const saved = useAppSelector(selectIsSaved(jobId));
   const applyStatus = useAppSelector((state) => state.saved.statuses[jobId]);
+  const nav = useLockedNav();
+  const dispatch = useAppDispatch();
   const styles = useThemedStyles(jobCardStyles);
+  const open = useCallback(() => {
+    if (!job) return;
+    dispatch(pinViewedJob(job));
+    nav.push(jobHref(job.id));
+  }, [dispatch, job, nav]);
+  const onToggle = useCallback(() => {
+    if (!job) return;
+    dispatch(toggleSaved(job));
+  }, [dispatch, job]);
   if (!job) return <View style={styles.placeholder} />;
-  return <JobCardView job={job} saved={saved} applyStatus={applyStatus} />;
+  return <JobCardView job={job} saved={saved} applyStatus={applyStatus} onOpen={open} onToggle={onToggle} />;
 });
 
-const JobCardView = memo(function JobCardView({
+export const JobCardView = memo(function JobCardView({
   job,
   saved,
   applyStatus,
+  onOpen,
+  onToggle,
 }: {
   job: Job;
   saved: boolean;
   applyStatus?: ApplyStatus;
+  onOpen?: () => void;
+  onToggle?: () => void;
 }) {
-  const nav = useLockedNav();
-  const dispatch = useAppDispatch();
   const t = useT();
   const locale = useLocale();
   const colors = useColors();
@@ -56,17 +69,8 @@ const JobCardView = memo(function JobCardView({
     formatPlace(job.location, job.remote) ||
     (job.remote ? t('fact.remote') : '');
 
-  const open = useCallback(() => {
-    dispatch(pinViewedJob(job));
-    nav.push(jobHref(job.id));
-  }, [dispatch, job, nav]);
-
-  const onToggle = useCallback(() => {
-    dispatch(toggleSaved(job));
-  }, [dispatch, job]);
-
   return (
-    <ToneCard tone={toneForTier(tier)} onPress={open} style={styles.card}>
+    <ToneCard tone={toneForTier(tier)} onPress={onOpen} style={styles.card}>
       <View style={styles.top}>
         <CompanyLogo uri={job.companyLogo || logoFromApplyUrl(job.url)} name={company} size={56} />
         <View style={styles.head}>
@@ -81,20 +85,24 @@ const JobCardView = memo(function JobCardView({
             {tier === 2 ? <Text style={styles.badgeWorkly}>{t('common.workly')}</Text> : null}
           </View>
         </View>
-        <Pressable
-          onPress={(event) => {
-            event.stopPropagation();
-            onToggle();
-          }}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={saved ? t('common.unsave') : t('common.save')}>
-          <MaterialDesignIcons
-            name={saved ? 'star' : 'star-outline'}
-            size={22}
-            color={saved ? colors.accent : colors.faint}
-          />
-        </Pressable>
+        {onToggle ? (
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              onToggle();
+            }}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={saved ? t('common.unsave') : t('common.save')}>
+            <MaterialDesignIcons
+              name={saved ? 'star' : 'star-outline'}
+              size={22}
+              color={saved ? colors.accent : colors.faint}
+            />
+          </Pressable>
+        ) : (
+          <MaterialDesignIcons name={saved ? 'star' : 'star-outline'} size={22} color={saved ? colors.accent : colors.faint} />
+        )}
       </View>
       {place || job.salary ? (
         <View style={styles.meta}>

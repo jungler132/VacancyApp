@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE, type AppLocale } from './locale';
 import { ru, type MsgId } from './ru';
 
 export type { AppLocale, MsgId };
-export { APP_LOCALES, DEFAULT_LOCALE, detectLocale, parseLocale } from './locale';
+export { APP_LOCALES, DEFAULT_LOCALE, detectLocale, localeFromDevice, parseLocale } from './locale';
 
 const TABLES: Record<AppLocale, Record<MsgId, string>> = { ru, en, az };
 

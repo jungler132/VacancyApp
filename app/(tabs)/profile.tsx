@@ -23,7 +23,7 @@ import { collectNewJobs } from '@/lib/today';
 import { applySearch } from '@/lib/store/filtersSlice';
 import { pinViewedJob, setTodayJobs } from '@/lib/store/jobsSlice';
 import { clearPendingNew } from '@/lib/store/alertsSlice';
-import { openPaywall, clearPremiumStub } from '@/lib/store/premiumSlice';
+import { openPaywall } from '@/lib/store/premiumSlice';
 import { clearVisits, recordVisit, removeVisit } from '@/lib/store/visitsSlice';
 import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 import { selectOwnMaster, selectTodayCard } from '@/lib/store/selectors';
@@ -235,7 +235,7 @@ export default function ProfileScreen() {
         />
         <PlanSwitch
           premium={isPremium}
-          onBasic={() => dispatch(clearPremiumStub())}
+          onBasic={() => undefined}
           onPremium={() => dispatch(openPaywall())}
         />
 

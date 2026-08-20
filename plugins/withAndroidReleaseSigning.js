@@ -1,6 +1,9 @@
 const { withAppBuildGradle } = require('expo/config-plugins');
 
-/** Release APK must be signed; use the debug keystore for local sideload builds. */
+/**
+ * Local sideload only: release builds use the debug keystore.
+ * Do not upload that AAB/APK to Google Play — create an upload keystore first.
+ */
 function withAndroidReleaseSigning(config) {
   return withAppBuildGradle(config, (mod) => {
     const src = mod.modResults.contents;

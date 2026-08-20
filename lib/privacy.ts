@@ -4,7 +4,7 @@ import { SUPPORT_EMAIL } from '@/lib/support';
 export const PRIVACY_HREF = '/privacy';
 export const PRIVACY_URL = 'https://jungler132.github.io/VacancyApp/';
 export const PRIVACY_EMAIL = SUPPORT_EMAIL;
-export const PRIVACY_UPDATED = '2026-08-19';
+export const PRIVACY_UPDATED = '2026-08-20';
 
 export type PrivacyBlock = {
   heading: string;
@@ -21,13 +21,13 @@ export type PrivacyDoc = {
 const DOCS: Record<AppLocale, PrivacyDoc> = {
   ru: {
     title: 'Политика конфиденциальности',
-        updated: 'Приложение Workly (Android, пакет com.workly.app). Дата вступления в силу: 19 августа 2026 г.',
+        updated: 'Приложение Workly (Android, пакет com.workly.app). Дата вступления в силу: 20 августа 2026 г.',
     blocks: [
       {
         heading: '1. Кто мы и о чём эта политика',
         paragraphs: [
           'Workly — мобильный агрегатор вакансий. Приложение показывает объявления с публичных площадок, даёт сохранить интересные вакансии, вести страницу услуг и настроить локальные оповещения о новых предложениях.',
-          'Гостевой режим работает без аккаунта, офлайн, на устройстве. По желанию можно войти по почте (код или ссылка) или анонимно и затем привязать почту — тогда страница услуг, фото и свои вакансии Workly синхронизируются с сервером. Workly может показывать рекламу через Google AdMob.',
+          'Гостевой режим работает без аккаунта, офлайн, на устройстве. По желанию можно войти по почте (код или ссылка) или анонимно и затем привязать почту — тогда страница услуг, фото и свои вакансии Workly синхронизируются с сервером. Бесплатная версия показывает рекламу Google AdMob.',
           `Контакт: ${PRIVACY_EMAIL}`,
         ],
       },
@@ -48,7 +48,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Без входа эти данные остаются на телефоне. После входа страница услуг, фото (в сжатом виде), свои вакансии Workly, канбан, фильтры, алерты, тема, язык и размер шрифта сохраняются в облаке провайдера бэкенда (Supabase) под вашим идентификатором. Публичный профиль услуг и свои вакансии могут видеть другие пользователи приложения.',
+          'Без входа эти данные остаются на телефоне. После входа страница услуг, фото (в сжатом виде), свои вакансии Workly, канбан, фильтры, алерты, тема, язык и размер шрифта сохраняются в облаке провайдера бэкенда (Supabase) под вашим идентификатором. Публичный профиль услуг и свои вакансии могут видеть другие пользователи приложения. Неподобающий контент можно пожаловаться из приложения — жалобы уходят в поддержку.',
         ],
       },
       {
@@ -93,7 +93,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '6. Реклама',
         paragraphs: [
-          'В приложении может показываться реклама Google AdMob (баннеры и другие форматы Google). Чтобы подобрать объявления, Google может использовать рекламный идентификатор устройства, данные о взаимодействии с рекламой и техническую информацию об устройстве. Это делает Google, а не сервер Workly.',
+          'В бесплатной версии показывается реклама Google AdMob: полноэкранная при открытии чужой вакансии или услуги (не каждый раз) и баннер в ленте вакансий и услуг. Чтобы подобрать объявления, Google может использовать рекламный идентификатор устройства, данные о взаимодействии с рекламой и техническую информацию об устройстве. Это делает Google, а не сервер Workly.',
           'Политика Google: https://policies.google.com/privacy и справка AdMob: https://support.google.com/admob/answer/6128543',
         ],
       },
@@ -123,13 +123,13 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
   },
   en: {
     title: 'Privacy policy',
-        updated: 'Workly app (Android, package com.workly.app). Effective date: 19 August 2026.',
+        updated: 'Workly app (Android, package com.workly.app). Effective date: 20 August 2026.',
     blocks: [
       {
         heading: '1. Who we are',
         paragraphs: [
           'Workly is a mobile job aggregator. It shows listings from public boards, lets you save jobs, keep a services page, and set local alerts for new listings.',
-          'Guest mode works without an account, offline, on the device. You can sign in with email (code or magic link) or anonymously and later link email — then your services page, photos and Workly jobs sync to the server. Workly may show ads through Google AdMob.',
+          'Guest mode works without an account, offline, on the device. You can sign in with email (code or magic link) or anonymously and later link email — then your services page, photos and Workly jobs sync to the server. The free version shows Google AdMob ads.',
           `Contact: ${PRIVACY_EMAIL}`,
         ],
       },
@@ -150,7 +150,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Without sign-in this data stays on the phone. After sign-in the services page, compressed photos, your Workly jobs, kanban, filters, alerts, theme, language and font size are stored in the backend provider (Supabase) under your user id. Your public services profile and Workly jobs may be visible to other users of the app.',
+          'Without sign-in this data stays on the phone. After sign-in the services page, compressed photos, your Workly jobs, kanban, filters, alerts, theme, language and font size are stored in the backend provider (Supabase) under your user id. Your public services profile and Workly jobs may be visible to other users of the app. Inappropriate content can be reported from the app — reports go to support.',
         ],
       },
       {
@@ -195,7 +195,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '6. Advertising',
         paragraphs: [
-          'The app may show Google AdMob ads. To serve ads, Google may use the advertising ID, ad interaction data and device information. That is done by Google, not by a Workly server.',
+          'The free version shows Google AdMob ads: a full-screen ad when you open someone else’s job or service (not every time) and a banner in the jobs and services feeds. To serve ads, Google may use the advertising ID, ad interaction data and device information. That is done by Google, not by a Workly server.',
           'Google policy: https://policies.google.com/privacy and AdMob help: https://support.google.com/admob/answer/6128543',
         ],
       },
@@ -223,13 +223,13 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
   },
   az: {
     title: 'Məxfilik siyasəti',
-        updated: 'Workly tətbiqi (Android, paket com.workly.app). Qüvvəyə minmə tarixi: 19 avqust 2026.',
+        updated: 'Workly tətbiqi (Android, paket com.workly.app). Qüvvəyə minmə tarixi: 20 avqust 2026.',
     blocks: [
       {
         heading: '1. Biz kimik',
         paragraphs: [
           'Workly vakansiyaların mobil aqreqatorudur. Tətbiq açıq saytlardan elan göstərir, vakansiyanı yadda saxlamağa, xidmət səhifəsi tutmağa və yeni elanlar üçün lokal bildiriş qurmağa imkan verir.',
-          'Qonaq rejim hesab olmadan, oflayn, cihazda işləyir. İstəsəniz e-poçt (kod və ya keçid) və ya anonim giriş, sonra e-poçt bağlamaq olar — o zaman xidmət səhifəsi, foto və Workly vakansiyaları serverə sinxron olur. Workly Google AdMob vasitəsilə reklam göstərə bilər.',
+          'Qonaq rejim hesab olmadan, oflayn, cihazda işləyir. İstəsəniz e-poçt (kod və ya keçid) və ya anonim giriş, sonra e-poçt bağlamaq olar — o zaman xidmət səhifəsi, foto və Workly vakansiyaları serverə sinxron olur. Pulsuz versiyada Google AdMob reklamı göstərilir.',
           `Əlaqə: ${PRIVACY_EMAIL}`,
         ],
       },
@@ -250,7 +250,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Giriş olmadan bu məlumat telefonda qalır. Girişdən sonra xidmət səhifəsi, sıxılmış fotolar, öz Workly vakansiyaları, kanban, filterlər, bildirişlər, tema, dil və şrift ölçüsü backend provayderində (Supabase) sizin identifikatorunuzla saxlanır. İctimai xidmət profili və Workly vakansiyaları tətbiqin digər istifadəçilərinə görünə bilər.',
+          'Giriş olmadan bu məlumat telefonda qalır. Girişdən sonra xidmət səhifəsi, sıxılmış fotolar, öz Workly vakansiyaları, kanban, filterlər, bildirişlər, tema, dil və şrift ölçüsü backend provayderində (Supabase) sizin identifikatorunuzla saxlanır. İctimai xidmət profili və Workly vakansiyaları tətbiqin digər istifadəçilərinə görünə bilər. Uyğunsuz məzmunu tətbiqdən şikayət etmək olar — şikayətlər dəstəyə gedir.',
         ],
       },
       {
@@ -295,7 +295,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '6. Reklam',
         paragraphs: [
-          'Tətbiqdə Google AdMob reklamı göstərilə bilər. Reklam seçmək üçün Google reklam identifikatoru, reklamla əlaqə və cihaz haqqında texniki məlumat istifadə edə bilər. Bunu Google edir, Workly serveri yox.',
+          'Pulsuz versiyada Google AdMob reklamı göstərilir: başqasının vakansiyasını və ya xidmətini açanda tam ekran (hər dəfə yox) və vakansiya/xidmət lentində banner. Reklam seçmək üçün Google reklam identifikatoru, reklamla əlaqə və cihaz haqqında texniki məlumat istifadə edə bilər. Bunu Google edir, Workly serveri yox.',
           'Google siyasəti: https://policies.google.com/privacy və AdMob köməyi: https://support.google.com/admob/answer/6128543',
         ],
       },
