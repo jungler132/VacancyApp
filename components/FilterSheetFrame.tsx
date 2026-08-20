@@ -1,11 +1,13 @@
 import { memo, useCallback, useEffect, type ReactNode } from 'react';
-import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { ChipWrap } from '@/components/ChipWrap';
+import { FormScroll } from '@/components/FormScroll';
 import { Text } from '@/components/AppText';
+import { useKeyboardInset } from '@/lib/keyboardInset';
 import { fonts, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 const SHEET_TRAVEL = Dimensions.get('window').height;
@@ -34,6 +36,9 @@ export const FilterSheetFrame = memo(function FilterSheetFrame({
   children: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardInset();
+  const windowH = Dimensions.get('window').height;
+  const sheetMax = open && keyboard ? Math.max(280, windowH - keyboard - 12) : undefined;
   const colors = useColors();
   const styles = useThemedStyles(filterSheetFrameStyles);
   const progress = useSharedValue(0);
@@ -56,7 +61,16 @@ export const FilterSheetFrame = memo(function FilterSheetFrame({
       <Pressable style={StyleSheet.absoluteFill} onPress={close}>
         <Animated.View style={[styles.backdrop, backdropStyle]} />
       </Pressable>
-      <Animated.View style={[styles.sheet, sheetStyle, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <Animated.View
+        style={[
+          styles.sheet,
+          sheetStyle,
+          {
+            paddingBottom: Math.max(insets.bottom, 16),
+            marginBottom: open ? keyboard : 0,
+            maxHeight: sheetMax ?? '82%',
+          },
+        ]}>
         <View style={styles.handle} />
         <View style={styles.head}>
           <Pressable onPress={close} hitSlop={8} style={styles.headLeft} accessibilityRole="button">
@@ -67,9 +81,13 @@ export const FilterSheetFrame = memo(function FilterSheetFrame({
             <Text style={[styles.reset, !dirty && styles.resetOff]}>{resetLabel}</Text>
           </Pressable>
         </View>
-        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <FormScroll
+          active={open}
+          padForKeyboard={false}
+          showsVerticalScrollIndicator={false}
+          style={{ flexGrow: 0, flexShrink: 1 }}>
           {children}
-        </ScrollView>
+        </FormScroll>
         {footer}
         <Pressable onPress={close} style={({ pressed }) => [styles.done, pressed && styles.pressed]}>
           <Text style={styles.doneText}>{doneLabel}</Text>

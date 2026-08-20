@@ -6,7 +6,7 @@ import { DEFAULT_LOCALE, type AppLocale } from '@/lib/i18n/locale';
 
 type NotificationsApi = typeof import('expo-notifications');
 
-const CHANNEL = 'workly-alerts';
+const CHANNEL = 'vakano-alerts';
 let handlerReady = false;
 let cached: NotificationsApi | null | undefined;
 

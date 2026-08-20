@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
@@ -13,6 +13,7 @@ import { SelectChip } from '@/components/FilterChips';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { PremiumBadge } from '@/components/PremiumBadge';
 import { requestInterstitial } from '@/lib/ads';
+import { showAppNotice } from '@/lib/appNotice';
 import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
 import { displayName, formatDate, formatPlace, htmlToText, joinMeta, jobFacts } from '@/lib/format';
 import { Text as AppText } from '@/components/AppText';
@@ -29,7 +30,7 @@ import { removeLocalJob, setLocalJobArchived } from '@/lib/store/localJobsSlice'
 import { matchRouteJobId, parseJobIdParam } from '@/lib/jobRoute';
 import { selectIsSaved, selectJobById, selectViewedJob } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
-import { isLocalJob, jobTier } from '@/lib/tiers';
+import { isAppJobId, isLocalJob, jobTier } from '@/lib/tiers';
 import { ToneCard } from '@/components/ToneCard';
 import { inferPlaceId, placeLabel } from '@/lib/places';
 import { fonts, radius, toneForTier, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
@@ -57,7 +58,7 @@ export default function JobDetailsScreen() {
   const limits = useLimits();
 
   useEffect(() => {
-    if (!decoded || decoded.startsWith('workly:')) return;
+    if (!decoded || isAppJobId(decoded)) return;
     requestInterstitial();
   }, [decoded]);
 
@@ -71,7 +72,7 @@ export default function JobDetailsScreen() {
   const open = useCallback(() => {
     if (!job) return;
     if (!applyStatus && pipelineCount >= limits.pipeline) {
-      Alert.alert(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
+      showAppNotice(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
     } else {
       dispatch(setApplyStatus({ job, status: 'applied' }));
     }
@@ -106,7 +107,7 @@ export default function JobDetailsScreen() {
         return;
       }
       if (!applyStatus && pipelineCount >= limits.pipeline) {
-        Alert.alert(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
+        showAppNotice(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
         return;
       }
       dispatch(setApplyStatus({ job, status: next }));
@@ -212,7 +213,7 @@ export default function JobDetailsScreen() {
   const company = showTranslated && translated ? translated.company : displayName(job.company);
   const text = showTranslated && translated ? translated.body : body;
   const premium = jobTier(job) === 1 && !ownJob?.archived;
-  const workly = jobTier(job) === 2 && !ownJob?.archived;
+  const appJob = jobTier(job) === 2 && !ownJob?.archived;
   const cardTone = ownJob?.archived ? 'default' : toneForTier(jobTier(job));
 
   return (
@@ -234,11 +235,11 @@ export default function JobDetailsScreen() {
         <ChipWrap center style={{ marginBottom: 16 }}>
           {ownJob?.archived ? <AppChip label={t('common.archived')} selected /> : null}
           {job.salary ? <AppChip label={job.salary} selected /> : null}
-          {meta ? <AppChip label={meta} /> : null}
+          {meta ? <AppChip label={meta} quiet /> : null}
           {facts.map((fact) => (
-            <AppChip key={fact.id} label={tokenLabel(locale, fact.value)} />
+            <AppChip key={fact.id} label={tokenLabel(locale, fact.value)} quiet />
           ))}
-          <AppChip label={premium ? t('common.premium') : workly ? t('common.workly') : job.sourceName} selected />
+          <AppChip label={premium ? t('common.premium') : appJob ? t('common.app') : job.sourceName} selected />
         </ChipWrap>
 
         {job.contact ? (
@@ -250,7 +251,7 @@ export default function JobDetailsScreen() {
         <ToneCard tone={cardTone} style={styles.companyCard}>
           <Text variant="titleSmall">{company}</Text>
           <Text variant="bodySmall" style={styles.companyNote}>
-            {premium ? t('common.premium') : workly ? t('common.workly') : job.sourceName}
+            {premium ? t('common.premium') : appJob ? t('common.app') : job.sourceName}
           </Text>
         </ToneCard>
 

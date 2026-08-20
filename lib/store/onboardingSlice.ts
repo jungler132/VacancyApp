@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-export const ONBOARDING_KEY = 'workly:onboarding:v2';
+import { readPersisted } from '@/lib/persist';
+
+export const ONBOARDING_KEY = 'vakano:onboarding:v2';
 
 export type OnboardingState = {
   ready: boolean;
@@ -15,7 +17,7 @@ const initialState: OnboardingState = {
 
 async function readDismissed(): Promise<boolean> {
   try {
-    const raw = await AsyncStorage.getItem(ONBOARDING_KEY);
+    const raw = await readPersisted(ONBOARDING_KEY);
     if (!raw) return false;
     const parsed = JSON.parse(raw) as { dismissed?: unknown };
     return parsed.dismissed === true;

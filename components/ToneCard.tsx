@@ -21,7 +21,7 @@ export const ToneCard = memo(function ToneCard({
   onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const styles = useThemedStyles(toneCardStyles);
-  const chrome = [styles.base, tone === 'premium' && styles.premium, tone === 'workly' && styles.workly, style];
+  const chrome = [styles.base, tone === 'premium' && styles.premium, tone === 'app' && styles.app, style];
   if (onPress) {
     return (
       <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [...chrome, pressed && styles.pressed]}>
@@ -40,7 +40,7 @@ function toneCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
   return {
     base: cardChrome(colors, scheme, 'default'),
     premium: cardChrome(colors, scheme, 'premium'),
-    workly: cardChrome(colors, scheme, 'workly'),
+    app: cardChrome(colors, scheme, 'app'),
     pressed: { opacity: 0.86 },
   };
 }

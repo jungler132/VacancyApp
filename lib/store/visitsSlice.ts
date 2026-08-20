@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-export const VISITS_KEY = 'workly:site-visits:v1';
+import { readPersisted } from '@/lib/persist';
+
+export const VISITS_KEY = 'vakano:site-visits:v1';
 export const VISITS_LIMIT = 24;
 
 export type SiteVisit = {
@@ -48,7 +50,7 @@ export function rankVisits(items: SiteVisit[]): SiteVisit[] {
 }
 
 export const hydrateVisits = createAsyncThunk('visits/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(VISITS_KEY);
+  const raw = await readPersisted(VISITS_KEY);
   if (!raw) return [] as SiteVisit[];
   try {
     return parseVisits(JSON.parse(raw));

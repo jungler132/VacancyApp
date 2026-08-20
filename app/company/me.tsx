@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { FormField, useFormStyles } from '@/components/FormField';
+import { FormScroll } from '@/components/FormScroll';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { runWithOverlay } from '@/components/SyncOverlay';
 import { Text } from '@/components/AppText';
@@ -61,8 +62,8 @@ function CompanyForm() {
   }, [about, dispatch, logoUri, name, router, saving, store, t]);
 
   return (
-    <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
+    <View style={formStyles.screen}>
+      <FormScroll contentContainerStyle={formStyles.content}>
         <Text style={formStyles.lead}>{t(userId ? 'company.lead' : 'company.leadGuest')}</Text>
         <Pressable onPress={pickLogo} style={styles.avatarWrap}>
           <ServiceAvatar uri={logoUri} name={name || t('create.company')} size={88} />
@@ -83,8 +84,8 @@ function CompanyForm() {
           style={({ pressed }) => [formStyles.primary, (pressed || saving) && formStyles.pressed]}>
           <Text style={formStyles.primaryText}>{t('company.save')}</Text>
         </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScroll>
+    </View>
   );
 }
 

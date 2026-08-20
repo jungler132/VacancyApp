@@ -19,7 +19,7 @@ describe('fontScale', () => {
   });
 
   it('считает ширину моноширинной подписи', () => {
-    assert.equal(monoAdvance('Workly', 13), Math.ceil(6 * 13 * 0.66));
+    assert.equal(monoAdvance('Vakano', 13), Math.ceil(6 * 13 * 0.66));
     assert.equal(monoAdvance('All fields', 13), Math.ceil(10 * 13 * 0.66));
   });
 });

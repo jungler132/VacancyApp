@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-export const DISABLED_SOURCES_KEY = 'workly:disabled-sources';
+import { readPersisted } from '@/lib/persist';
+
+export const DISABLED_SOURCES_KEY = 'vakano:disabled-sources';
 const STORAGE_KEY = DISABLED_SOURCES_KEY;
 
 export type SourcesState = {
@@ -15,7 +17,7 @@ const initialState: SourcesState = {
 };
 
 export const hydrateSources = createAsyncThunk('sources/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(STORAGE_KEY);
+  const raw = await readPersisted(STORAGE_KEY);
   if (!raw) return [] as string[];
   try {
     const parsed = JSON.parse(raw) as unknown;

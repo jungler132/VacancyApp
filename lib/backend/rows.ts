@@ -1,9 +1,9 @@
 import { OWN_PROFILE_ID } from '@/lib/store/freelanceSlice';
 import { asPlaceId } from '@/lib/places';
 import type { ServiceMaster, ServiceOffer, ServiceProfile } from '@/lib/services/types';
-import { WORKLY_SOURCE_ID } from '@/lib/tiers';
+import { APP_SOURCE_ID } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
-import { CATALOG_PAGE } from './config';
+import { CATALOG_PAGE, JOBS_TABLE } from './config';
 import { getSupabase } from './supabase';
 
 type ProfileRow = {
@@ -116,11 +116,11 @@ export function offerFromRow(row: OfferRow, own = false): ServiceOffer {
 }
 
 export function jobFromRow(row: JobRow, own = false): Job {
-  const raw = row.id.replace(/^workly:/, '');
+  const raw = row.id.replace(/^(?:vakano|workly):/, '');
   return {
-    id: own ? row.id : `workly:${row.user_id}:${raw}`,
-    sourceId: WORKLY_SOURCE_ID,
-    sourceName: 'Workly',
+    id: own ? row.id : `vakano:${row.user_id}:${raw}`,
+    sourceId: APP_SOURCE_ID,
+    sourceName: 'Vakano',
     title: row.title,
     company: row.company,
     companyLogo: row.company_logo || undefined,
@@ -148,7 +148,7 @@ export async function fetchOwnRows(userId: string) {
   const [profile, offers, jobs] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
     supabase.from('service_offers').select('*').eq('user_id', userId),
-    supabase.from('workly_jobs').select('*').eq('user_id', userId),
+    supabase.from(JOBS_TABLE).select('*').eq('user_id', userId),
   ]);
   return {
     profile: (profile.data as ProfileRow | null) ?? null,
@@ -187,7 +187,7 @@ export async function fetchPublicCatalog(excludeUserId?: string | null): Promise
 export async function fetchPublicJobs(excludeUserId?: string | null): Promise<Job[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  let query = supabase.from('workly_jobs').select('*').order('published_at', { ascending: false }).limit(80);
+  let query = supabase.from(JOBS_TABLE).select('*').order('published_at', { ascending: false }).limit(80);
   if (excludeUserId) query = query.neq('user_id', excludeUserId);
   const { data } = await query;
   return ((data as JobRow[] | null) ?? []).map((row) => jobFromRow(row)).filter((job) => !job.archived);

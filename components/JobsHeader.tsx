@@ -74,7 +74,7 @@ export const JobsHeader = memo(function JobsHeader({
               label={
                 item.id === 'all'
                   ? t('common.all')
-                  : t(keyOf('common', item.id === 1 ? 'premium' : item.id === 2 ? 'workly' : 'platforms'))
+                  : t(keyOf('common', item.id === 1 ? 'premium' : item.id === 2 ? 'app' : 'platforms'))
               }
               compact
               selected={tierFilter === item.id}

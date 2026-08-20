@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Appearance, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Appearance, Linking, Pressable, View } from 'react-native';
 import { Switch } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -7,6 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { AccountCard } from '@/components/AccountCard';
 import { AppHeader } from '@/components/AppHeader';
 import { ChoiceBar } from '@/components/ChoiceBar';
+import { FormScroll } from '@/components/FormScroll';
 import { NavRow } from '@/components/NavRow';
 import { Text } from '@/components/AppText';
 import { SOURCES, availableSourceIds } from '@/lib/api/aggregator';
@@ -18,6 +19,7 @@ import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectSourceErrorMap } from '@/lib/store/selectors';
 import { setFontSize, setLocale, setTheme } from '@/lib/store/appearanceSlice';
 import { showOnboarding } from '@/lib/store/onboardingSlice';
+import { grantPremium, revokePremium } from '@/lib/store/premiumSlice';
 import { toggleSource } from '@/lib/store/sourcesSlice';
 import { PRIVACY_HREF } from '@/lib/privacy';
 import { SUPPORT_EMAIL } from '@/lib/support';
@@ -35,6 +37,7 @@ export default function SettingsScreen() {
   const fontSize = useAppSelector((state) => state.appearance.fontSize);
   const themePref = useAppSelector((state) => state.appearance.theme);
   const locale = useAppSelector((state) => state.appearance.locale);
+  const isPremium = useAppSelector((state) => state.premium.isPremium);
   const styles = useThemedStyles(settingsStyles);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -87,7 +90,7 @@ export default function SettingsScreen() {
   return (
     <View style={styles.screen}>
       <AppHeader title={t('tab.settings')} />
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}>
+      <FormScroll contentContainerStyle={[styles.content, { paddingBottom: tabBar.listPaddingBottom }]}>
         <Text style={styles.section}>{t('auth.section')}</Text>
         <AccountCard />
 
@@ -151,9 +154,17 @@ export default function SettingsScreen() {
         <NavRow title={t('settings.mail')} meta={copied ? t('common.copied') : FEEDBACK_EMAIL} onPress={copyEmail} right={null} />
 
         <Text style={styles.section}>{t('settings.about')}</Text>
+        {typeof __DEV__ !== 'undefined' && __DEV__ ? (
+          <NavRow
+            title={t('settings.testPremium')}
+            meta={isPremium ? t('settings.testPremiumOn') : t('settings.testPremiumOff')}
+            premium={isPremium}
+            onPress={() => dispatch(isPremium ? revokePremium() : grantPremium())}
+          />
+        ) : null}
         <NavRow title={t('settings.tour')} meta={t('settings.tourMeta')} onPress={() => dispatch(showOnboarding())} />
         <NavRow title={t('settings.privacy')} onPress={() => router.push(PRIVACY_HREF)} />
-      </ScrollView>
+      </FormScroll>
     </View>
   );
 }

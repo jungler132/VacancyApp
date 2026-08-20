@@ -6,7 +6,7 @@ const os = require('os');
 const root = path.resolve(__dirname, '..');
 const androidDir = path.join(root, 'android');
 const distDir = path.join(root, 'dist');
-const outApk = path.join(distDir, 'Workly.apk');
+const outApk = path.join(distDir, 'Vakano.apk');
 
 function exists(file) {
   try {

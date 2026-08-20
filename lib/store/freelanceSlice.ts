@@ -7,8 +7,9 @@ import { asPlaceId } from '@/lib/places';
 import type { ServiceHours, ServiceKindId, ServiceOffer, ServiceProfile } from '@/lib/services/types';
 
 import { MAX_OFFERS, MAX_OFFER_PHOTOS, MAX_PROFILE_PHOTOS } from '@/lib/limits';
+import { readPersisted } from '@/lib/persist';
 
-export const FREELANCE_KEY = 'workly:freelance:v1';
+export const FREELANCE_KEY = 'vakano:freelance:v1';
 export const OWN_PROFILE_ID = 'local:me';
 export const OFFERS_LIMIT = MAX_OFFERS;
 export const OFFER_PHOTOS_LIMIT = MAX_OFFER_PHOTOS;
@@ -149,7 +150,7 @@ export function emptyProfile(): ServiceProfile {
 }
 
 export const hydrateFreelance = createAsyncThunk('freelance/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(FREELANCE_KEY);
+  const raw = await readPersisted(FREELANCE_KEY);
   if (!raw) return { profile: null, offers: [] as ServiceOffer[] };
   try {
     return parseFreelance(JSON.parse(raw));

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { ChipWrap } from '@/components/ChipWrap';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { SelectChip } from '@/components/FilterChips';
 import { FormField, useFormStyles } from '@/components/FormField';
+import { FormScroll } from '@/components/FormScroll';
 import { Text } from '@/components/AppText';
 import { CATEGORIES } from '@/lib/catalog';
 import { SALARY_CURRENCIES } from '@/lib/format';
@@ -192,18 +193,18 @@ export default function CreateJobScreen() {
   const previewCompany = companyName.trim() || t('create.companyPh');
 
   return (
-    <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
+    <View style={formStyles.screen}>
+      <FormScroll contentContainerStyle={formStyles.content}>
         <Text style={formStyles.lead}>{t('create.lead')}</Text>
         <Text style={formStyles.label}>{t('create.preview')}</Text>
-        <ToneCard tone="workly" style={styles.preview}>
+        <ToneCard tone="app" style={styles.preview}>
           <CompanyLogo uri={logoUri} name={previewCompany} size={48} />
           <View style={styles.previewBody}>
             <Text style={styles.previewTitle} numberOfLines={2}>
               {previewTitle}
             </Text>
             <Text style={styles.previewMeta} numberOfLines={1}>
-              {previewCompany} · {t('common.workly')}
+              {previewCompany} · {t('common.app')}
             </Text>
           </View>
         </ToneCard>
@@ -318,8 +319,8 @@ export default function CreateJobScreen() {
         <Pressable onPress={onPremium} style={({ pressed }) => [styles.premium, pressed && formStyles.pressed]}>
           <Text style={styles.premiumText}>{t('create.premium')}</Text>
         </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScroll>
+    </View>
   );
 }
 

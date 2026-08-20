@@ -12,6 +12,7 @@ import { enabledSourceIds, searchJobs } from '@/lib/api/aggregator';
 import { apiCategory } from '@/lib/catalog';
 import { filterFeedIds } from '@/lib/filters';
 import { notifyNewJobs } from '@/lib/notifications';
+import { readPersisted } from '@/lib/persist';
 import { readStoredLocale } from '@/lib/store/appearanceSlice';
 import { DISABLED_SOURCES_KEY } from '@/lib/store/sourcesSlice';
 import type { Job } from '@/lib/types';
@@ -32,7 +33,7 @@ const CHECK_COOLDOWN_MS = 8 * 60 * 1000;
 const NOTIFY_COOLDOWN_MS = 40 * 60 * 1000;
 
 export async function loadAlerts(): Promise<SavedSearch[]> {
-  const raw = await AsyncStorage.getItem(ALERTS_KEY);
+  const raw = await readPersisted(ALERTS_KEY);
   if (!raw) return [];
   try {
     return normalizeAlerts(JSON.parse(raw));
@@ -123,7 +124,7 @@ export async function checkSavedSearches(
 }
 
 async function loadDisabledSources(): Promise<string[]> {
-  const raw = await AsyncStorage.getItem(DISABLED_SOURCES_KEY);
+  const raw = await readPersisted(DISABLED_SOURCES_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;

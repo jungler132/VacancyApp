@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE, type AppLocale } from './i18n/locale';
 import { placeLabel } from './places';
 import type { CategoryId, Job, RegionId } from './types';
 
-export const ALERTS_KEY = 'workly:saved-searches';
+export const ALERTS_KEY = 'vakano:saved-searches';
 export const MAX_ALERTS = 6;
 const MAX_SEEN = 250;
 
@@ -73,7 +73,7 @@ function parsePendingJobs(raw: unknown): Job[] {
     out.push({
       id: row.id,
       sourceId: typeof row.sourceId === 'string' ? row.sourceId : 'app',
-      sourceName: typeof row.sourceName === 'string' ? row.sourceName : 'Workly',
+      sourceName: typeof row.sourceName === 'string' ? row.sourceName : 'Vakano',
       title: row.title,
       company: typeof row.company === 'string' ? row.company : '',
       location: typeof row.location === 'string' ? row.location : '',

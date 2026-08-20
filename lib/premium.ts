@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const PREMIUM_STORAGE_KEY = 'workly:premium:v2';
-const LEGACY_PREMIUM_KEYS = ['workly:premium'];
+import { readPersisted } from '@/lib/persist';
+
+export const PREMIUM_STORAGE_KEY = 'vakano:premium:v2';
+const LEGACY_PREMIUM_KEYS = ['workly:premium', 'vakano:premium'];
 
 export function parsePremiumFlag(raw: unknown): boolean {
   return raw === true || raw === 1 || raw === '1' || raw === 'true';
@@ -9,7 +11,7 @@ export function parsePremiumFlag(raw: unknown): boolean {
 
 export async function readPremium(): Promise<boolean> {
   await Promise.all(LEGACY_PREMIUM_KEYS.map((key) => AsyncStorage.removeItem(key).catch(() => undefined)));
-  const raw = await AsyncStorage.getItem(PREMIUM_STORAGE_KEY);
+  const raw = await readPersisted(PREMIUM_STORAGE_KEY);
   if (!raw) return false;
   try {
     return parsePremiumFlag(JSON.parse(raw));

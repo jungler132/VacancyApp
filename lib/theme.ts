@@ -101,14 +101,14 @@ export function premiumGlow(scheme: ColorSchemeName) {
   };
 }
 
-export function worklySurface(colors: ThemeColors) {
+export function appSurface(colors: ThemeColors) {
   return {
     borderColor: colors.blue,
     backgroundColor: colors.accentDim,
   };
 }
 
-export function worklyGlow(scheme: ColorSchemeName) {
+export function appGlow(scheme: ColorSchemeName) {
   return {
     shadowColor: '#1e3a8a',
     shadowOpacity: scheme === 'dark' ? 0.4 : 0.18,
@@ -118,16 +118,16 @@ export function worklyGlow(scheme: ColorSchemeName) {
   };
 }
 
-export type CardTone = 'default' | 'premium' | 'workly';
+export type CardTone = 'default' | 'premium' | 'app';
 
 export function cardChrome(colors: ThemeColors, scheme: ColorSchemeName, tone: CardTone = 'default') {
   const surface =
     tone === 'premium'
       ? premiumSurface(colors)
-      : tone === 'workly'
-        ? worklySurface(colors)
+      : tone === 'app'
+        ? appSurface(colors)
         : { backgroundColor: colors.card, borderColor: colors.cardBorder };
-  const glow = tone === 'premium' ? premiumGlow(scheme) : tone === 'workly' ? worklyGlow(scheme) : shadowsFor(scheme).card;
+  const glow = tone === 'premium' ? premiumGlow(scheme) : tone === 'app' ? appGlow(scheme) : shadowsFor(scheme).card;
   return {
     borderWidth: 1,
     borderRadius: radius.lg,
@@ -140,7 +140,7 @@ export function cardChrome(colors: ThemeColors, scheme: ColorSchemeName, tone: C
 
 export function toneForTier(tier: 1 | 2 | 3): CardTone {
   if (tier === 1) return 'premium';
-  if (tier === 2) return 'workly';
+  if (tier === 2) return 'app';
   return 'default';
 }
 

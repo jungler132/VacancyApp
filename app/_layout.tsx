@@ -15,6 +15,7 @@ import {
 import { PaperProvider } from 'react-native-paper';
 
 import { AlertsHost } from '@/components/AlertsHost';
+import { AppNoticeHost } from '@/components/AppNoticeHost';
 import { BackendHost } from '@/components/BackendHost';
 import { AdsHost } from '@/components/AdsHost';
 import { BillingHost } from '@/components/BillingHost';
@@ -134,6 +135,7 @@ export default function RootLayout() {
               <FilterSheetHost />
               <OnboardingHost />
               <SyncOverlayHost />
+              <AppNoticeHost />
             </View>
           </BillingHost>
         </AppShell>

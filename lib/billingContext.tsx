@@ -5,6 +5,9 @@ export type BillingApi = {
   purchasing: boolean;
   buy: () => void;
   restore: () => void;
+  storeBlocked: boolean;
+  dismissStoreBlocked: () => void;
+  tryTest?: () => void;
 };
 
 export const defaultBilling: BillingApi = {
@@ -12,6 +15,8 @@ export const defaultBilling: BillingApi = {
   purchasing: false,
   buy: () => undefined,
   restore: () => undefined,
+  storeBlocked: false,
+  dismissStoreBlocked: () => undefined,
 };
 
 export const BillingContext = createContext<BillingApi>(defaultBilling);

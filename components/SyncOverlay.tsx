@@ -1,14 +1,14 @@
 import { memo, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Modal, View, useWindowDimensions } from 'react-native';
 
 import { Text } from '@/components/AppText';
-import { fonts } from '@/lib/theme';
+import { fonts, radius, useAppTheme, useThemedStyles, type ThemeColors } from '@/lib/theme';
 
 type OverlayState = { open: boolean; label: string };
 
 const IDLE: OverlayState = { open: false, label: '' };
-const PAINT_MS = 48;
-const MIN_VISIBLE_MS = 700;
+const PAINT_MS = 32;
+const MIN_VISIBLE_MS = 280;
 
 let current = IDLE;
 const listeners = new Set<(state: OverlayState) => void>();
@@ -38,6 +38,9 @@ export async function runWithOverlay<T>(label: string, work: () => Promise<T>): 
 }
 
 export const SyncOverlayHost = memo(function SyncOverlayHost() {
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(overlayStyles);
+  const { width, height } = useWindowDimensions();
   const [state, setState] = useState(current);
   useEffect(() => {
     listeners.add(setState);
@@ -46,31 +49,48 @@ export const SyncOverlayHost = memo(function SyncOverlayHost() {
       listeners.delete(setState);
     };
   }, []);
-  if (!state.open) return null;
   return (
-    <View style={styles.root} pointerEvents="auto">
-      <ActivityIndicator size="large" color="#ffffff" />
-      <Text style={styles.label}>{state.label}</Text>
-    </View>
+    <Modal visible={state.open} transparent animationType="fade" statusBarTranslucent>
+      <View
+        collapsable={false}
+        pointerEvents="auto"
+        style={[styles.root, { width, height, minHeight: height }]}>
+        <View style={styles.card}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={styles.label}>{state.label}</Text>
+        </View>
+      </View>
+    </Modal>
   );
 });
 
-const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 32,
-    gap: 16,
-    zIndex: 100,
-    elevation: 100,
-  },
-  label: {
-    color: '#ffffff',
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-});
+function overlayStyles(colors: ThemeColors) {
+  return {
+    root: {
+      flex: 1,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      backgroundColor: 'rgba(7, 9, 15, 0.55)',
+      paddingHorizontal: 28,
+    },
+    card: {
+      minWidth: 220,
+      maxWidth: 320,
+      backgroundColor: colors.card,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      paddingHorizontal: 24,
+      paddingVertical: 22,
+      alignItems: 'center' as const,
+      gap: 14,
+    },
+    label: {
+      color: colors.text,
+      fontFamily: fonts.semibold,
+      fontSize: 16,
+      lineHeight: 22,
+      textAlign: 'center' as const,
+    },
+  };
+}

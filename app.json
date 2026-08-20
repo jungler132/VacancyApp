@@ -1,18 +1,19 @@
 {
   "expo": {
-    "name": "Workly",
-    "slug": "Workly",
+    "name": "Vakano",
+    "slug": "Vakano",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "workly",
+    "scheme": "vakano",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "userInterfaceStyle": "automatic"
+      "userInterfaceStyle": "automatic",
+      "bundleIdentifier": "app.vakano.jobs"
     },
     "android": {
-      "package": "com.workly.app",
+      "package": "app.vakano.jobs",
       "versionCode": 1,
       "userInterfaceStyle": "automatic",
       "icon": "./assets/images/icon.png",
@@ -22,7 +23,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "bundler": "metro",
@@ -54,7 +56,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Workly needs photos for avatars and services / фото для аватара и услуг / avatar və xidmət şəkilləri.",
+          "photosPermission": "Vakano needs photos for avatars and services / фото для аватара и услуг / avatar və xidmət şəkilləri.",
           "cameraPermission": false,
           "microphonePermission": false
         }
@@ -66,7 +68,7 @@
         "expo-notifications",
         {
           "color": "#00236f",
-          "defaultChannel": "workly-alerts"
+          "defaultChannel": "vakano-alerts"
         }
       ],
       [
@@ -93,7 +95,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-6203993897795010~9453438867",
+          "androidAppId": "ca-app-pub-6203993897795010~2424463259",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511",
           "delayAppMeasurementInit": true
         }

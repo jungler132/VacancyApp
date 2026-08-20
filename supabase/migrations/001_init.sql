@@ -1,6 +1,6 @@
--- Workly free backend. Paste into Supabase SQL editor.
+-- Vakano free backend. Paste into Supabase SQL editor.
+-- URL config: Site URL vakano://  Redirect vakano://auth/callback
 -- Dashboard: Authentication → Providers → Email (OTP) + Anonymous on.
--- URL config: Site URL workly://  Redirect workly://auth/callback
 -- Storage: create public bucket `media` (this script also upserts it).
 
 create extension if not exists pgcrypto;

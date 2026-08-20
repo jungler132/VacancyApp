@@ -246,6 +246,7 @@ export function AccountCard() {
         body={prompt ? t(PROMPT_COPY[prompt].body) : ''}
         onConfirm={confirmPrompt}
         onClose={closePrompt}
+        cancelLabel={t('auth.later')}
       />
     </View>
   );

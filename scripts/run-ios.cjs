@@ -2,7 +2,7 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const bundleId = 'com.workly.app';
+const bundleId = 'app.vakano.jobs';
 const expoBin = path.join(root, 'node_modules', '.bin', 'expo');
 
 function run(command, args, stdio = 'inherit') {
@@ -54,7 +54,7 @@ function allowDeepLink(udid) {
   );
   run(
     'defaults',
-    ['write', prefs, 'com.apple.CoreSimulator.CoreSimulatorBridge-->com.workly.app', bundleId],
+    ['write', prefs, 'com.apple.CoreSimulator.CoreSimulatorBridge-->app.vakano.jobs', bundleId],
     'pipe',
   );
 }
@@ -70,7 +70,7 @@ function ensureSimulatorReady() {
   spawnSync('sleep', ['2']);
 }
 
-function launchWorkly() {
+function launchVakano() {
   const udid = bootedUdid() || 'booted';
   return run('xcrun', ['simctl', 'launch', udid, bundleId]).status === 0;
 }
@@ -81,8 +81,8 @@ if (expo.status === 0) {
   process.exit(0);
 }
 
-if (launchWorkly()) {
-  console.log('Workly launched on the simulator after Expo deep-link error 115.');
+if (launchVakano()) {
+  console.log('Vakano launched on the simulator after Expo deep-link error 115.');
   process.exit(0);
 }
 

@@ -13,7 +13,7 @@ import { replaceAlerts } from '@/lib/store/alertsSlice';
 import { replaceDisabledSources } from '@/lib/store/sourcesSlice';
 import { replaceVisits } from '@/lib/store/visitsSlice';
 import { setRemoteMasters } from '@/lib/store/servicesCatalogSlice';
-import { setWorklyPublic } from '@/lib/store/jobsSlice';
+import { setAppPublic } from '@/lib/store/jobsSlice';
 import { parseFormat } from '@/lib/prefs';
 import { MAX_JOBS, MAX_OFFERS } from '@/lib/limits';
 import { t } from '@/lib/i18n';
@@ -25,6 +25,7 @@ import { signOutAccount } from './auth';
 import { readBoundEmail, writeBoundEmail } from './boundEmail';
 import { fetchOwnRows, fetchPublicCatalog, fetchPublicJobs, jobFromRow, offerFromRow, profileFromRow } from './rows';
 import { isRemoteUri } from './merge';
+import { JOBS_TABLE } from './config';
 import { getSupabase } from './supabase';
 import { deleteOfferMedia, uploadMany, uploadMedia } from './storage';
 
@@ -115,7 +116,7 @@ export async function refreshPublic(dispatch: Dispatch, userId?: string | null) 
   lastPublicUser = userKey;
   const [masters, jobs] = await Promise.all([fetchPublicCatalog(userId), fetchPublicJobs(userId)]);
   dispatch(setRemoteMasters(masters));
-  dispatch(setWorklyPublic(jobs));
+  dispatch(setAppPublic(jobs));
 }
 
 export async function pullAccount(dispatch: Dispatch, getState: () => SyncState) {
@@ -176,7 +177,7 @@ export async function pushAccount(state: SyncState, dispatch?: Dispatch) {
   try {
     await pushAccountInner(state, dispatch);
   } catch (error) {
-    console.warn('workly sync', error);
+    console.warn('vakano sync', error);
     if (dispatch) {
       dispatch(setAuthNotice(t(state.appearance?.locale ?? 'ru', 'auth.syncFailed')));
     }
@@ -380,7 +381,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
   }
 
   let jobRes = jobs.length
-    ? await supabase.from('workly_jobs').upsert(
+    ? await supabase.from(JOBS_TABLE).upsert(
         jobs.map((job) => ({
           id: job.id,
           user_id: userId,
@@ -411,7 +412,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
       )
     : { error: null };
   if (jobRes.error && isMissingCity(jobRes.error.message)) {
-    jobRes = await supabase.from('workly_jobs').upsert(
+    jobRes = await supabase.from(JOBS_TABLE).upsert(
       jobs.map((job) => ({
         id: job.id,
         user_id: userId,
@@ -441,7 +442,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     );
   }
   if (jobRes.error && isMissingArchived(jobRes.error.message)) {
-    jobRes = await supabase.from('workly_jobs').upsert(
+    jobRes = await supabase.from(JOBS_TABLE).upsert(
       jobs.map((job) => ({
         id: job.id,
         user_id: userId,
@@ -471,7 +472,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     );
   }
   if (jobRes.error && (isMissingCity(jobRes.error.message) || isMissingArchived(jobRes.error.message))) {
-    jobRes = await supabase.from('workly_jobs').upsert(
+    jobRes = await supabase.from(JOBS_TABLE).upsert(
       jobs.map((job) => ({
         id: job.id,
         user_id: userId,
@@ -502,11 +503,11 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
   if (jobRes.error) throw jobRes.error;
 
   const keepJobs = jobs.map((item) => item.id);
-  const staleJobs = await supabase.from('workly_jobs').select('id').eq('user_id', userId);
+  const staleJobs = await supabase.from(JOBS_TABLE).select('id').eq('user_id', userId);
   if (staleJobs.error) throw staleJobs.error;
   const dropJobs = (staleJobs.data ?? []).map((row) => row.id).filter((id) => !keepJobs.includes(id));
   if (dropJobs.length) {
-    await supabase.from('workly_jobs').delete().eq('user_id', userId).in('id', dropJobs);
+    await supabase.from(JOBS_TABLE).delete().eq('user_id', userId).in('id', dropJobs);
   }
 
   const uploadFailed =
@@ -551,7 +552,7 @@ export async function deleteRemoteOffer(userId: string, id: string) {
 export async function deleteRemoteJob(userId: string, id: string) {
   const supabase = getSupabase();
   if (!supabase) return;
-  await supabase.from('workly_jobs').delete().eq('user_id', userId).eq('id', id);
+  await supabase.from(JOBS_TABLE).delete().eq('user_id', userId).eq('id', id);
 }
 
 export function resetPushCache() {

@@ -82,7 +82,7 @@ export const JobCardView = memo(function JobCardView({
               {company}
             </Text>
             {tier === 1 ? <PremiumBadge compact /> : null}
-            {tier === 2 ? <Text style={styles.badgeWorkly}>{t('common.workly')}</Text> : null}
+            {tier === 2 ? <Text style={styles.badgeApp}>{t('common.app')}</Text> : null}
           </View>
         </View>
         {onToggle ? (
@@ -125,9 +125,9 @@ export const JobCardView = memo(function JobCardView({
         </View>
       ) : null}
       {tags.length ? (
-        <ChipWrap style={{ marginTop: 12 }}>
+        <ChipWrap style={styles.tags}>
           {tags.map((tag) => (
-            <AppChip key={tag} label={tokenLabel(locale, tag)} selected />
+            <AppChip key={tag} label={tokenLabel(locale, tag)} quiet />
           ))}
         </ChipWrap>
       ) : null}
@@ -143,7 +143,7 @@ function jobCardStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
       padding: 16,
       marginBottom: 16,
     },
-    badgeWorkly: {
+    badgeApp: {
       color: colors.accent,
       fontFamily: fonts.semibold,
       fontSize: 11,
@@ -157,6 +157,7 @@ function jobCardStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
     meta: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12, marginTop: 12 },
     metaItem: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, maxWidth: '100%' as const },
     metaText: { color: colors.muted, fontSize: 12, fontFamily: fonts.medium, flexShrink: 1 },
+    tags: { marginTop: 8 },
     status: { color: colors.accent, marginTop: 10, fontSize: 12, fontFamily: fonts.semibold },
   };
 }

@@ -1,10 +1,9 @@
 import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { finishTransaction, isUserCancelledError, useIAP, type Purchase } from 'expo-iap';
 
 import { PREMIUM_SKU, purchaseHasPremiumSku } from '@/lib/billing';
 import { BillingProvider } from '@/lib/billingContext';
-import { useT } from '@/lib/i18n/useT';
 import { closePaywall, grantPremium } from '@/lib/store/premiumSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 
@@ -12,11 +11,13 @@ function isPremiumPurchase(purchase: Purchase): boolean {
   return purchaseHasPremiumSku([purchase.productId]);
 }
 
+const allowTestPremium = typeof __DEV__ !== 'undefined' && __DEV__;
+
 export const BillingHost = memo(function BillingHost({ children }: { children: ReactNode }) {
-  const t = useT();
   const dispatch = useAppDispatch();
   const isPremium = useAppSelector((state) => state.premium.isPremium);
   const [purchasing, setPurchasing] = useState(false);
+  const [storeBlocked, setStoreBlocked] = useState(false);
 
   const onPurchaseSuccess = useCallback(
     (purchase: Purchase) => {
@@ -34,14 +35,11 @@ export const BillingHost = memo(function BillingHost({ children }: { children: R
     [dispatch],
   );
 
-  const onPurchaseError = useCallback(
-    (error: unknown) => {
-      setPurchasing(false);
-      if (isUserCancelledError(error)) return;
-      Alert.alert(t('paywall.title'), t('paywall.needStore'));
-    },
-    [t],
-  );
+  const onPurchaseError = useCallback((error: unknown) => {
+    setPurchasing(false);
+    if (isUserCancelledError(error)) return;
+    setStoreBlocked(true);
+  }, []);
 
   const { connected, products, availablePurchases, fetchProducts, getAvailablePurchases, requestPurchase, restorePurchases } =
     useIAP({
@@ -73,7 +71,7 @@ export const BillingHost = memo(function BillingHost({ children }: { children: R
   const buy = useCallback(() => {
     if (purchasing) return;
     if (__DEV__) {
-      Alert.alert(t('paywall.title'), t('paywall.needStore'));
+      setStoreBlocked(true);
       return;
     }
     setPurchasing(true);
@@ -82,13 +80,13 @@ export const BillingHost = memo(function BillingHost({ children }: { children: R
       type: 'in-app',
     }).catch(() => {
       setPurchasing(false);
-      Alert.alert(t('paywall.title'), t('paywall.needStore'));
+      setStoreBlocked(true);
     });
-  }, [purchasing, requestPurchase, t]);
+  }, [purchasing, requestPurchase]);
 
   const restore = useCallback(() => {
     if (__DEV__) {
-      Alert.alert(t('paywall.title'), t('paywall.needStore'));
+      setStoreBlocked(true);
       return;
     }
     void (async () => {
@@ -96,14 +94,27 @@ export const BillingHost = memo(function BillingHost({ children }: { children: R
         await restorePurchases();
         await getAvailablePurchases();
       } catch {
-        Alert.alert(t('paywall.title'), t('paywall.needStore'));
+        setStoreBlocked(true);
       }
     })();
-  }, [getAvailablePurchases, restorePurchases, t]);
+  }, [getAvailablePurchases, restorePurchases]);
+
+  const tryTest = useCallback(() => {
+    void dispatch(grantPremium());
+    setStoreBlocked(false);
+  }, [dispatch]);
 
   const value = useMemo(
-    () => ({ priceLabel, purchasing, buy, restore }),
-    [buy, priceLabel, purchasing, restore],
+    () => ({
+      priceLabel,
+      purchasing,
+      buy,
+      restore,
+      storeBlocked,
+      dismissStoreBlocked: () => setStoreBlocked(false),
+      tryTest: allowTestPremium ? tryTest : undefined,
+    }),
+    [buy, priceLabel, purchasing, restore, storeBlocked, tryTest],
   );
 
   return <BillingProvider value={value}>{children}</BillingProvider>;

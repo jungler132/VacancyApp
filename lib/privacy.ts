@@ -21,20 +21,20 @@ export type PrivacyDoc = {
 const DOCS: Record<AppLocale, PrivacyDoc> = {
   ru: {
     title: 'Политика конфиденциальности',
-        updated: 'Приложение Workly (Android, пакет com.workly.app). Дата вступления в силу: 20 августа 2026 г.',
+    updated: 'Приложение Vakano (Android, пакет app.vakano.jobs). Дата вступления в силу: 20 августа 2026 г.',
     blocks: [
       {
         heading: '1. Кто мы и о чём эта политика',
         paragraphs: [
-          'Workly — мобильный агрегатор вакансий. Приложение показывает объявления с публичных площадок, даёт сохранить интересные вакансии, вести страницу услуг и настроить локальные оповещения о новых предложениях.',
-          'Гостевой режим работает без аккаунта, офлайн, на устройстве. По желанию можно войти по почте (код или ссылка) или анонимно и затем привязать почту — тогда страница услуг, фото и свои вакансии Workly синхронизируются с сервером. Бесплатная версия показывает рекламу Google AdMob.',
+          'Vakano — мобильный агрегатор вакансий. Приложение показывает объявления с публичных площадок, даёт сохранить интересные вакансии, вести страницу услуг и настроить локальные оповещения о новых предложениях.',
+          'Гостевой режим работает без аккаунта, офлайн, на устройстве. По желанию можно войти по почте (код или ссылка) или анонимно и затем привязать почту — тогда страница услуг, фото и свои вакансии Vakano синхронизируются с сервером. Бесплатная версия показывает рекламу Google AdMob.',
           `Контакт: ${PRIVACY_EMAIL}`,
         ],
       },
       {
         heading: '2. Какие данные обрабатываются',
         paragraphs: [
-          'Workly не собирает платёжные данные. Имя, почта, телефон, тексты и фото страницы услуг обрабатываются, только если вы их сами указали.',
+          'Vakano не собирает платёжные данные. Имя, почта, телефон, тексты и фото страницы услуг обрабатываются, только если вы их сами указали.',
           'На устройстве пользователя (локально) могут храниться:',
         ],
         items: [
@@ -48,7 +48,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Без входа эти данные остаются на телефоне. После входа страница услуг, фото (в сжатом виде), свои вакансии Workly, канбан, фильтры, алерты, тема, язык и размер шрифта сохраняются в облаке провайдера бэкенда (Supabase) под вашим идентификатором. Публичный профиль услуг и свои вакансии могут видеть другие пользователи приложения. Неподобающий контент можно пожаловаться из приложения — жалобы уходят в поддержку.',
+          'Без входа эти данные остаются на телефоне. После входа страница услуг, фото (в сжатом виде), свои вакансии Vakano, канбан, фильтры, алерты, тема, язык и размер шрифта сохраняются в облаке провайдера бэкенда (Supabase) под вашим идентификатором. Публичный профиль услуг и свои вакансии могут видеть другие пользователи приложения. Неподобающий контент можно пожаловаться из приложения — жалобы уходят в поддержку.',
         ],
       },
       {
@@ -93,7 +93,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '6. Реклама',
         paragraphs: [
-          'В бесплатной версии показывается реклама Google AdMob: полноэкранная при открытии чужой вакансии или услуги (не каждый раз) и баннер в ленте вакансий и услуг. Чтобы подобрать объявления, Google может использовать рекламный идентификатор устройства, данные о взаимодействии с рекламой и техническую информацию об устройстве. Это делает Google, а не сервер Workly.',
+          'В бесплатной версии показывается реклама Google AdMob: полноэкранная при открытии чужой вакансии или услуги (не каждый раз) и баннер в ленте вакансий и услуг. Чтобы подобрать объявления, Google может использовать рекламный идентификатор устройства, данные о взаимодействии с рекламой и техническую информацию об устройстве. Это делает Google, а не сервер Vakano.',
           'Политика Google: https://policies.google.com/privacy и справка AdMob: https://support.google.com/admob/answer/6128543',
         ],
       },
@@ -123,20 +123,20 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
   },
   en: {
     title: 'Privacy policy',
-        updated: 'Workly app (Android, package com.workly.app). Effective date: 20 August 2026.',
+    updated: 'Vakano app (Android, package app.vakano.jobs). Effective date: 20 August 2026.',
     blocks: [
       {
         heading: '1. Who we are',
         paragraphs: [
-          'Workly is a mobile job aggregator. It shows listings from public boards, lets you save jobs, keep a services page, and set local alerts for new listings.',
-          'Guest mode works without an account, offline, on the device. You can sign in with email (code or magic link) or anonymously and later link email — then your services page, photos and Workly jobs sync to the server. The free version shows Google AdMob ads.',
+          'Vakano is a mobile job aggregator. It shows listings from public boards, lets you save jobs, keep a services page, and set local alerts for new listings.',
+          'Guest mode works without an account, offline, on the device. You can sign in with email (code or magic link) or anonymously and later link email — then your services page, photos and Vakano jobs sync to the server. The free version shows Google AdMob ads.',
           `Contact: ${PRIVACY_EMAIL}`,
         ],
       },
       {
         heading: '2. What data is processed',
         paragraphs: [
-          'Workly does not collect payment data. Name, email, phone, texts and service photos are processed only if you add them yourself.',
+          'Vakano does not collect payment data. Name, email, phone, texts and service photos are processed only if you add them yourself.',
           'The following may be stored locally on your device:',
         ],
         items: [
@@ -150,7 +150,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Without sign-in this data stays on the phone. After sign-in the services page, compressed photos, your Workly jobs, kanban, filters, alerts, theme, language and font size are stored in the backend provider (Supabase) under your user id. Your public services profile and Workly jobs may be visible to other users of the app. Inappropriate content can be reported from the app — reports go to support.',
+          'Without sign-in this data stays on the phone. After sign-in the services page, compressed photos, your Vakano jobs, kanban, filters, alerts, theme, language and font size are stored in the backend provider (Supabase) under your user id. Your public services profile and Vakano jobs may be visible to other users of the app. Inappropriate content can be reported from the app — reports go to support.',
         ],
       },
       {
@@ -170,7 +170,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Further processing is governed by those services’ policies. If you open a job, a website or a Telegram channel, you leave Workly and their rules apply.',
+          'Further processing is governed by those services’ policies. If you open a job, a website or a Telegram channel, you leave Vakano and their rules apply.',
           'Optional job-text translation uses a third-party translation service. The request contains a fragment of the listing and the target language.',
         ],
       },
@@ -195,7 +195,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '6. Advertising',
         paragraphs: [
-          'The free version shows Google AdMob ads: a full-screen ad when you open someone else’s job or service (not every time) and a banner in the jobs and services feeds. To serve ads, Google may use the advertising ID, ad interaction data and device information. That is done by Google, not by a Workly server.',
+          'The free version shows Google AdMob ads: a full-screen ad when you open someone else’s job or service (not every time) and a banner in the jobs and services feeds. To serve ads, Google may use the advertising ID, ad interaction data and device information. That is done by Google, not by a Vakano server.',
           'Google policy: https://policies.google.com/privacy and AdMob help: https://support.google.com/admob/answer/6128543',
         ],
       },
@@ -223,20 +223,20 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
   },
   az: {
     title: 'Məxfilik siyasəti',
-        updated: 'Workly tətbiqi (Android, paket com.workly.app). Qüvvəyə minmə tarixi: 20 avqust 2026.',
+    updated: 'Vakano tətbiqi (Android, paket app.vakano.jobs). Qüvvəyə minmə tarixi: 20 avqust 2026.',
     blocks: [
       {
         heading: '1. Biz kimik',
         paragraphs: [
-          'Workly vakansiyaların mobil aqreqatorudur. Tətbiq açıq saytlardan elan göstərir, vakansiyanı yadda saxlamağa, xidmət səhifəsi tutmağa və yeni elanlar üçün lokal bildiriş qurmağa imkan verir.',
-          'Qonaq rejim hesab olmadan, oflayn, cihazda işləyir. İstəsəniz e-poçt (kod və ya keçid) və ya anonim giriş, sonra e-poçt bağlamaq olar — o zaman xidmət səhifəsi, foto və Workly vakansiyaları serverə sinxron olur. Pulsuz versiyada Google AdMob reklamı göstərilir.',
+          'Vakano vakansiyaların mobil aqreqatorudur. Tətbiq açıq saytlardan elan göstərir, vakansiyanı yadda saxlamağa, xidmət səhifəsi tutmağa və yeni elanlar üçün lokal bildiriş qurmağa imkan verir.',
+          'Qonaq rejim hesab olmadan, oflayn, cihazda işləyir. İstəsəniz e-poçt (kod və ya keçid) və ya anonim giriş, sonra e-poçt bağlamaq olar — o zaman xidmət səhifəsi, foto və Vakano vakansiyaları serverə sinxron olur. Pulsuz versiyada Google AdMob reklamı göstərilir.',
           `Əlaqə: ${PRIVACY_EMAIL}`,
         ],
       },
       {
         heading: '2. Hansı məlumat emal olunur',
         paragraphs: [
-          'Workly ödəniş məlumatını toplamır. Ad, e-poçt, telefon, mətn və xidmət fotoları yalnız siz özünüz yazsanız emal olunur.',
+          'Vakano ödəniş məlumatını toplamır. Ad, e-poçt, telefon, mətn və xidmət fotoları yalnız siz özünüz yazsanız emal olunur.',
           'Cihazınızda lokal olaraq saxlana bilər:',
         ],
         items: [
@@ -250,7 +250,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Giriş olmadan bu məlumat telefonda qalır. Girişdən sonra xidmət səhifəsi, sıxılmış fotolar, öz Workly vakansiyaları, kanban, filterlər, bildirişlər, tema, dil və şrift ölçüsü backend provayderində (Supabase) sizin identifikatorunuzla saxlanır. İctimai xidmət profili və Workly vakansiyaları tətbiqin digər istifadəçilərinə görünə bilər. Uyğunsuz məzmunu tətbiqdən şikayət etmək olar — şikayətlər dəstəyə gedir.',
+          'Giriş olmadan bu məlumat telefonda qalır. Girişdən sonra xidmət səhifəsi, sıxılmış fotolar, öz Vakano vakansiyaları, kanban, filterlər, bildirişlər, tema, dil və şrift ölçüsü backend provayderində (Supabase) sizin identifikatorunuzla saxlanır. İctimai xidmət profili və Vakano vakansiyaları tətbiqin digər istifadəçilərinə görünə bilər. Uyğunsuz məzmunu tətbiqdən şikayət etmək olar — şikayətlər dəstəyə gedir.',
         ],
       },
       {
@@ -270,7 +270,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '',
         paragraphs: [
-          'Sonrakı emal həmin xidmətlərin siyasəti ilə tənzimlənir. Vakansiya, sayt və ya Telegram kanalı açanda Workly-dən çıxırsınız və onların qaydaları keçərli olur.',
+          'Sonrakı emal həmin xidmətlərin siyasəti ilə tənzimlənir. Vakansiya, sayt və ya Telegram kanalı açanda Vakano-dən çıxırsınız və onların qaydaları keçərli olur.',
           'İstəyə bağlı tərcümə üçüncü tərəf tərcümə xidməti ilə gedir. Sorğuda elanın fraqmenti və seçilmiş dil olur.',
         ],
       },
@@ -295,7 +295,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
       {
         heading: '6. Reklam',
         paragraphs: [
-          'Pulsuz versiyada Google AdMob reklamı göstərilir: başqasının vakansiyasını və ya xidmətini açanda tam ekran (hər dəfə yox) və vakansiya/xidmət lentində banner. Reklam seçmək üçün Google reklam identifikatoru, reklamla əlaqə və cihaz haqqında texniki məlumat istifadə edə bilər. Bunu Google edir, Workly serveri yox.',
+          'Pulsuz versiyada Google AdMob reklamı göstərilir: başqasının vakansiyasını və ya xidmətini açanda tam ekran (hər dəfə yox) və vakansiya/xidmət lentində banner. Reklam seçmək üçün Google reklam identifikatoru, reklamla əlaqə və cihaz haqqında texniki məlumat istifadə edə bilər. Bunu Google edir, Vakano serveri yox.',
           'Google siyasəti: https://policies.google.com/privacy və AdMob köməyi: https://support.google.com/admob/answer/6128543',
         ],
       },

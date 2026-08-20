@@ -42,7 +42,7 @@ export function reportMailUrl(
   reporter?: string | null,
 ): string {
   const text = message.trim().slice(0, REPORT_MAX);
-  const subject = `Workly report: ${target.title}`.slice(0, 90);
+  const subject = `Vakano report: ${target.title}`.slice(0, 90);
   const body = [
     text,
     `type: ${target.kind}`,

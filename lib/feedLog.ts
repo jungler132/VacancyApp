@@ -1,4 +1,4 @@
-const TAG = '[workly:feed]';
+const TAG = '[vakano:feed]';
 
 export function feedLog(event: string, extra: Record<string, unknown> = {}) {
   const errors = Number(extra.errors ?? 0);

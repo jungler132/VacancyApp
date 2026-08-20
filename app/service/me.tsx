@@ -1,16 +1,18 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { PlacePicker } from '@/components/PlacePicker';
 import { FormField, useFormStyles } from '@/components/FormField';
+import { FormScroll } from '@/components/FormScroll';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { runWithOverlay } from '@/components/SyncOverlay';
 import { TimeWheel } from '@/components/TimeWheel';
 import { WeekdayStrip } from '@/components/WeekdayStrip';
 import { Text } from '@/components/AppText';
+import { showAppNotice } from '@/lib/appNotice';
 import { flushAccount } from '@/lib/backend/sync';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
@@ -83,7 +85,7 @@ function ProfileForm() {
 
   const addOffer = useCallback(() => {
     if ((own?.offers.length ?? 0) >= limits.offers) {
-      Alert.alert(t('common.limit'), t('me.offerLimit', { limit: limits.offers }));
+      showAppNotice(t('common.limit'), t('me.offerLimit', { limit: limits.offers }));
       return;
     }
     router.push(offerEditorHref('new'));
@@ -93,11 +95,11 @@ function ProfileForm() {
     const name = customKindDraft.trim();
     if (!name) return;
     if (customKinds.some((item) => item.toLowerCase() === name.toLowerCase())) {
-      Alert.alert(t('common.missing'), t('me.kindExists'));
+      showAppNotice(t('common.missing'), t('me.kindExists'));
       return;
     }
     if (customKinds.length >= CUSTOM_KINDS_LIMIT) {
-      Alert.alert(t('common.limit'), t('me.kindLimit', { limit: CUSTOM_KINDS_LIMIT }));
+      showAppNotice(t('common.limit'), t('me.kindLimit', { limit: CUSTOM_KINDS_LIMIT }));
       return;
     }
     setCustomKinds((current) => [...current, name]);
@@ -113,7 +115,7 @@ function ProfileForm() {
   const onSave = useCallback(async () => {
     const name = displayName.trim();
     if (!name) {
-      Alert.alert(t('common.missing'), t('me.needName'));
+      showAppNotice(t('common.missing'), t('me.needName'));
       return;
     }
     if (saving) return;
@@ -146,8 +148,8 @@ function ProfileForm() {
   }, [address, avatarUri, bio, cityId, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, saving, store, t]);
 
   return (
-    <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
+    <View style={formStyles.screen}>
+      <FormScroll contentContainerStyle={formStyles.content}>
         <Text style={formStyles.lead}>{t(userId ? 'me.lead' : 'me.leadGuest')}</Text>
         <Pressable onPress={pickAvatar} style={styles.avatarWrap}>
           <ServiceAvatar uri={avatarUri} name={displayName || t('common.you')} size={88} />
@@ -245,8 +247,8 @@ function ProfileForm() {
             )}
           </>
         ) : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScroll>
+    </View>
   );
 }
 

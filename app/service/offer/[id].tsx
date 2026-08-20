@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Switch } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -8,9 +8,11 @@ import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
 import { PlacePicker } from '@/components/PlacePicker';
 import { FormField, useFormStyles } from '@/components/FormField';
+import { FormScroll } from '@/components/FormScroll';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { runWithOverlay } from '@/components/SyncOverlay';
 import { Text } from '@/components/AppText';
+import { showAppConfirm, showAppNotice } from '@/lib/appNotice';
 import { flushAccount } from '@/lib/backend/sync';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
@@ -66,11 +68,18 @@ function OfferForm() {
   const [kind, setKind] = useState<ServiceKindId>(existing?.kind ?? profile?.kinds[0] ?? 'other');
   const [customKind, setCustomKind] = useState(existing?.customKind ?? '');
   const [featured, setFeatured] = useState(Boolean(existing?.featured));
-  const [cityId, setCityId] = useState(existing?.cityId || profile?.cityId || '');
-  const [address, setAddress] = useState(existing?.address ?? '');
+  const [cityId, setCityId] = useState(contact.cityId);
+  const [address, setAddress] = useState(contact.address);
   const [phone, setPhone] = useState(contact.phone);
+
   const [images, setImages] = useState<string[]>(existing?.images ?? []);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const next = existing?.cityId || profile?.cityId;
+    if (!next) return;
+    setCityId((current) => current || next);
+  }, [existing?.cityId, profile?.cityId]);
 
   const onKind = useCallback((next: string | number) => {
     if (isServiceKindId(next)) setKind(next);
@@ -102,7 +111,7 @@ function OfferForm() {
 
   const addPhoto = useCallback(async () => {
     if (images.length >= limits.offerPhotos) {
-      Alert.alert(t('common.limit'), t('offer.photoLimit', { limit: limits.offerPhotos }));
+      showAppNotice(t('common.limit'), t('offer.photoLimit', { limit: limits.offerPhotos }));
       return;
     }
     const uri = await pickServiceImage();
@@ -116,16 +125,28 @@ function OfferForm() {
   const onSave = useCallback(async () => {
     const nextTitle = title.trim();
     if (!nextTitle) {
-      Alert.alert(t('common.missing'), t('offer.needTitle'));
+      showAppNotice(t('common.missing'), t('offer.needTitle'));
+      return;
+    }
+    if (!description.trim()) {
+      showAppNotice(t('common.missing'), t('offer.needDescription'));
+      return;
+    }
+    if (!negotiable && !price.trim()) {
+      showAppNotice(t('common.missing'), t('offer.needPrice'));
+      return;
+    }
+    if (images.length < 1) {
+      showAppNotice(t('common.missing'), t('offer.needPhoto'));
       return;
     }
     if (!profile?.displayName) {
-      Alert.alert(t('offer.needProfileTitle'), t('offer.needProfile'));
+      showAppNotice(t('offer.needProfileTitle'), t('offer.needProfile'));
       router.replace(SERVICE_ME_HREF);
       return;
     }
     if (isNew && offers.length >= limits.offers) {
-      Alert.alert(t('common.limit'), t('me.offerLimit', { limit: limits.offers }));
+      showAppNotice(t('common.limit'), t('me.offerLimit', { limit: limits.offers }));
       return;
     }
     if (saving) return;
@@ -161,17 +182,16 @@ function OfferForm() {
 
   const onDelete = useCallback(() => {
     if (!existing) return;
-    Alert.alert(t('offer.deleteTitle'), existing.title, [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: () => {
-          dispatch(removeOffer(existing.id));
-          router.back();
-        },
+    showAppConfirm({
+      title: t('offer.deleteTitle'),
+      body: existing.title,
+      confirmLabel: t('common.delete'),
+      danger: true,
+      onConfirm: () => {
+        dispatch(removeOffer(existing.id));
+        router.back();
       },
-    ]);
+    });
   }, [dispatch, existing, router, t]);
 
   if (!isNew && !existing) {
@@ -183,10 +203,8 @@ function OfferForm() {
   }
 
   return (
-    <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={[formStyles.content, { paddingBottom: Math.max(insets.bottom, 16) + 72 }]}
-        keyboardShouldPersistTaps="handled">
+    <View style={formStyles.screen}>
+      <FormScroll contentContainerStyle={[formStyles.content, { paddingBottom: Math.max(insets.bottom, 16) + 72 }]}>
         <Text style={formStyles.lead}>{t('offer.lead')}</Text>
         <FormField label={t('offer.title')} value={title} onChangeText={setTitle} placeholder={t('offer.titlePh')} />
         <Text style={formStyles.label}>{t('offer.kind')}</Text>
@@ -290,8 +308,8 @@ function OfferForm() {
             <Text style={styles.dangerText}>{t('common.delete')}</Text>
           </Pressable>
         ) : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScroll>
+    </View>
   );
 }
 

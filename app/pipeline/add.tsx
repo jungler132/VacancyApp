@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
-import { useLockedNav } from '@/lib/hooks/useLockedNav';
+import { Pressable, View } from 'react-native';
 
 import { FormField, useFormStyles } from '@/components/FormField';
+import { FormScroll } from '@/components/FormScroll';
 import { Text } from '@/components/AppText';
+import { showAppNotice } from '@/lib/appNotice';
+import { useLockedNav } from '@/lib/hooks/useLockedNav';
 import { useT } from '@/lib/i18n/useT';
 import { jobHref } from '@/lib/jobRoute';
 import { makeTrackedJob } from '@/lib/pipeline';
@@ -27,11 +29,11 @@ export default function PipelineAddScreen() {
     const nextTitle = title.trim();
     const nextCompany = company.trim();
     if (!nextTitle || !nextCompany) {
-      Alert.alert(t('common.missing'), t('pipeline.needFields'));
+      showAppNotice(t('common.missing'), t('pipeline.needFields'));
       return;
     }
     if (pipelineCount >= limits.pipeline) {
-      Alert.alert(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
+      showAppNotice(t('common.limit'), t('pipeline.limit', { limit: limits.pipeline }));
       return;
     }
     const job = makeTrackedJob({ title: nextTitle, company: nextCompany, url });
@@ -41,8 +43,8 @@ export default function PipelineAddScreen() {
   }, [company, dispatch, limits.pipeline, nav, pipelineCount, t, title, url]);
 
   return (
-    <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
+    <View style={formStyles.screen}>
+      <FormScroll contentContainerStyle={formStyles.content}>
         <Text style={formStyles.lead}>{t('pipeline.addLead')}</Text>
         <FormField label={t('pipeline.title')} value={title} onChangeText={setTitle} placeholder={t('pipeline.titlePh')} />
         <FormField label={t('pipeline.company')} value={company} onChangeText={setCompany} placeholder={t('pipeline.companyPh')} />
@@ -50,7 +52,7 @@ export default function PipelineAddScreen() {
         <Pressable onPress={onSave} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
           <Text style={formStyles.primaryText}>{t('pipeline.add')}</Text>
         </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScroll>
+    </View>
   );
 }

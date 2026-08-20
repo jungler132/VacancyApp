@@ -1,4 +1,5 @@
 export const MEDIA_BUCKET = 'media';
+export const JOBS_TABLE = 'vakano_jobs';
 export const CATALOG_PAGE = 48;
 export const EMAIL_OTP_LENGTH = 8;
 

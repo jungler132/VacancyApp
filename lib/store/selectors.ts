@@ -66,11 +66,11 @@ export const selectVisibleIds = createSelector(
     (state: RootState) => state.filters.extra,
     (state: RootState) => state.filters.tierFilter,
     (state: RootState) => state.localJobs.items,
-    (state: RootState) => state.jobs.worklyPublicIds,
+    (state: RootState) => state.jobs.appPublicIds,
   ],
-  (feed, byId, query, region, categories, extra, tierFilter, localJobs, worklyPublicIds) => {
+  (feed, byId, query, region, categories, extra, tierFilter, localJobs, appPublicIds) => {
     const extras: Job[] = [];
-    for (const id of worklyPublicIds) {
+    for (const id of appPublicIds) {
       const job = byId[id];
       if (job) extras.push(job);
     }

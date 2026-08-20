@@ -1,9 +1,9 @@
-# Workly
+# Vakano
 
 Android-приложение (Expo SDK 57): лента вакансий с публичных площадок, каталог услуг, локальные оповещения. Гостевой режим работает без аккаунта; вход по почте включает синхронизацию.
 
-- Пакет: `com.workly.app`
-- Схема: `workly://`
+- Пакет: `app.vakano.jobs`
+- Схема: `vakano://`
 - Поддержка: [worklysupport@proton.me](mailto:worklysupport@proton.me)
 - Политика: [https://jungler132.github.io/VacancyApp/](https://jungler132.github.io/VacancyApp/)
 
@@ -28,10 +28,10 @@ yarn test
 
 ## Реклама (AdMob)
 
-В AdMob создайте **два** блока для Android `com.workly.app`:
+В AdMob создайте **два** блока для Android `app.vakano.jobs`:
 
-1. **Межстраничное объявление** — имя например `workly_interstitial`. Показ при открытии вакансии или чужой услуги: каждое 3-е открытие и не чаще раза в 90 секунд. Крестик рисует Google, не наш таймер на 3 секунды.
-2. **Баннер** — имя например `workly_feed_banner`. Низ ленты вакансий и услуг, над табами.
+1. **Межстраничное объявление** — имя например `vakano_interstitial`. Показ при открытии вакансии или чужой услуги: каждое 3-е открытие и не чаще раза в 90 секунд. Крестик рисует Google, не наш таймер на 3 секунды.
+2. **Баннер** — имя например `vakano_feed_banner`. Низ ленты вакансий и услуг, над табами.
 
 Остальные форматы (rewarded, native, app open) не подключайте.
 
@@ -45,9 +45,9 @@ EXPO_PUBLIC_ADMOB_BANNER_ID=ca-app-pub-…/…
 
 Пока переменных нет, в сборке тестовые ID Google.
 
-**Сейчас тестовый режим включён** (`EXPO_PUBLIC_ADMOB_USE_TEST_ADS=1`): debug и локальный release показывают demo-объявления Google, боевые блоки `workly_interstitial` / `workly_feed_banner` не дергаются. Перед заливкой в Play поставьте `EXPO_PUBLIC_ADMOB_USE_TEST_ADS=0` и пересоберите.
+**Сейчас тестовый режим включён** (`EXPO_PUBLIC_ADMOB_USE_TEST_ADS=1`): debug и локальный release показывают demo-объявления Google, боевые блоки `vakano_interstitial` / `vakano_feed_banner` не дергаются. Перед заливкой в Play поставьте `EXPO_PUBLIC_ADMOB_USE_TEST_ADS=0` и пересоберите.
 
-Премиум без рекламы покупается через Google Play Billing (SKU `workly_premium`). На debug sideload покупка не проходит — нужен продукт в Play Console и установка с внутренней тестовой дорожки.
+Премиум без рекламы покупается через Google Play Billing (SKU `vakano_premium`). На debug sideload покупка не проходит — нужен продукт в Play Console и установка с внутренней тестовой дорожки.
 
 В Play Console: «Да, в приложении есть реклама». Data safety: рекламный ID — да, обрабатывает Google. Покупки — да, обрабатывает Google Play.
 
@@ -55,7 +55,7 @@ EXPO_PUBLIC_ADMOB_BANNER_ID=ca-app-pub-…/…
 
 Чтобы первая публикация не упиралась в политику, в приложении сделано так:
 
-1. **Премиум через Google Play Billing.** SKU `workly_premium`. Кнопка больше не заглушка. На локальном debug покупка не сработает, пока нет внутренней тестовой дорожки.
+1. **Премиум через Google Play Billing.** SKU `vakano_premium`. Кнопка больше не заглушка. На локальном debug покупка не сработает, пока нет внутренней тестовой дорожки.
 2. **Реклама AdMob.** Пока `EXPO_PUBLIC_ADMOB_USE_TEST_ADS=1` — только demo-объявления Google. Официальные test ads можно кликать для проверки. Боевые блоки — нет.
 3. **Debug-подпись.** Local release всё ещё debug-keystore — в Play такой AAB не заливать.
 
@@ -87,7 +87,7 @@ EXPO_PUBLIC_ADMOB_BANNER_ID=ca-app-pub-…/…
 
 ### User-generated content (обязательная анкета)
 
-Пользователи публикуют **свои вакансии Workly** и **страницу услуг** (тексты, фото, телефон). Это UGC.
+Пользователи публикуют **свои вакансии Vakano** и **страницу услуг** (тексты, фото, телефон). Это UGC.
 
 В Play Console нужно отметить:
 
@@ -104,8 +104,8 @@ EXPO_PUBLIC_ADMOB_BANNER_ID=ca-app-pub-…/…
 
 - **Приблизительное / точное местоположение:** не собираем. Город — это текст поиска, не GPS.
 - **Рекламный ID:** да, обрабатывает Google AdMob.
-- **Покупки в приложении:** да, разовый `workly_premium` через Google Play Billing. Платежные данные обрабатывает Google, не Workly.
-- **Электронная почта / имя / телефон / фото:** да, **только если** пользователь вошёл и сам указал (аккаунт, услуга, вакансия Workly). Назначение: функциональность приложения. Не продаём.
+- **Покупки в приложении:** да, разовый `vakano_premium` через Google Play Billing. Платежные данные обрабатывает Google, не Vakano.
+- **Электронная почта / имя / телефон / фото:** да, **только если** пользователь вошёл и сам указал (аккаунт, услуга, вакансия Vakano). Назначение: функциональность приложения. Не продаём.
 - **Сообщения / контент пользователя:** тексты вакансий и услуг, которые он публикует.
 - **Идентификаторы аккаунта:** да, после входа (Supabase).
 - **Передача третьим лицам:** поисковый запрос (текст, город, фильтры) уходит на включённые площадки вакансий; опционально фрагмент текста — в сервис перевода. Это нужно, чтобы лента работала.
@@ -134,21 +134,17 @@ EXPO_PUBLIC_ADMOB_BANNER_ID=ca-app-pub-…/…
 ### RU — короткое
 
 ```
-Вакансии с площадок, услуги и оповещения. Можно без аккаунта.
+Вакансии, услуги и оповещения в Vakano. Можно без аккаунта.
 ```
 
 ### RU — полное
 
 ```
-Workly собирает вакансии с публичных площадок в одну ленту: фильтры, город, удалёнка, сохранение и локальные оповещения о новых объявлениях.
+Vakano — лента вакансий с публичных площадок, каталог услуг и локальные оповещения. Гостевой режим без аккаунта; вход по почте включает синхронизацию.
 
-Гостевой режим работает на телефоне без регистрации. По желанию можно войти по почте — тогда страница услуг, фото и свои объявления Workly синхронизируются.
+В бесплатной версии есть реклама Google AdMob (баннер в ленте и межстраничное при открытии чужой вакансии или услуги). Vakano Premium убирает рекламу и открывает расширенные лимиты — покупка через Google Play.
 
-В каталоге услуг мастера публикуют карточку, контакты и работы. Чужой контент можно пожаловаться из приложения.
-
-Это не официальное приложение HeadHunter, «Работы России» и других площадок. Отклик и детали вакансии открываются на сайте источника.
-
-Премиум-размещение и реклама появятся позже. Сейчас в приложении нет покупок и нет рекламной сети.
+Это не официальное приложение HeadHunter, «Работы России» и других площадок. Отклик открывается на сайте источника.
 
 Поддержка: worklysupport@proton.me
 Политика конфиденциальности: https://jungler132.github.io/VacancyApp/
@@ -157,21 +153,17 @@ Workly собирает вакансии с публичных площадок 
 ### EN — short
 
 ```
-Job feed from public boards, services and alerts. Guest mode OK.
+Vakano: jobs, services and alerts. Guest mode OK.
 ```
 
 ### EN — full
 
 ```
-Workly aggregates job listings from public boards into one feed: filters, city, remote, saved jobs and local alerts for new posts.
+Vakano is a job feed from public boards, a services catalog and local alerts. Guest mode works without an account; email sign-in syncs your data.
 
-Guest mode works on-device with no account. Sign in with email if you want your services page, photos and Workly listings to sync.
+The free version shows Google AdMob ads (a feed banner and an interstitial when you open someone else’s job or service). Vakano Premium removes ads and raises limits — billed through Google Play.
 
-Professionals can publish a services card with contacts and photos. Users can report inappropriate content in the app.
-
-Workly is not the official HeadHunter, Trudvsem or other board app. Apply and read full listings on the source site.
-
-Premium placement and ads will come later. This version has no in-app purchases and no ad network.
+Vakano is not the official HeadHunter, Trudvsem or other board app. Apply on the source site.
 
 Support: worklysupport@proton.me
 Privacy policy: https://jungler132.github.io/VacancyApp/

@@ -1,11 +1,12 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormField, useFormStyles } from '@/components/FormField';
 import { Text } from '@/components/AppText';
 import { fetchReportUnlockAt, peekReportUnlockAt, submitServiceReport } from '@/lib/backend/reports';
 import { useT } from '@/lib/i18n/useT';
+import { useKeyboardInset } from '@/lib/keyboardInset';
 import { useAppSelector } from '@/lib/store/hooks';
 import { REPORT_COOLDOWN_MS, REPORT_MAX, reportWaitLabel, type ServiceReportTarget } from '@/lib/support';
 import { fonts, radius, useThemedStyles, type ThemeColors } from '@/lib/theme';
@@ -21,6 +22,7 @@ export const ReportSheet = memo(function ReportSheet({
 }) {
   const t = useT();
   const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardInset();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(reportSheetStyles);
   const email = useAppSelector((state) => state.auth.email);
@@ -103,9 +105,9 @@ export const ReportSheet = memo(function ReportSheet({
 
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.backdrop}>
         <Pressable style={styles.dismiss} onPress={close} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 12, marginBottom: open ? keyboard : 0 }]}>
           {sent ? (
             <>
               <Text style={styles.title}>{t('report.sent')}</Text>
@@ -155,7 +157,7 @@ export const ReportSheet = memo(function ReportSheet({
             </>
           )}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 });

@@ -3,10 +3,11 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 
 import { composeSalary } from '@/lib/format';
 import { asPlaceId } from '@/lib/places';
-import { LOCAL_JOBS_LIMIT, WORKLY_SOURCE_ID } from '@/lib/tiers';
+import { readPersisted } from '@/lib/persist';
+import { APP_SOURCE_ID, LOCAL_JOBS_LIMIT, isAppJobId } from '@/lib/tiers';
 import type { Job, JobTier } from '@/lib/types';
 
-export const LOCAL_JOBS_KEY = 'workly:local-jobs';
+export const LOCAL_JOBS_KEY = 'vakano:local-jobs';
 
 export type LocalJobsState = {
   items: Job[];
@@ -23,7 +24,7 @@ function isLocalJobRecord(value: unknown): value is Job {
   const row = value as Partial<Job>;
   return (
     typeof row.id === 'string' &&
-    row.id.startsWith('workly:') &&
+    isAppJobId(row.id) &&
     typeof row.title === 'string' &&
     typeof row.company === 'string'
   );
@@ -34,8 +35,8 @@ export function parseLocalJobs(raw: unknown): Job[] {
   const items = raw.filter(isLocalJobRecord).slice(0, LOCAL_JOBS_LIMIT);
   return items.map((job) => ({
     ...job,
-    sourceId: WORKLY_SOURCE_ID,
-    sourceName: job.sourceName || 'Workly',
+    sourceId: APP_SOURCE_ID,
+    sourceName: job.sourceName || 'Vakano',
     location: job.location ?? '',
     cityId: asPlaceId((job as Job).cityId),
     remote: Boolean(job.remote),
@@ -47,11 +48,11 @@ export function parseLocalJobs(raw: unknown): Job[] {
 }
 
 export function makeLocalJobId(): string {
-  return `workly:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  return `vakano:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export const hydrateLocalJobs = createAsyncThunk('localJobs/hydrate', async (): Promise<Job[]> => {
-  const raw = await AsyncStorage.getItem(LOCAL_JOBS_KEY);
+  const raw = await readPersisted(LOCAL_JOBS_KEY);
   if (!raw) return [];
   try {
     return parseLocalJobs(JSON.parse(raw));
@@ -138,8 +139,8 @@ export function buildLocalJob(input: {
   const excerpt = input.description.trim().slice(0, 180);
   return {
     id: makeLocalJobId(),
-    sourceId: WORKLY_SOURCE_ID,
-    sourceName: 'Workly',
+    sourceId: APP_SOURCE_ID,
+    sourceName: 'Vakano',
     title,
     company: input.company.trim(),
     companyLogo: input.companyLogo?.trim() || undefined,

@@ -4,25 +4,29 @@ import { DEFAULT_EXTRA_FILTERS, filterFeedIds, jobMatchesExtra, type ExtraFilter
 import { compareJobsByDate } from './freshness';
 import type { CategoryId, Job, JobTier, RegionId } from './types';
 
-export const WORKLY_SOURCE_ID = 'workly';
+export const APP_SOURCE_ID = 'vakano';
 export const LOCAL_JOBS_LIMIT = MAX_JOBS;
+
+export function isAppJobId(id: string): boolean {
+  return id.startsWith('vakano:') || id.startsWith('workly:');
+}
 
 export type TierFilter = 'all' | JobTier;
 
 export const TIER_FILTERS: { id: TierFilter; label: string }[] = [
   { id: 'all', label: 'Все' },
   { id: 1, label: 'Премиум' },
-  { id: 2, label: 'Workly' },
+  { id: 2, label: 'Vakano' },
   { id: 3, label: 'Площадки' },
 ];
 
 export function jobTier(job: Pick<Job, 'tier' | 'sourceId'>): JobTier {
   if (job.tier === 1 || job.tier === 2 || job.tier === 3) return job.tier;
-  return job.sourceId === WORKLY_SOURCE_ID ? 2 : 3;
+  return job.sourceId === APP_SOURCE_ID || job.sourceId === 'workly' ? 2 : 3;
 }
 
 export function isLocalJob(job: Pick<Job, 'sourceId' | 'id'>): boolean {
-  return job.sourceId === WORKLY_SOURCE_ID || job.id.startsWith('workly:');
+  return job.sourceId === APP_SOURCE_ID || job.sourceId === 'workly' || isAppJobId(job.id);
 }
 
 export function compareJobsByTierThenDate(a: Job, b: Job): number {

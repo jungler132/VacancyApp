@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import { readPersisted } from '@/lib/persist';
 import { DEFAULT_SEEK_PREFS, parseSeekPrefs, type SeekPrefs } from '@/lib/prefs';
 
-export const IDENTITY_KEY = 'workly:identity:v1';
+export const IDENTITY_KEY = 'vakano:identity:v1';
 
 export type IdentityState = SeekPrefs & {
   seeking: boolean;
@@ -39,7 +40,7 @@ export async function persistIdentity(state: IdentityPersist) {
 }
 
 export const hydrateIdentity = createAsyncThunk('identity/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(IDENTITY_KEY);
+  const raw = await readPersisted(IDENTITY_KEY);
   if (!raw) return parseIdentity(null);
   try {
     return parseIdentity(JSON.parse(raw));

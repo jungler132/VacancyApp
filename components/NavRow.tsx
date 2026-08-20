@@ -14,7 +14,7 @@ export const NavRow = memo(function NavRow({
   clearLabel,
   right,
   premium,
-  workly,
+  app,
   muted,
 }: {
   title: string;
@@ -24,7 +24,7 @@ export const NavRow = memo(function NavRow({
   clearLabel?: string;
   right?: ReactNode;
   premium?: boolean;
-  workly?: boolean;
+  app?: boolean;
   muted?: boolean;
 }) {
   const colors = useColors();
@@ -32,7 +32,7 @@ export const NavRow = memo(function NavRow({
   const press = useCallback(() => onPress(), [onPress]);
   return (
     <ToneCard
-      tone={muted ? 'default' : premium ? 'premium' : workly ? 'workly' : 'default'}
+      tone={muted ? 'default' : premium ? 'premium' : app ? 'app' : 'default'}
       onPress={press}
       style={[styles.row, muted && styles.muted]}>
       <View style={styles.body}>

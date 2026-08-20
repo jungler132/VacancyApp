@@ -2,10 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { isRemoteUri } from '@/lib/backend/merge';
+import { readPersisted } from '@/lib/persist';
 import { isServiceKindId } from '@/lib/services/kinds';
 import type { ServiceKindId, ServiceMaster, ServiceOffer, ServiceProfile } from '@/lib/services/types';
 
-export const SAVED_SERVICES_KEY = 'workly:saved-services:v1';
+export const SAVED_SERVICES_KEY = 'vakano:saved-services:v1';
 export const MAX_SAVED_SERVICES = 80;
 
 export type SavedServiceKind = 'offer' | 'master';
@@ -119,7 +120,7 @@ export function parseSavedServices(raw: unknown): SavedServiceItem[] {
 }
 
 export const hydrateSavedServices = createAsyncThunk('savedServices/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(SAVED_SERVICES_KEY);
+  const raw = await readPersisted(SAVED_SERVICES_KEY);
   if (!raw) return [] as SavedServiceItem[];
   try {
     return parseSavedServices(JSON.parse(raw));

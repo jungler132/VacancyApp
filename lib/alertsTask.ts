@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { checkSavedSearches } from '@/lib/alerts';
 import { setupNotificationHandler } from '@/lib/notifications';
 
-export const ALERT_TASK = 'workly-alert-check';
+export const ALERT_TASK = 'vakano-alert-check';
 
 setupNotificationHandler();
 

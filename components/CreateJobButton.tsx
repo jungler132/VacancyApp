@@ -21,7 +21,12 @@ export const CreateJobButton = memo(function CreateJobButton({
       accessibilityLabel={t('jobs.createA11y')}
       style={({ pressed }) => [styles.btn, pressed && styles.pressed]}>
       <MaterialDesignIcons name="plus" size={16} color={colors.accentText} />
-      <Text numberOfLines={1} style={styles.label}>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        allowFontScaling={false}
+        style={styles.label}>
         {t('jobs.new')}
       </Text>
     </Pressable>
@@ -36,11 +41,18 @@ function createJobButtonStyles(colors: ThemeColors) {
       gap: 4,
       backgroundColor: colors.accent,
       borderRadius: radius.full,
-      paddingHorizontal: 10,
+      paddingHorizontal: 12,
       paddingVertical: 7,
-      maxWidth: 168,
+      maxWidth: 220,
+      minWidth: 0,
     },
-    label: { color: colors.accentText, fontFamily: fonts.bold, fontSize: 12 },
+    label: {
+      color: colors.accentText,
+      fontFamily: fonts.bold,
+      fontSize: 12,
+      includeFontPadding: false,
+      flexShrink: 1,
+    },
     pressed: { opacity: 0.86 },
   };
 }

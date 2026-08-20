@@ -33,7 +33,7 @@ export async function fetchReportUnlockAt(now = Date.now()): Promise<number | nu
     .limit(1)
     .maybeSingle();
   if (error) {
-    console.warn('workly report last', error.message);
+    console.warn('vakano report last', error.message);
     return peekReportUnlockAt(userId, now);
   }
   if (!data?.created_at) {
@@ -72,7 +72,7 @@ export async function submitServiceReport(
       await fetchReportUnlockAt();
       return 'cooldown';
     }
-    console.warn('workly report', error.message);
+    console.warn('vakano report', error.message);
     return 'failed';
   }
   rememberLast(userId, Date.now());

@@ -1,5 +1,5 @@
 ---
-description: Как Workly ходит в площадки вакансий — волны, фильтры, ключи, HH
+description: Как Vakano ходит в площадки вакансий — волны, фильтры, ключи, HH
 globs: lib/api/**/*.ts,lib/placeQuery.ts,lib/http.ts,lib/feedKey.ts,lib/alerts.ts,lib/alertModel.ts,lib/hooks/useJobsFeed.ts
 alwaysApply: false
 ---

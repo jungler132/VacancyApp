@@ -9,8 +9,9 @@ import {
 } from '@/lib/fontScale';
 import { DEFAULT_LOCALE, detectLocale, parseLocale, type AppLocale } from '@/lib/i18n/locale';
 import { DEFAULT_THEME_PREF, parseThemePref, type ThemePreference } from '@/lib/theme';
+import { readPersisted } from '@/lib/persist';
 
-export const APPEARANCE_KEY = 'workly:appearance:v2';
+export const APPEARANCE_KEY = 'vakano:appearance:v2';
 
 export type AppearanceState = {
   fontSize: FontSizeId;
@@ -27,7 +28,7 @@ const initialState: AppearanceState = {
 };
 
 async function readAppearance(): Promise<{ fontSize: FontSizeId; locale: AppLocale; theme: ThemePreference }> {
-  const raw = await AsyncStorage.getItem(APPEARANCE_KEY);
+  const raw = await readPersisted(APPEARANCE_KEY);
   if (raw) {
     try {
       const parsed = JSON.parse(raw) as { fontSize?: unknown; locale?: unknown; theme?: unknown };
@@ -40,7 +41,7 @@ async function readAppearance(): Promise<{ fontSize: FontSizeId; locale: AppLoca
       /* migrate below */
     }
   }
-  const legacy = await AsyncStorage.getItem(FONT_SIZE_KEY);
+  const legacy = await readPersisted(FONT_SIZE_KEY);
   let fontSize = DEFAULT_FONT_SIZE;
   if (legacy) {
     try {
@@ -58,7 +59,7 @@ export async function persistAppearance(fontSize: FontSizeId, locale: AppLocale,
 
 export async function readStoredLocale(): Promise<AppLocale> {
   try {
-    const raw = await AsyncStorage.getItem(APPEARANCE_KEY);
+    const raw = await readPersisted(APPEARANCE_KEY);
     if (!raw) return detectLocale();
     const parsed = JSON.parse(raw) as { locale?: unknown };
     return parseLocale(parsed.locale) ?? detectLocale();

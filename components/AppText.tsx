@@ -7,6 +7,8 @@ import {
   type TextProps,
 } from 'react-native';
 
+import { scheduleKeyboardReveal } from '@/lib/keyboardInset';
+
 import { scaleFont, useFontScale } from '@/lib/fontScale';
 import { fonts, useColors } from '@/lib/theme';
 
@@ -36,6 +38,7 @@ export const TextInput = memo(function TextInput({
   style,
   allowFontScaling = false,
   placeholderTextColor,
+  onFocus,
   ...props
 }: TextInputProps) {
   const scale = useFontScale();
@@ -45,6 +48,10 @@ export const TextInput = memo(function TextInput({
       {...props}
       allowFontScaling={allowFontScaling}
       placeholderTextColor={placeholderTextColor ?? colors.placeholder}
+      onFocus={(event) => {
+        onFocus?.(event);
+        scheduleKeyboardReveal();
+      }}
       style={[
         { color: colors.text, fontFamily: fonts.regular, paddingVertical: 10, includeFontPadding: false },
         scaledStyle(style, scale),

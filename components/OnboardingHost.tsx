@@ -54,7 +54,7 @@ function mockJob(job: Partial<Job> & Pick<Job, 'id' | 'title' | 'company'>): Job
     sourceName: 'HeadHunter',
     location: '',
     remote: false,
-    url: 'https://workly.app',
+    url: 'https://vakano.app',
     excerpt: '',
     ...job,
   };
@@ -127,6 +127,9 @@ function MockTabBar({ active }: { active: TabGlyph }) {
             <TabGlyphView name={tab.icon} active={focused} />
             <Text
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.5}
+              allowFontScaling={false}
               style={[styles.tabBarLabel, { color: focused ? colors.accent : colors.faint }]}>
               {t(tab.label)}
             </Text>
@@ -223,8 +226,8 @@ function StepVisual({ visual }: { visual: StepVisualId }) {
         remote: true,
         salary: '$2,800–3,400',
         tier: 2,
-        sourceName: 'Workly',
-        sourceId: 'workly',
+        sourceName: 'Vakano',
+        sourceId: 'vakano',
         schedule: 'remote',
       }),
       mockJob({
@@ -373,7 +376,7 @@ function StepVisual({ visual }: { visual: StepVisualId }) {
               <MaterialDesignIcons name="drag" size={20} color={colors.faint} />
               <View style={styles.miniCopy}>
                 <Text style={styles.miniTitle}>{t('onboard.kanbanCard1')}</Text>
-                <Text style={styles.miniMeta}>Acme · {t('common.workly')}</Text>
+                <Text style={styles.miniMeta}>Acme · {t('common.app')}</Text>
               </View>
             </ToneCard>
             <View style={styles.sectionHead}>
@@ -679,12 +682,15 @@ function onboardStyles(colors: ThemeColors) {
       paddingBottom: 10,
       backgroundColor: colors.card,
     },
-    tabBarItem: { flex: 1, alignItems: 'center' as const, gap: 2 },
+    tabBarItem: { flex: 1, minWidth: 0, alignItems: 'center' as const, gap: 2 },
     tabBarLabel: {
-      fontSize: 9,
-      lineHeight: 11,
+      fontSize: 10,
+      lineHeight: 12,
       fontFamily: fonts.semibold,
       textAlign: 'center' as const,
+      width: '100%' as const,
+      includeFontPadding: false,
+      paddingHorizontal: 1,
     },
     footer: { gap: 14, paddingTop: 18 },
     dots: { flexDirection: 'row' as const, justifyContent: 'center' as const, alignItems: 'center' as const, gap: 6 },

@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { ChoiceTiles } from '@/components/ChoiceTiles';
 import { FormField, useFormStyles } from '@/components/FormField';
+import { FormScroll } from '@/components/FormScroll';
 import { Text } from '@/components/AppText';
 import { beginNav } from '@/lib/navLock';
 import { keyOf } from '@/lib/i18n';
@@ -64,8 +65,8 @@ export default function PrefsScreen() {
   }, [available, dispatch, format, router, seeking, title]);
 
   return (
-    <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={formStyles.content} keyboardShouldPersistTaps="handled">
+    <View style={formStyles.screen}>
+      <FormScroll contentContainerStyle={formStyles.content}>
         <Text style={formStyles.lead}>{t('prefs.lead')}</Text>
         <View>
           <Text style={formStyles.label}>{t('prefs.status')}</Text>
@@ -79,7 +80,7 @@ export default function PrefsScreen() {
         <Pressable onPress={onSave} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
           <Text style={formStyles.primaryText}>{t('common.save')}</Text>
         </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScroll>
+    </View>
   );
 }

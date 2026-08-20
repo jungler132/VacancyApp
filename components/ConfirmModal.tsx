@@ -11,6 +11,9 @@ export const ConfirmModal = memo(function ConfirmModal({
   title,
   body,
   confirmLabel,
+  hideCancel,
+  danger,
+  cancelLabel,
   onConfirm,
   onClose,
 }: {
@@ -18,6 +21,9 @@ export const ConfirmModal = memo(function ConfirmModal({
   title: string;
   body: string;
   confirmLabel?: string;
+  hideCancel?: boolean;
+  danger?: boolean;
+  cancelLabel?: string;
   onConfirm: () => void;
   onClose: () => void;
 }) {
@@ -31,15 +37,21 @@ export const ConfirmModal = memo(function ConfirmModal({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={[styles.card, { marginBottom: Math.max(insets.bottom, 16) }]}>
           <Text style={styles.title}>{title}</Text>
-          <ScrollView style={styles.scroll} bounces={false}>
-            <Text style={styles.body}>{body}</Text>
-          </ScrollView>
-          <Pressable onPress={onConfirm} style={({ pressed }) => [styles.yes, pressed && styles.pressed]}>
+          {body ? (
+            <ScrollView style={styles.scroll} bounces={false}>
+              <Text style={styles.body}>{body}</Text>
+            </ScrollView>
+          ) : null}
+          <Pressable
+            onPress={onConfirm}
+            style={({ pressed }) => [styles.yes, danger && styles.yesDanger, pressed && styles.pressed]}>
             <Text style={styles.yesText}>{confirmLabel ?? t('auth.agree')}</Text>
           </Pressable>
-          <Pressable onPress={onClose} style={({ pressed }) => [styles.no, pressed && styles.pressed]}>
-            <Text style={styles.noText}>{t('auth.later')}</Text>
-          </Pressable>
+          {hideCancel ? null : (
+            <Pressable onPress={onClose} style={({ pressed }) => [styles.no, pressed && styles.pressed]}>
+              <Text style={styles.noText}>{cancelLabel ?? t('common.cancel')}</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>
@@ -52,7 +64,8 @@ function confirmModalStyles(colors: ThemeColors) {
       flex: 1,
       justifyContent: 'center' as const,
       paddingHorizontal: 20,
-      backgroundColor: 'rgba(0,0,0,0.45)',
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      zIndex: 40,
     },
     card: {
       backgroundColor: colors.card,
@@ -74,6 +87,7 @@ function confirmModalStyles(colors: ThemeColors) {
       justifyContent: 'center' as const,
     },
     yesText: { color: colors.accentText, fontFamily: fonts.bold, fontSize: 16 },
+    yesDanger: { backgroundColor: colors.danger },
     no: {
       height: 44,
       alignItems: 'center' as const,

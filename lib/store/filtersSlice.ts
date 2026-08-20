@@ -7,8 +7,9 @@ import { placeFitsRegion } from '@/lib/places';
 import type { TierFilter } from '@/lib/tiers';
 import type { CategoryId, RegionId } from '@/lib/types';
 import type { SearchSnapshot } from '@/lib/alerts';
+import { readPersisted } from '@/lib/persist';
 
-export const FILTERS_KEY = 'workly:filters:v2';
+export const FILTERS_KEY = 'vakano:filters:v2';
 
 const REGIONS: RegionId[] = ['all', 'cis', 'az', 'europe', 'west', 'asia', 'remote'];
 const CATEGORIES: CategoryId[] = [
@@ -83,7 +84,7 @@ export function parsePersistedFilters(raw: unknown): PersistedFilters {
 }
 
 export const hydrateFilters = createAsyncThunk('filters/hydrate', async (): Promise<PersistedFilters> => {
-  const raw = await AsyncStorage.getItem(FILTERS_KEY);
+  const raw = await readPersisted(FILTERS_KEY);
   if (!raw) return parsePersistedFilters(null);
   try {
     return parsePersistedFilters(JSON.parse(raw));

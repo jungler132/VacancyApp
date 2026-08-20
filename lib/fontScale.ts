@@ -1,9 +1,11 @@
 import { createContext, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { readPersisted } from '@/lib/persist';
+
 export type FontSizeId = 'sm' | 'md' | 'lg';
 
-export const FONT_SIZE_KEY = 'workly:font-size:v1';
+export const FONT_SIZE_KEY = 'vakano:font-size:v1';
 export const DEFAULT_FONT_SIZE: FontSizeId = 'md';
 
 export const FONT_SIZE_OPTIONS: { id: FontSizeId; label: string }[] = [
@@ -29,7 +31,7 @@ export function parseFontSize(raw: unknown): FontSizeId {
 }
 
 export async function readFontSize(): Promise<FontSizeId> {
-  const raw = await AsyncStorage.getItem(FONT_SIZE_KEY);
+  const raw = await readPersisted(FONT_SIZE_KEY);
   if (!raw) return DEFAULT_FONT_SIZE;
   try {
     return parseFontSize(JSON.parse(raw));

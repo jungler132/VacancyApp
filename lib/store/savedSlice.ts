@@ -3,9 +3,10 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 
 import { isApplyStatus, type ApplyStatus } from '@/lib/apply';
 import { MAX_PIPELINE } from '@/lib/limits';
+import { readPersisted } from '@/lib/persist';
 import type { Job } from '@/lib/types';
 
-const STORAGE_KEY = 'workly:saved-jobs';
+const STORAGE_KEY = 'vakano:saved-jobs';
 
 export type SavedState = {
   items: Job[];
@@ -67,7 +68,7 @@ export function parseSavedPersist(raw: unknown): SavedPersist {
 }
 
 export const hydrateSaved = createAsyncThunk('saved/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(STORAGE_KEY);
+  const raw = await readPersisted(STORAGE_KEY);
   if (!raw) return { items: [] as Job[], statuses: {} as Record<string, ApplyStatus>, statusAt: {} as Record<string, string> };
   return parseSaved(raw);
 });

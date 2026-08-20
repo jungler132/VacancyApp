@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import { readPersisted } from '@/lib/persist';
 import { JOB_SITES, TELEGRAM_GROUPS, type CatalogLink } from '@/lib/telegramGroups';
 
-export const SAVED_CATALOG_KEY = 'workly:saved-catalog:v1';
+export const SAVED_CATALOG_KEY = 'vakano:saved-catalog:v1';
 
 export type SavedCatalogKind = 'telegram' | 'site';
 
@@ -60,7 +61,7 @@ export function parseSavedCatalog(raw: unknown): SavedCatalogItem[] {
 }
 
 export const hydrateSavedCatalog = createAsyncThunk('savedCatalog/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(SAVED_CATALOG_KEY);
+  const raw = await readPersisted(SAVED_CATALOG_KEY);
   if (!raw) return [] as SavedCatalogItem[];
   try {
     return parseSavedCatalog(JSON.parse(raw));

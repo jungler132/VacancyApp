@@ -1,11 +1,11 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Pressable, View } from 'react-native';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { Text, TextInput } from '@/components/AppText';
 import { useFormStyles } from '@/components/FormField';
 import { useLocale, useT } from '@/lib/i18n/useT';
-import { getPlace, placeLabel, searchPlaces } from '@/lib/places';
+import { getPlace, inferPlaceId, placeLabel, searchPlaces } from '@/lib/places';
 import { fonts, radius, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import type { RegionId } from '@/lib/types';
 
@@ -32,6 +32,8 @@ export const PlacePicker = memo(function PlacePicker({
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const picking = useRef(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryRef = useRef('');
   const selected = getPlace(value);
   const selectedLabel = selected ? placeLabel(selected.id, locale) : '';
   const options = useMemo(() => {
@@ -43,31 +45,70 @@ export const PlacePicker = memo(function PlacePicker({
   const open = focused && query.trim().length > 0;
   const text = focused ? query : selectedLabel;
 
+  const cancelBlur = useCallback(() => {
+    if (blurTimer.current) {
+      clearTimeout(blurTimer.current);
+      blurTimer.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => cancelBlur(), [cancelBlur]);
+
   const onFocus = useCallback(() => {
+    picking.current = false;
+    cancelBlur();
     setFocused(true);
+    queryRef.current = selectedLabel;
     setQuery(selectedLabel);
-  }, [selectedLabel]);
+  }, [cancelBlur, selectedLabel]);
+
+  const commitTyped = useCallback(
+    (raw: string) => {
+      const needle = raw.trim();
+      if (!needle) return;
+      if (selected && needle.toLowerCase() === selectedLabel.toLowerCase()) {
+        return;
+      }
+      const inferred = inferPlaceId(needle);
+      const place = getPlace(inferred);
+      if (!place) return;
+      if (!allowCountry && place.kind !== 'city') return;
+      if (region !== 'all' && region !== 'remote' && place.region !== region) return;
+      onChange(place.id);
+    },
+    [allowCountry, onChange, region, selected, selectedLabel],
+  );
 
   const onBlur = useCallback(() => {
-    if (picking.current) return;
-    setFocused(false);
-    setQuery('');
-  }, []);
+    cancelBlur();
+    blurTimer.current = setTimeout(() => {
+      blurTimer.current = null;
+      if (picking.current) return;
+      commitTyped(queryRef.current);
+      setFocused(false);
+      setQuery('');
+    }, 180);
+  }, [cancelBlur, commitTyped]);
 
   const pick = useCallback(
     (id: string) => {
       picking.current = true;
+      cancelBlur();
       onChange(id);
+      queryRef.current = '';
       setQuery('');
       setFocused(false);
       Keyboard.dismiss();
-      picking.current = false;
+      setTimeout(() => {
+        picking.current = false;
+      }, 240);
     },
-    [onChange],
+    [cancelBlur, onChange],
   );
 
   const clear = useCallback(() => {
     onChange('');
+    queryRef.current = '';
     setQuery('');
   }, [onChange]);
 
@@ -77,7 +118,10 @@ export const PlacePicker = memo(function PlacePicker({
       <View style={styles.field}>
         <TextInput
           value={text}
-          onChangeText={setQuery}
+          onChangeText={(next) => {
+            queryRef.current = next;
+            setQuery(next);
+          }}
           onFocus={onFocus}
           onBlur={onBlur}
           placeholder={placeholder ?? t('filters.placeSearch')}
@@ -85,6 +129,7 @@ export const PlacePicker = memo(function PlacePicker({
           style={[formStyles.input, styles.input, selected && !focused ? styles.inputPicked : null]}
           autoCorrect={false}
           autoCapitalize="none"
+          blurOnSubmit={false}
         />
         {selected && !focused ? (
           <Pressable onPress={clear} hitSlop={10} style={styles.clear} accessibilityLabel={t('common.reset')}>
@@ -133,7 +178,7 @@ const PlaceRow = memo(function PlaceRow({
   const styles = useThemedStyles(placePickerStyles);
   const press = useCallback(() => onPick(id), [id, onPick]);
   return (
-    <Pressable onPressIn={press} style={[styles.row, lined && styles.rowLine, selected && styles.rowOn]}>
+    <Pressable onPressIn={press} delayPressIn={0} style={[styles.row, lined && styles.rowLine, selected && styles.rowOn]}>
       <Text style={[styles.rowTitle, selected && styles.rowTitleOn]}>{label}</Text>
       {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
     </Pressable>
@@ -159,6 +204,8 @@ function placePickerStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
       borderColor: colors.cardBorder,
       backgroundColor: colors.card,
       overflow: 'hidden' as const,
+      zIndex: 8,
+      elevation: 8,
     },
     row: {
       paddingHorizontal: 12,

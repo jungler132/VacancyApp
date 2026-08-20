@@ -69,7 +69,7 @@ export type JobsState = {
   lru: string[];
   viewedId?: string;
   todayIds: string[];
-  worklyPublicIds: string[];
+  appPublicIds: string[];
 };
 
 const initialState: JobsState = {
@@ -77,7 +77,7 @@ const initialState: JobsState = {
   feeds: {},
   lru: [],
   todayIds: [],
-  worklyPublicIds: [],
+  appPublicIds: [],
 };
 
 function sameJob(prev: Job, next: Job) {
@@ -116,7 +116,7 @@ function pruneById(state: JobsState, extraKeep: string[] = []) {
   const keep = new Set(extraKeep);
   if (state.viewedId) keep.add(state.viewedId);
   for (const id of state.todayIds) keep.add(id);
-  for (const id of state.worklyPublicIds) keep.add(id);
+  for (const id of state.appPublicIds) keep.add(id);
   for (const feed of Object.values(state.feeds)) {
     for (const id of feed.ids) keep.add(id);
   }
@@ -250,9 +250,9 @@ const jobsSlice = createSlice({
       upsertJobs(state, action.payload);
       state.todayIds = action.payload.map((job) => job.id);
     },
-    setWorklyPublic(state, action: PayloadAction<Job[]>) {
+    setAppPublic(state, action: PayloadAction<Job[]>) {
       upsertJobs(state, action.payload);
-      state.worklyPublicIds = action.payload.map((job) => job.id);
+      state.appPublicIds = action.payload.map((job) => job.id);
     },
     pinViewedJob(state, action: PayloadAction<Job>) {
       upsertJobs(state, [action.payload]);
@@ -356,7 +356,7 @@ const jobsSlice = createSlice({
         current.errors = [
           {
             sourceId: 'app',
-            sourceName: 'Workly',
+            sourceName: 'Vakano',
             message: action.error.message ?? 'не удалось загрузить ленту',
           },
         ];
@@ -375,7 +375,7 @@ const jobsSlice = createSlice({
 export const {
   rememberJobs,
   setTodayJobs,
-  setWorklyPublic,
+  setAppPublic,
   pinViewedJob,
   pruneUnreferencedJobs,
   clearJobsCache,

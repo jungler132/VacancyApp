@@ -258,12 +258,12 @@ export default function ProfileScreen() {
               meta={[
                 job.archived ? t('common.archived') : '',
                 job.company,
-                jobTier(job) === 1 ? t('profile.jobPremium') : t('common.workly'),
+                jobTier(job) === 1 ? t('profile.jobPremium') : t('common.app'),
               ]
                 .filter(Boolean)
                 .join(' · ')}
               premium={jobTier(job) === 1 && !job.archived}
-              workly={jobTier(job) === 2 && !job.archived}
+              app={jobTier(job) === 2 && !job.archived}
               muted={job.archived}
               onPress={() => {
                 dispatch(pinViewedJob(job));

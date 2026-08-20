@@ -21,6 +21,11 @@ export const grantPremium = createAsyncThunk('premium/grant', async () => {
   return true;
 });
 
+export const revokePremium = createAsyncThunk('premium/revoke', async () => {
+  await writePremium(false);
+  return false;
+});
+
 const premiumSlice = createSlice({
   name: 'premium',
   initialState,
@@ -44,6 +49,9 @@ const premiumSlice = createSlice({
       .addCase(grantPremium.fulfilled, (state) => {
         state.isPremium = true;
         state.paywallOpen = false;
+      })
+      .addCase(revokePremium.fulfilled, (state) => {
+        state.isPremium = false;
       });
   },
 });

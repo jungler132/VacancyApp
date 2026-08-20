@@ -217,7 +217,7 @@ listener.startListening({
     const state = listenerApi.getState() as RootState;
     const savedIds = state.saved.items.map((item) => item.id);
     const localIds = state.localJobs.items.map((item) => item.id);
-    listenerApi.dispatch(pruneUnreferencedJobs([...savedIds, ...localIds, ...state.jobs.todayIds, ...state.jobs.worklyPublicIds]));
+    listenerApi.dispatch(pruneUnreferencedJobs([...savedIds, ...localIds, ...state.jobs.todayIds, ...state.jobs.appPublicIds]));
   },
 });
 

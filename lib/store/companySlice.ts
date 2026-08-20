@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-export const COMPANY_KEY = 'workly:company:v1';
+import { readPersisted } from '@/lib/persist';
+
+export const COMPANY_KEY = 'vakano:company:v1';
 
 export type CompanyPersist = {
   name: string;
@@ -39,7 +41,7 @@ export async function persistCompany(state: CompanyPersist) {
 }
 
 export const hydrateCompany = createAsyncThunk('company/hydrate', async () => {
-  const raw = await AsyncStorage.getItem(COMPANY_KEY);
+  const raw = await readPersisted(COMPANY_KEY);
   if (!raw) return parseCompany(null);
   try {
     return parseCompany(JSON.parse(raw));

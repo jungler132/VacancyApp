@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,9 +22,15 @@ export const PaywallHost = memo(function PaywallHost() {
       open={open}
       purchasing={billing.purchasing}
       priceLabel={billing.priceLabel}
-      onClose={() => dispatch(closePaywall())}
+      storeBlocked={billing.storeBlocked}
+      onClose={() => {
+        billing.dismissStoreBlocked();
+        dispatch(closePaywall());
+      }}
       onPurchase={billing.buy}
       onRestore={billing.restore}
+      onDismissNotice={billing.dismissStoreBlocked}
+      onTryTest={billing.tryTest}
     />
   );
 });
@@ -33,16 +39,22 @@ export const PaywallSheet = memo(function PaywallSheet({
   open,
   purchasing,
   priceLabel,
+  storeBlocked,
   onClose,
   onPurchase,
   onRestore,
+  onDismissNotice,
+  onTryTest,
 }: {
   open: boolean;
   purchasing: boolean;
   priceLabel: string | null;
+  storeBlocked?: boolean;
   onClose: () => void;
   onPurchase: () => void;
   onRestore: () => void;
+  onDismissNotice?: () => void;
+  onTryTest?: () => void;
 }) {
   const t = useT();
   const insets = useSafeAreaInsets();
@@ -78,6 +90,12 @@ export const PaywallSheet = memo(function PaywallSheet({
               {purchasing ? t('paywall.buying') : priceLabel ? t('paywall.buyPrice', { price: priceLabel }) : t('paywall.buy')}
             </Text>
           </Pressable>
+          {onTryTest ? (
+            <Pressable onPress={onTryTest} style={({ pressed }) => [styles.test, pressed && styles.pressed]}>
+              <Text style={styles.testText}>{t('paywall.tryTest')}</Text>
+              <Text style={styles.testHint}>{t('paywall.tryTestHint')}</Text>
+            </Pressable>
+          ) : null}
           <Pressable onPress={onRestore} style={styles.later}>
             <Text style={styles.laterText}>{t('paywall.restore')}</Text>
           </Pressable>
@@ -85,6 +103,23 @@ export const PaywallSheet = memo(function PaywallSheet({
             <Text style={styles.laterText}>{t('paywall.later')}</Text>
           </Pressable>
         </ScrollView>
+        {storeBlocked ? (
+          <View style={styles.noticeRoot} pointerEvents="box-none">
+            <Pressable style={styles.noticeDim} onPress={onDismissNotice} />
+            <View style={[styles.noticeCard, { marginBottom: Math.max(insets.bottom, 16) }]}>
+              <Text style={styles.noticeTitle}>{t('paywall.needStoreTitle')}</Text>
+              <Text style={styles.noticeBody}>{t('paywall.needStore')}</Text>
+              {onTryTest ? (
+                <Pressable onPress={onTryTest} style={({ pressed }) => [styles.noticeBuy, pressed && styles.pressed]}>
+                  <Text style={styles.buyText}>{t('paywall.tryTest')}</Text>
+                </Pressable>
+              ) : null}
+              <Pressable onPress={onDismissNotice} style={styles.later}>
+                <Text style={styles.noticeOk}>{t('common.ok')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </View>
     </Modal>
   );
@@ -136,6 +171,45 @@ function paywallSheetStyles(colors: ThemeColors) {
     buyOff: { opacity: 0.55 },
     later: { alignItems: 'center' as const, paddingVertical: 16 },
     laterText: { color: colors.onPrimaryContainer, fontFamily: fonts.semibold, fontSize: 15 },
+    test: {
+      marginTop: 4,
+      borderWidth: 1,
+      borderColor: colors.orange,
+      borderRadius: radius.lg,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      alignItems: 'center' as const,
+      gap: 4,
+    },
+    testText: { color: '#ffffff', fontFamily: fonts.bold, fontSize: 15 },
+    testHint: { color: colors.onPrimaryContainer, fontFamily: fonts.medium, fontSize: 12, textAlign: 'center' as const },
+    noticeRoot: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 4,
+      justifyContent: 'center' as const,
+      paddingHorizontal: 20,
+    },
+    noticeDim: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    noticeCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: colors.orange,
+      padding: 20,
+      gap: 12,
+    },
+    noticeTitle: { color: colors.text, fontFamily: fonts.bold, fontSize: 20, lineHeight: 26 },
+    noticeBody: { color: colors.muted, fontFamily: fonts.medium, fontSize: 15, lineHeight: 22 },
+    noticeOk: { color: colors.muted, fontFamily: fonts.semibold, fontSize: 15 },
+    noticeBuy: {
+      backgroundColor: colors.orange,
+      borderRadius: radius.full,
+      paddingVertical: 16,
+      alignItems: 'center' as const,
+    },
     pressed: { opacity: 0.86 },
   };
 }

@@ -248,7 +248,7 @@ const PipelineCard = memo(function PipelineCard({
           {job.title}
         </Text>
         <Text style={styles.cardMeta} numberOfLines={1}>
-          {[job.company, jobTier(job) === 1 ? t('common.premium') : jobTier(job) === 2 ? t('common.workly') : job.sourceName]
+          {[job.company, jobTier(job) === 1 ? t('common.premium') : jobTier(job) === 2 ? t('common.app') : job.sourceName]
             .filter(Boolean)
             .join(' · ')}
         </Text>
