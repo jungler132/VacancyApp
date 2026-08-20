@@ -102,7 +102,7 @@ export async function searchHeadHunterAz(params: SearchParams): Promise<Job[]> {
   return searchHh(params, {
     id: 'hhaz',
     name: 'HeadHunter AZ',
-    site: 'hh.az',
+    site: 'hh1.az',
     areas: ['9'],
     fallbackLocation: 'Азербайджан',
     lang: 'az',

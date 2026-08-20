@@ -8,6 +8,8 @@ import { Text } from '@/components/AppText';
 import { beginNav } from '@/lib/navLock';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
+import { prefsFilled, searchFromPrefs } from '@/lib/prefs';
+import { applySearch } from '@/lib/store/filtersSlice';
 import { savePrefs } from '@/lib/store/identitySlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import type { WorkFormat } from '@/lib/filters';
@@ -51,7 +53,14 @@ export default function PrefsScreen() {
 
   const onSave = useCallback(() => {
     dispatch(savePrefs({ title, format, seeking, available }));
-    if (beginNav()) router.back();
+    if (!beginNav()) return;
+    const next = { title, format };
+    if (prefsFilled(next)) dispatch(applySearch(searchFromPrefs(next)));
+    if (seeking && prefsFilled(next)) {
+      router.replace('/');
+      return;
+    }
+    router.back();
   }, [available, dispatch, format, router, seeking, title]);
 
   return (

@@ -15,11 +15,11 @@ import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { fonts, radius, regionColor, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 async function openCatalogLink(item: CatalogLink) {
-  if (item.handle) {
+  try {
     await Linking.openURL(item.url);
-    return;
+  } catch {
+    await WebBrowser.openBrowserAsync(item.url);
   }
-  await WebBrowser.openBrowserAsync(item.url);
 }
 
 export const CatalogLinkCard = memo(function CatalogLinkCard({

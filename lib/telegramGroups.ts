@@ -350,11 +350,11 @@ export const TELEGRAM_GROUPS: CatalogLink[] = [
 ];
 
 export const JOB_SITES: CatalogLink[] = [
-  site('az', 'hhaz', 'HeadHunter AZ', 'https://hh.az'),
+  site('az', 'hhaz', 'HeadHunter AZ', 'https://hh1.az'),
   site('az', 'birjob', 'BirJob', 'https://www.birjob.com'),
   site('az', 'boss', 'Boss.az', 'https://boss.az'),
-  site('az', 'hellojob', 'HelloJob.az', 'https://www.hellojob.az'),
-  site('az', 'jobsearch', 'JobSearch.az', 'https://www.jobsearch.az'),
+  site('az', 'hellojob', 'HelloJob.az', 'https://hellojob.az'),
+  site('az', 'jobsearch', 'JobSearch.az', 'https://jobsearch.az'),
   site('az', 'offer', 'Offer.az', 'https://www.offer.az'),
   site('az', 'rabota-az', 'Rabota.az', 'https://www.rabota.az'),
   site('az', 'busy', 'Busy.az', 'https://busy.az'),
@@ -363,8 +363,8 @@ export const JOB_SITES: CatalogLink[] = [
   site('az', 'glorri', 'Glorri', 'https://glorri.com'),
   site('az', 'olx-az', 'OLX — İş elanları', 'https://www.olx.az/is-elanlari/'),
   site('az', 'tap-az', 'Tap.az — İş', 'https://tap.az/elanlar/is-elanlari'),
-  site('az', 'ejob', 'e-Job.az', 'https://www.e-job.az'),
-  site('az', 'vakansiya-az', 'Vakansiya.az', 'https://vakansiya.az'),
+  site('az', 'ejob', 'eJob.az', 'https://ejob.az'),
+  site('az', 'vakansiya-az', 'Vakansiya.az', 'https://www.vakansiya.az'),
 
   site('ru', 'hhru', 'HeadHunter', 'https://hh.ru'),
   site('ru', 'superjob', 'SuperJob', 'https://www.superjob.ru'),

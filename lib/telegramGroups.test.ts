@@ -55,6 +55,17 @@ describe('catalog resources', () => {
     assert.ok(groups.some((group) => group.id === 'az'));
   });
 
+  it('держит актуальные адреса HH AZ и eJob.az', () => {
+    const hh = JOB_SITES.find((item) => item.id === 'hhaz');
+    const ejob = JOB_SITES.find((item) => item.id === 'ejob');
+    const hellojob = JOB_SITES.find((item) => item.id === 'hellojob');
+    const jobsearch = JOB_SITES.find((item) => item.id === 'jobsearch');
+    assert.equal(hh?.url, 'https://hh1.az');
+    assert.equal(ejob?.url, 'https://ejob.az');
+    assert.equal(hellojob?.url, 'https://hellojob.az');
+    assert.equal(jobsearch?.url, 'https://jobsearch.az');
+  });
+
   it('выводит тип охвата и доступ без сети', () => {
     const hh = JOB_SITES.find((item) => item.id === 'hhru');
     const djinni = JOB_SITES.find((item) => item.id === 'djinni');

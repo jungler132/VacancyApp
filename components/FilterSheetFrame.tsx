@@ -106,8 +106,8 @@ function filterSheetFrameStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       bottom: 0,
       left: 0,
       justifyContent: 'flex-end' as const,
-      zIndex: 50,
-      elevation: 50,
+      zIndex: 200,
+      elevation: 200,
     },
     backdrop: {
       ...StyleSheet.absoluteFill,

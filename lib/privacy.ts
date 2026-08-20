@@ -58,7 +58,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
           'Среди таких площадок могут быть, в частности:',
         ],
         items: [
-          'HeadHunter (hh.ru / hh.az);',
+          'HeadHunter (hh.ru / hh1.az);',
           'BirJob;',
           'Работа России (trudvsem.ru);',
           'Adzuna, Jooble, USAJobs;',
@@ -160,7 +160,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
           'Those boards may include:',
         ],
         items: [
-          'HeadHunter (hh.ru / hh.az);',
+          'HeadHunter (hh.ru / hh1.az);',
           'BirJob;',
           'Russia’s jobs portal (trudvsem.ru);',
           'Adzuna, Jooble, USAJobs;',
@@ -260,7 +260,7 @@ const DOCS: Record<AppLocale, PrivacyDoc> = {
           'Belə saytlara daxil ola bilər:',
         ],
         items: [
-          'HeadHunter (hh.ru / hh.az);',
+          'HeadHunter (hh.ru / hh1.az);',
           'BirJob;',
           'Rusiya iş portalı (trudvsem.ru);',
           'Adzuna, Jooble, USAJobs;',

@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
@@ -75,7 +75,11 @@ export default function JobDetailsScreen() {
     } else {
       dispatch(setApplyStatus({ job, status: 'applied' }));
     }
-    if (job.url) WebBrowser.openBrowserAsync(job.url);
+    if (job.url) {
+      Linking.openURL(job.url).catch(() => {
+        WebBrowser.openBrowserAsync(job.url!).catch(() => undefined);
+      });
+    }
   }, [applyStatus, dispatch, job, limits.pipeline, pipelineCount, t]);
 
   const toggle = useCallback(() => {

@@ -14,12 +14,12 @@ import { Text } from '@/components/AppText';
 import { flushAccount } from '@/lib/backend/sync';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
-import { masterHref, offerEditorHref, offerPriceLabel } from '@/lib/services/catalog';
+import { offerEditorHref, offerPriceLabel } from '@/lib/services/catalog';
 import { formatServiceSchedule, WORKDAYS } from '@/lib/services/hours';
 import { pickServiceImage } from '@/lib/services/images';
 import { SERVICE_KINDS } from '@/lib/services/kinds';
 import type { ServiceKindId, WeekdayId } from '@/lib/services/types';
-import { CUSTOM_KINDS_LIMIT, OWN_PROFILE_ID, emptyProfile, saveProfile } from '@/lib/store/freelanceSlice';
+import { CUSTOM_KINDS_LIMIT, emptyProfile, saveProfile } from '@/lib/store/freelanceSlice';
 import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 import { selectOwnMaster } from '@/lib/store/selectors';
@@ -138,7 +138,7 @@ function ProfileForm() {
           }),
         );
         await flushAccount(() => store.getState(), dispatch);
-        router.replace(masterHref(own?.id ?? OWN_PROFILE_ID));
+        router.back();
       });
     } finally {
       setSaving(false);

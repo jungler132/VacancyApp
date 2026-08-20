@@ -59,7 +59,7 @@ const PROVIDERS: Provider[] = [
 
 export const SOURCES: SourceInfo[] = [
   { id: 'hh', name: 'HeadHunter', regionLabel: 'СНГ', status: 'live', note: 'hh.ru, все профессии' },
-  { id: 'hhaz', name: 'HeadHunter AZ', regionLabel: 'Азербайджан', status: 'live', note: 'hh.az, вакансии по Азербайджану' },
+  { id: 'hhaz', name: 'HeadHunter AZ', regionLabel: 'Азербайджан', status: 'live', note: 'hh1.az, вакансии по Азербайджану' },
   { id: 'birjob', name: 'BirJob', regionLabel: 'Азербайджан', status: 'live', note: 'Агрегатор AZ-площадок: Boss, HelloJob, Glorri и др.' },
   { id: 'trudvsem', name: 'Работа России', regionLabel: 'Россия', status: 'live', note: 'Госпортал trudvsem.ru' },
   { id: 'arbeitnow', name: 'Arbeitnow', regionLabel: 'Европа', status: 'live', note: 'Вакансии по Европе' },

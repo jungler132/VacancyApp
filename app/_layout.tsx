@@ -18,6 +18,7 @@ import { AlertsHost } from '@/components/AlertsHost';
 import { BackendHost } from '@/components/BackendHost';
 import { AdsHost } from '@/components/AdsHost';
 import { BillingHost } from '@/components/BillingHost';
+import { FilterSheetHost } from '@/components/FilterSheetHost';
 import { PaywallHost } from '@/components/PaywallSheet';
 import { OnboardingHost } from '@/components/OnboardingHost';
 import { SyncOverlayHost } from '@/components/SyncOverlay';
@@ -130,6 +131,7 @@ export default function RootLayout() {
               <AdsHost />
               <PaywallHost />
               <Navigation />
+              <FilterSheetHost />
               <OnboardingHost />
               <SyncOverlayHost />
             </View>

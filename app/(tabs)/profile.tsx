@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import type { Href } from 'expo-router';
 
 import { AppHeader } from '@/components/AppHeader';
@@ -100,11 +99,7 @@ export default function ProfileScreen() {
   const openVisit = useCallback(
     (item: (typeof frequent)[number]) => {
       dispatch(recordVisit({ id: item.id, title: item.title, url: item.url, kind: item.kind }));
-      if (item.kind === 'telegram') {
-        Linking.openURL(item.url).catch(() => undefined);
-        return;
-      }
-      WebBrowser.openBrowserAsync(item.url).catch(() => undefined);
+      Linking.openURL(item.url).catch(() => undefined);
     },
     [dispatch],
   );
@@ -139,6 +134,14 @@ export default function ProfileScreen() {
       nav.push(JOBS_HREF);
     }
   }, [digest.alert, dispatch, identity, nav, store]);
+  const openTodayEmpty = useCallback(() => {
+    if (prefsFilled(identity)) {
+      dispatch(applySearch(searchFromPrefs(identity)));
+      nav.push(JOBS_HREF);
+      return;
+    }
+    nav.push(PREFS_HREF);
+  }, [dispatch, identity, nav]);
   const openTodayStale = useCallback(() => {
     const job = savedJobs.find((item) => item.id === digest.staleJob?.id);
     if (!job) return;
@@ -183,8 +186,8 @@ export default function ProfileScreen() {
               </Pressable>
             ) : null}
             {!newText && !digest.moves && !digest.staleJob ? (
-              <Pressable onPress={() => nav.push(PREFS_HREF)} style={({ pressed }) => pressed && styles.pressed}>
-                <Text style={styles.todayEmpty}>{t('today.empty')}</Text>
+              <Pressable onPress={openTodayEmpty} style={({ pressed }) => pressed && styles.pressed}>
+                <Text style={styles.todayEmpty}>{t(prefsFilled(identity) ? 'today.emptyFeed' : 'today.empty')}</Text>
               </Pressable>
             ) : null}
           </View>
