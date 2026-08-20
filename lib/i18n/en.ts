@@ -205,6 +205,8 @@ export const en: Record<MsgId, string> = {
   'settings.mail': 'Email',
   'settings.about': 'About',
   'settings.privacy': 'Privacy policy',
+  'settings.tour': 'Quick tour',
+  'settings.tourMeta': 'Walk through the tabs again',
   'auth.section': 'Account',
   'auth.lead': 'Sign in with email or Google. Your services page is bound to that address. Another email is another account.',
   'auth.off': 'Backend is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.',

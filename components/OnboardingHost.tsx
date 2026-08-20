@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import PagerView from 'react-native-pager-view';
@@ -432,6 +432,13 @@ export const OnboardingHost = memo(function OnboardingHost() {
   const [hideNext, setHideNext] = useState(false);
   const last = step >= STEPS.length - 1;
   const open = appearanceReady && onboard.ready && !onboard.dismissed;
+
+  useEffect(() => {
+    if (!open) return;
+    setStep(0);
+    setHideNext(false);
+    pager.current?.setPage(0);
+  }, [open]);
 
   const goTo = useCallback((next: number) => {
     const index = Math.max(0, Math.min(STEPS.length - 1, next));

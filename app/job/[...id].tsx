@@ -29,7 +29,7 @@ import { removeLocalJob, setLocalJobArchived } from '@/lib/store/localJobsSlice'
 import { matchRouteJobId, parseJobIdParam } from '@/lib/jobRoute';
 import { selectIsSaved, selectJobById, selectViewedJob } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
-import { jobTier } from '@/lib/tiers';
+import { isLocalJob, jobTier } from '@/lib/tiers';
 import { ToneCard } from '@/components/ToneCard';
 import { inferPlaceId, placeLabel } from '@/lib/places';
 import { fonts, radius, toneForTier, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
@@ -269,7 +269,7 @@ export default function JobDetailsScreen() {
         {!job.description && isHhJobId(job.id) ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
 
         {text ? <JobBody text={text} /> : null}
-        {snippetOnly && !showTranslated ? (
+        {snippetOnly && !showTranslated && !isLocalJob(job) ? (
           <AppText style={styles.snippetHint}>{t('job.snippet')}</AppText>
         ) : null}
         {translateError ? <AppText style={styles.snippetHint}>{translateError}</AppText> : null}

@@ -205,6 +205,8 @@ export const az: Record<MsgId, string> = {
   'settings.mail': 'E-poçt',
   'settings.about': 'Haqqında',
   'settings.privacy': 'Məxfilik siyasəti',
+  'settings.tour': 'Qısa bələdçi',
+  'settings.tourMeta': 'Tabları yenidən keç',
   'auth.section': 'Hesab',
   'auth.lead': 'E-poçt və ya Google ilə daxil olun. Xidmət səhifəsi bu ünvana bağlanır. Başqa e-poçt — başqa hesab.',
   'auth.off': 'Server qurulmayıb. EXPO_PUBLIC_SUPABASE_URL və EXPO_PUBLIC_SUPABASE_ANON_KEY əlavə edin.',

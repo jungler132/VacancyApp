@@ -38,6 +38,9 @@ const onboardingSlice = createSlice({
     hideOnboarding(state) {
       state.dismissed = true;
     },
+    showOnboarding(state) {
+      state.dismissed = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -54,5 +57,5 @@ const onboardingSlice = createSlice({
   },
 });
 
-export const { hideOnboarding } = onboardingSlice.actions;
+export const { hideOnboarding, showOnboarding } = onboardingSlice.actions;
 export default onboardingSlice.reducer;

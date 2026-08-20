@@ -17,6 +17,7 @@ import { useTabBarLayout } from '@/lib/layout';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectSourceErrorMap } from '@/lib/store/selectors';
 import { setFontSize, setLocale, setTheme } from '@/lib/store/appearanceSlice';
+import { showOnboarding } from '@/lib/store/onboardingSlice';
 import { toggleSource } from '@/lib/store/sourcesSlice';
 import { PRIVACY_HREF } from '@/lib/privacy';
 import { SUPPORT_EMAIL } from '@/lib/support';
@@ -150,6 +151,7 @@ export default function SettingsScreen() {
         <NavRow title={t('settings.mail')} meta={copied ? t('common.copied') : FEEDBACK_EMAIL} onPress={copyEmail} right={null} />
 
         <Text style={styles.section}>{t('settings.about')}</Text>
+        <NavRow title={t('settings.tour')} meta={t('settings.tourMeta')} onPress={() => dispatch(showOnboarding())} />
         <NavRow title={t('settings.privacy')} onPress={() => router.push(PRIVACY_HREF)} />
       </ScrollView>
     </View>

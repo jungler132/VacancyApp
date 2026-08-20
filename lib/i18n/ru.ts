@@ -209,6 +209,8 @@ export const ru = {
   'settings.mail': 'Почта',
   'settings.about': 'О приложении',
   'settings.privacy': 'Политика конфиденциальности',
+  'settings.tour': 'Короткий гид',
+  'settings.tourMeta': 'Ещё раз пройти по вкладкам',
   'auth.section': 'Аккаунт',
   'auth.lead': 'Войдите почтой или Google. Страница услуг привязывается к этой почте. Другая почта — другой аккаунт.',
   'auth.off': 'Сервер не настроен. Добавьте EXPO_PUBLIC_SUPABASE_URL и EXPO_PUBLIC_SUPABASE_ANON_KEY.',
