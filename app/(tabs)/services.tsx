@@ -48,10 +48,11 @@ export default function ServicesScreen() {
   const masters = useAppSelector(selectCatalogMasters);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ServiceKindId | 'all'>('all');
+  const [placeId, setPlaceId] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetReady, setSheetReady] = useState(false);
-  const visible = useMemo(() => filterServiceMasters(masters, query, kind), [masters, query, kind]);
-  const filtersActive = kind !== 'all';
+  const visible = useMemo(() => filterServiceMasters(masters, query, kind, placeId), [masters, query, kind, placeId]);
+  const filtersActive = kind !== 'all' || Boolean(placeId);
   const listPadding = useMemo(
     () => [styles.content, { paddingBottom: tabBar.listPaddingBottom }],
     [styles.content, tabBar.listPaddingBottom],
@@ -62,7 +63,10 @@ export default function ServicesScreen() {
     setSheetOpen(true);
   }, []);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
-  const resetFilters = useCallback(() => setKind('all'), []);
+  const resetFilters = useCallback(() => {
+    setKind('all');
+    setPlaceId('');
+  }, []);
   const openMaster = useCallback((id: string) => nav.push(masterHref(id)), [nav]);
   const openEditor = useCallback(() => nav.push(SERVICE_ME_HREF), [nav]);
   const renderItem = useCallback(
@@ -114,8 +118,10 @@ export default function ServicesScreen() {
         <ServicesFiltersSheet
           open={sheetOpen}
           kind={kind}
+          placeId={placeId}
           resultCount={visible.length}
           onChangeKind={setKind}
+          onChangePlace={setPlaceId}
           onClose={closeSheet}
           onReset={resetFilters}
         />

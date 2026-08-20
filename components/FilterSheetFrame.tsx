@@ -82,15 +82,17 @@ export const FilterSheetFrame = memo(function FilterSheetFrame({
 export const FilterSheetSection = memo(function FilterSheetSection({
   title,
   children,
+  chips = true,
 }: {
   title: string;
   children: ReactNode;
+  chips?: boolean;
 }) {
   const styles = useThemedStyles(filterSheetFrameStyles);
   return (
     <>
       <Text style={styles.section}>{title}</Text>
-      <ChipWrap>{children}</ChipWrap>
+      {chips ? <ChipWrap>{children}</ChipWrap> : children}
     </>
   );
 });

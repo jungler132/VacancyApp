@@ -101,6 +101,49 @@ export function premiumGlow(scheme: ColorSchemeName) {
   };
 }
 
+export function worklySurface(colors: ThemeColors) {
+  return {
+    borderColor: colors.blue,
+    backgroundColor: colors.accentDim,
+  };
+}
+
+export function worklyGlow(scheme: ColorSchemeName) {
+  return {
+    shadowColor: '#1e3a8a',
+    shadowOpacity: scheme === 'dark' ? 0.4 : 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 7,
+  };
+}
+
+export type CardTone = 'default' | 'premium' | 'workly';
+
+export function cardChrome(colors: ThemeColors, scheme: ColorSchemeName, tone: CardTone = 'default') {
+  const surface =
+    tone === 'premium'
+      ? premiumSurface(colors)
+      : tone === 'workly'
+        ? worklySurface(colors)
+        : { backgroundColor: colors.card, borderColor: colors.cardBorder };
+  const glow = tone === 'premium' ? premiumGlow(scheme) : tone === 'workly' ? worklyGlow(scheme) : shadowsFor(scheme).card;
+  return {
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    overflow: 'hidden' as const,
+    ...shadowsFor(scheme).card,
+    ...glow,
+    ...surface,
+  };
+}
+
+export function toneForTier(tier: 1 | 2 | 3): CardTone {
+  if (tier === 1) return 'premium';
+  if (tier === 2) return 'workly';
+  return 'default';
+}
+
 export function shadowsFor(scheme: ColorSchemeName) {
   if (scheme === 'dark') {
     return {

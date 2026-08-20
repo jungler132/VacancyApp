@@ -1,6 +1,7 @@
 import type { Job, SearchParams } from '../../types';
 import { CIS_AREAS, buildQuery } from '../../catalog';
 import { excerptOf, formatSalary, htmlToText, stripHtml, toPublishedAt } from '../../format';
+import { inferPlaceId } from '../../places';
 import { fetchJson } from '../../http';
 import { SUPPORT_EMAIL } from '@/lib/support';
 
@@ -72,6 +73,7 @@ async function searchHh(params: SearchParams, board: HhBoard): Promise<Job[]> {
       company: item.employer?.name ?? 'Компания',
       companyLogo: item.employer?.logo_urls?.['90'] ?? item.employer?.logo_urls?.original,
       location: item.area?.name ?? board.fallbackLocation,
+      cityId: inferPlaceId(item.area?.name),
       remote: /удал|remote|distant/i.test(item.schedule?.name ?? ''),
       salary: formatSalary(item.salary?.from, item.salary?.to, item.salary?.currency),
       employment: item.employment?.name,
@@ -126,6 +128,7 @@ export async function fetchHeadHunterDetails(vacancyId: string, signal?: AbortSi
     title: data.name,
     company: data.employer?.name,
     location: data.area?.name,
+    cityId: inferPlaceId(data.area?.name),
     salary: formatSalary(data.salary?.from, data.salary?.to, data.salary?.currency),
     description: htmlToText(data.description),
     url: data.alternate_url,

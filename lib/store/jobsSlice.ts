@@ -23,6 +23,21 @@ export type FeedCache = {
   status: FeedStatus;
 };
 
+export function shouldFetchFeed(
+  feed: FeedCache | undefined,
+  mode: 'replace' | 'append' | 'refresh',
+  now = Date.now(),
+): boolean {
+  if (!feed) return true;
+  if (mode === 'refresh') return feed.status !== 'refreshing';
+  if (feed.status === 'loading' || feed.status === 'loadingMore' || feed.status === 'refreshing') return false;
+  if (mode === 'append') return feed.hasMore && feed.status === 'ready';
+  if (feed.ids.length === 0) {
+    return feed.status === 'idle' || feed.status === 'error' || now - feed.fetchedAt >= CACHE_TTL_MS;
+  }
+  return now - feed.fetchedAt >= CACHE_TTL_MS;
+}
+
 export type JobsState = {
   byId: Record<string, Job>;
   feeds: Record<string, FeedCache>;
@@ -45,6 +60,7 @@ function sameJob(prev: Job, next: Job) {
     prev.title === next.title &&
     prev.company === next.company &&
     prev.location === next.location &&
+    prev.cityId === next.cityId &&
     prev.remote === next.remote &&
     prev.salary === next.salary &&
     prev.publishedAt === next.publishedAt &&
@@ -140,13 +156,7 @@ export const fetchFeed = createAsyncThunk(
     condition: (args, { getState }) => {
       const state = (getState() as { jobs: JobsState }).jobs;
       const key = makeFeedKey(args.query, args.region, args.category, args.enabledSources);
-      const feed = state.feeds[key];
-      if (!feed) return true;
-      if (feed.status === 'loading' || feed.status === 'loadingMore' || feed.status === 'refreshing') return false;
-      if (args.mode === 'refresh') return true;
-      if (args.mode === 'append') return feed.hasMore && feed.status === 'ready';
-      const fresh = Date.now() - feed.fetchedAt < CACHE_TTL_MS;
-      return !(fresh && feed.ids.length > 0);
+      return shouldFetchFeed(state.feeds[key], args.mode);
     },
   },
 );
@@ -237,7 +247,7 @@ const jobsSlice = createSlice({
         const current = state.feeds[key];
         if (!current) return;
         if (isAbortError(action.error)) {
-          current.status = current.ids.length ? 'ready' : 'loading';
+          current.status = current.ids.length ? 'ready' : 'idle';
           return;
         }
         current.errors = [

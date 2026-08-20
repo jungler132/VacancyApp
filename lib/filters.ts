@@ -1,5 +1,6 @@
 import { jobMatchesCategories } from './catalog';
 import { MAX_JOB_AGE_DAYS, isFreshJob } from './freshness';
+import { isPlaceId, matchesPlaceFilter } from './places';
 import type { CategoryId, Job } from './types';
 
 export type WorkFormat = 'any' | 'remote' | 'office';
@@ -10,12 +11,14 @@ export type ExtraFilters = {
   format: WorkFormat;
   employment: EmploymentFilter;
   maxAgeDays: AgeFilter;
+  placeId: string;
 };
 
 export const DEFAULT_EXTRA_FILTERS: ExtraFilters = {
   format: 'any',
   employment: 'any',
   maxAgeDays: MAX_JOB_AGE_DAYS,
+  placeId: '',
 };
 
 export const AGE_PRESETS: AgeFilter[] = [7, 30, 90];
@@ -38,18 +41,25 @@ export function parseExtraFilters(value: unknown): ExtraFilters {
       ? (row.employment as EmploymentFilter)
       : 'any',
     maxAgeDays: parseAgeFilter(row.maxAgeDays),
+    placeId: typeof row.placeId === 'string' && isPlaceId(row.placeId) ? row.placeId : '',
   };
 }
 
 export function extraFiltersActive(filters?: ExtraFilters | null): boolean {
   if (!filters) return false;
-  return filters.format !== 'any' || filters.employment !== 'any' || filters.maxAgeDays !== MAX_JOB_AGE_DAYS;
+  return (
+    filters.format !== 'any' ||
+    filters.employment !== 'any' ||
+    filters.maxAgeDays !== MAX_JOB_AGE_DAYS ||
+    Boolean(filters.placeId)
+  );
 }
 
 export function jobMatchesExtra(job: Job, filters: ExtraFilters): boolean {
   if (!isFreshJob(job, filters.maxAgeDays)) return false;
   if (filters.format === 'remote' && !job.remote) return false;
   if (filters.format === 'office' && job.remote) return false;
+  if (filters.placeId && !matchesPlaceFilter(job.cityId, job.location, filters.placeId)) return false;
   if (filters.employment !== 'any') {
     const hay = `${job.employment ?? ''} ${job.title} ${job.excerpt}`.toLowerCase();
     if (filters.employment === 'full') {

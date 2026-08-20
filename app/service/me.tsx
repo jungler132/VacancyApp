@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 
 import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
+import { PlacePicker } from '@/components/PlacePicker';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { runWithOverlay } from '@/components/SyncOverlay';
@@ -46,6 +47,7 @@ function ProfileForm() {
   const [bio, setBio] = useState(seed.bio);
   const [email, setEmail] = useState(seed.email);
   const [phone, setPhone] = useState(seed.phone);
+  const [cityId, setCityId] = useState(seed.cityId ?? '');
   const [address, setAddress] = useState(seed.address ?? '');
   const [avatarUri, setAvatarUri] = useState(seed.avatarUri);
   const [kinds, setKinds] = useState<ServiceKindId[]>(seed.kinds);
@@ -126,6 +128,7 @@ function ProfileForm() {
             email: email.trim(),
             phone: phone.trim(),
             address: address.trim() || undefined,
+            cityId: cityId || undefined,
             avatarUri,
             photos: own?.photos ?? [],
             kinds,
@@ -140,7 +143,7 @@ function ProfileForm() {
     } finally {
       setSaving(false);
     }
-  }, [address, avatarUri, bio, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, saving, store, t]);
+  }, [address, avatarUri, bio, cityId, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, saving, store, t]);
 
   return (
     <KeyboardAvoidingView style={formStyles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -166,6 +169,7 @@ function ProfileForm() {
           keyboardType="email-address"
         />
         <FormField label={t('me.phone')} value={phone} onChangeText={setPhone} placeholder={t('me.phonePh')} keyboardType="phone-pad" />
+        <PlacePicker label={t('me.city')} value={cityId} onChange={setCityId} />
         <FormField label={t('me.address')} value={address} onChangeText={setAddress} placeholder={t('me.addressPh')} />
         <Text style={formStyles.label}>{t('me.kinds')}</Text>
         <ChipWrap>
@@ -232,6 +236,7 @@ function ProfileForm() {
                   id={item.id}
                   title={item.title}
                   price={offerPriceLabel(item, t('services.priceNegotiable'))}
+                  archived={Boolean(item.archived)}
                   onPress={openOffer}
                 />
               ))
@@ -249,21 +254,24 @@ const OwnOfferRow = memo(function OwnOfferRow({
   id,
   title,
   price,
+  archived,
   onPress,
 }: {
   id: string;
   title: string;
   price: string;
+  archived?: boolean;
   onPress: (id: string) => void;
 }) {
+  const t = useT();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(serviceMeStyles);
   const press = useCallback(() => onPress(id), [id, onPress]);
   return (
-    <Pressable onPress={press} style={({ pressed }) => [styles.offerRow, pressed && formStyles.pressed]}>
+    <Pressable onPress={press} style={({ pressed }) => [styles.offerRow, archived && styles.archived, pressed && formStyles.pressed]}>
       <View style={styles.offerBody}>
         <Text style={styles.offerTitle}>{title}</Text>
-        <Text style={styles.offerMeta}>{price}</Text>
+        <Text style={styles.offerMeta}>{archived ? `${t('common.archived')} · ${price}` : price}</Text>
       </View>
       <Text style={styles.chevron}>›</Text>
     </Pressable>
@@ -293,6 +301,7 @@ function serviceMeStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
     offerBody: { flex: 1, minWidth: 0 },
     offerTitle: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },
     offerMeta: { color: colors.faint, fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
+    archived: { opacity: 0.62 },
     chevron: { color: colors.faint, fontSize: 22 },
     empty: { color: colors.faint, fontFamily: fonts.medium, fontSize: 13 },
   };

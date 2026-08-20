@@ -82,6 +82,26 @@ describe('mergeVisibleIds', () => {
     assert.deepEqual(ids, ['workly:new']);
   });
 
+  it('не показывает архивную вакансию в ленте', () => {
+    const archived = job({
+      id: 'workly:old',
+      sourceId: 'workly',
+      sourceName: 'Workly',
+      tier: 2,
+      url: '',
+      archived: true,
+    });
+    const live = job({ id: 'workly:live', sourceId: 'workly', sourceName: 'Workly', tier: 2, url: '' });
+    const ids = mergeVisibleIds([], [archived, live], {}, {
+      query: '',
+      region: 'cis',
+      categories: ['all'],
+      extra: DEFAULT_EXTRA_FILTERS,
+      tierFilter: 'all',
+    });
+    assert.deepEqual(ids, ['workly:live']);
+  });
+
   it('не вставляет новые площадки в середину уже показанной ленты', () => {
     const older = new Date(Date.now() - 48 * 3600_000).toISOString();
     const newer = new Date().toISOString();

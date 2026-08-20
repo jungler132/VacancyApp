@@ -3,6 +3,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 
 import { toggleCategory } from '@/lib/catalog';
 import { DEFAULT_EXTRA_FILTERS, parseExtraFilters, type AgeFilter, type ExtraFilters } from '@/lib/filters';
+import { placeFitsRegion } from '@/lib/places';
 import type { TierFilter } from '@/lib/tiers';
 import type { CategoryId, RegionId } from '@/lib/types';
 import type { SearchSnapshot } from '@/lib/alerts';
@@ -112,6 +113,9 @@ const filtersSlice = createSlice({
     },
     setRegion(state, action: PayloadAction<RegionId>) {
       state.region = action.payload;
+      if (state.extra.placeId && !placeFitsRegion(state.extra.placeId, action.payload)) {
+        state.extra.placeId = '';
+      }
     },
     setExtra(state, action: PayloadAction<ExtraFilters>) {
       state.extra = action.payload;

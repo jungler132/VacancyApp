@@ -11,8 +11,9 @@ import { ServiceOfferCard } from '@/components/ServiceOfferCard';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
-import { useT } from '@/lib/i18n/useT';
-import { offerEditorHref, offerViewHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
+import { useLocale, useT } from '@/lib/i18n/useT';
+import { formatPlaceLine } from '@/lib/places';
+import { liveOffers, offerEditorHref, offerViewHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { formatServiceSchedule } from '@/lib/services/hours';
 import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
@@ -22,6 +23,7 @@ import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '
 
 export default function ServicePublicScreen() {
   const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
@@ -48,9 +50,13 @@ export default function ServicePublicScreen() {
     return [...master.kinds.map((id) => t(keyOf('kind', id))), ...(master.customKinds ?? [])].filter(Boolean).join(' · ');
   }, [master, t]);
   const gallery = useMemo(
-    () => (master?.photos ?? []).filter((uri) => uri && uri !== master.avatarUri),
+    () => (master?.photos ?? []).filter((uri) => uri && uri !== master?.avatarUri),
     [master?.avatarUri, master?.photos],
   );
+  const offers = useMemo(() => {
+    if (!master) return [];
+    return master.mine ? master.offers : liveOffers(master.offers);
+  }, [master]);
 
   const call = useCallback(() => {
     const phone = master?.phone?.trim();
@@ -107,7 +113,9 @@ export default function ServicePublicScreen() {
           <ServicePhotoGrid uris={gallery} />
         </>
       ) : null}
-      {master.address ? <Text style={styles.meta}>{t('master.address', { value: master.address })}</Text> : null}
+      {formatPlaceLine(locale, master.cityId, master.address) ? (
+        <Text style={styles.meta}>{t('master.address', { value: formatPlaceLine(locale, master.cityId, master.address) })}</Text>
+      ) : null}
       {master.phone ? (
         <Pressable onPress={call}>
           <Text style={styles.link}>{t('master.phone', { value: master.phone })}</Text>
@@ -135,8 +143,8 @@ export default function ServicePublicScreen() {
       ) : null}
 
       <Text style={styles.section}>{t('master.offers')}</Text>
-      {master.offers.length ? (
-        master.offers.map((offer) => (
+      {offers.length ? (
+        offers.map((offer) => (
           <ServiceOfferCard key={offer.id} offer={offer} profile={master} onPress={openOffer} />
         ))
       ) : (

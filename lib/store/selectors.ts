@@ -227,7 +227,9 @@ export const selectOfferView = createSelector(
     if (!offerId) return undefined;
     for (const master of masters) {
       const offer = master.offers.find((item) => item.id === offerId);
-      if (offer) return { master, offer };
+      if (!offer) continue;
+      if (offer.archived && !master.mine) return undefined;
+      return { master, offer };
     }
     return undefined;
   },

@@ -12,13 +12,14 @@ import {
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 
 import { Text } from '@/components/AppText';
+import { ToneCard } from '@/components/ToneCard';
 import { APPLY_STATUSES, type ApplyStatus } from '@/lib/apply';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { jobsForStatus } from '@/lib/pipeline';
 import { jobTier } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
-import { fonts, premiumGlow, premiumSurface, radius, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, radius, toneForTier, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 type SectionBox = { y: number; height: number };
 
@@ -230,10 +231,10 @@ const PipelineCard = memo(function PipelineCard({
   );
 
   return (
-    <View
-      ref={cardRef}
-      collapsable={false}
-      style={[styles.card, jobTier(job) === 1 && styles.premium, hidden && styles.cardHidden]}
+    <ToneCard
+      cardRef={cardRef}
+      tone={toneForTier(jobTier(job))}
+      style={[styles.card, hidden && styles.cardHidden]}
       onLayout={() => {
         cardRef.current?.measureInWindow((x, y, width, height) => {
           origin.current = { x, y, width, height };
@@ -247,14 +248,16 @@ const PipelineCard = memo(function PipelineCard({
           {job.title}
         </Text>
         <Text style={styles.cardMeta} numberOfLines={1}>
-          {[job.company, jobTier(job) === 1 ? t('common.premium') : job.sourceName].filter(Boolean).join(' · ')}
+          {[job.company, jobTier(job) === 1 ? t('common.premium') : jobTier(job) === 2 ? t('common.workly') : job.sourceName]
+            .filter(Boolean)
+            .join(' · ')}
         </Text>
       </Pressable>
-    </View>
+    </ToneCard>
   );
 });
 
-function pipelineBoardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+function pipelineBoardStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
     screen: { flex: 1 },
     list: { padding: 16, paddingBottom: 48, gap: 12 },
@@ -275,18 +278,9 @@ function pipelineBoardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
     card: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      borderRadius: radius.md,
       paddingVertical: 10,
       paddingRight: 12,
       minHeight: 56,
-      overflow: 'hidden' as const,
-    },
-    premium: {
-      ...premiumSurface(colors),
-      ...premiumGlow(scheme),
     },
     cardHidden: { opacity: 0.28 },
     handle: { width: 44, alignItems: 'center' as const, justifyContent: 'center' as const, alignSelf: 'stretch' as const },

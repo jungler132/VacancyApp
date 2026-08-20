@@ -1,4 +1,5 @@
 import { OWN_PROFILE_ID } from '@/lib/store/freelanceSlice';
+import { asPlaceId } from '@/lib/places';
 import type { ServiceMaster, ServiceOffer, ServiceProfile } from '@/lib/services/types';
 import { WORKLY_SOURCE_ID } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
@@ -15,6 +16,7 @@ type ProfileRow = {
   kinds: string[] | null;
   custom_kinds: string[] | null;
   address: string | null;
+  city_id?: string | null;
   hours_open: string;
   hours_close: string;
   hours_days: number[] | null;
@@ -24,6 +26,9 @@ type ProfileRow = {
   seek_format: string;
   updated_at: string;
   account_state?: unknown;
+  company_name?: string;
+  company_logo?: string | null;
+  company_about?: string;
 };
 
 type OfferRow = {
@@ -35,10 +40,12 @@ type OfferRow = {
   currency: string;
   images: string[] | null;
   address: string | null;
+  city_id?: string | null;
   phone: string | null;
   kind: string;
   custom_kind: string | null;
   featured: boolean;
+  archived?: boolean;
   updated_at: string;
 };
 
@@ -49,6 +56,7 @@ type JobRow = {
   company: string;
   company_logo: string | null;
   location: string;
+  city_id?: string | null;
   remote: boolean;
   salary: string | null;
   employment: string | null;
@@ -61,6 +69,7 @@ type JobRow = {
   description: string | null;
   tier: number;
   contact: string | null;
+  archived?: boolean;
   updated_at: string;
 };
 
@@ -76,6 +85,7 @@ export function profileFromRow(row: ProfileRow, own = false): ServiceProfile {
     kinds: (row.kinds ?? []) as ServiceProfile['kinds'],
     customKinds: row.custom_kinds ?? [],
     address: row.address || undefined,
+    cityId: asPlaceId(row.city_id),
     hours: {
       open: row.hours_open,
       close: row.hours_close,
@@ -95,10 +105,12 @@ export function offerFromRow(row: OfferRow, own = false): ServiceOffer {
     currency: row.currency,
     images: row.images ?? [],
     address: row.address || undefined,
+    cityId: asPlaceId(row.city_id),
     phone: row.phone || undefined,
     kind: row.kind as ServiceOffer['kind'],
     customKind: row.custom_kind || undefined,
     featured: row.featured,
+    archived: Boolean(row.archived),
     updatedAt: row.updated_at,
   };
 }
@@ -113,6 +125,7 @@ export function jobFromRow(row: JobRow, own = false): Job {
     company: row.company,
     companyLogo: row.company_logo || undefined,
     location: row.location,
+    cityId: asPlaceId(row.city_id),
     remote: row.remote,
     salary: row.salary || undefined,
     employment: row.employment || undefined,
@@ -125,6 +138,7 @@ export function jobFromRow(row: JobRow, own = false): Job {
     description: row.description || undefined,
     tier: row.tier === 1 ? 1 : 2,
     contact: row.contact || undefined,
+    archived: Boolean(row.archived),
   };
 }
 
@@ -166,7 +180,7 @@ export async function fetchPublicCatalog(excludeUserId?: string | null): Promise
   }
   return rows.map((row) => ({
     ...profileFromRow(row),
-    offers: (byUser.get(row.id) ?? []).map((item) => offerFromRow(item)),
+    offers: (byUser.get(row.id) ?? []).map((item) => offerFromRow(item)).filter((item) => !item.archived),
   }));
 }
 
@@ -176,7 +190,7 @@ export async function fetchPublicJobs(excludeUserId?: string | null): Promise<Jo
   let query = supabase.from('workly_jobs').select('*').order('published_at', { ascending: false }).limit(80);
   if (excludeUserId) query = query.neq('user_id', excludeUserId);
   const { data } = await query;
-  return ((data as JobRow[] | null) ?? []).map(jobFromRow);
+  return ((data as JobRow[] | null) ?? []).map((row) => jobFromRow(row)).filter((job) => !job.archived);
 }
 
 export type { OfferRow, ProfileRow, JobRow };

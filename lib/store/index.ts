@@ -1,5 +1,6 @@
 import { configureStore, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
 
+import { isAbortError } from '@/lib/api/errors';
 import { apiCategory } from '@/lib/catalog';
 import { filterFeedIds } from '@/lib/filters';
 import jobsReducer, {
@@ -27,8 +28,18 @@ import localJobsReducer, {
   persistLocalJobs,
   removeLocalJob,
   replaceLocalJobs,
+  setLocalJobArchived,
+  stampCompanyOnJobs,
   upsertLocalJob,
 } from './localJobsSlice';
+import companyReducer, {
+  applyCompanyLogo,
+  hydrateCompany,
+  persistCompany,
+  replaceCompany,
+  resetCompany,
+  saveCompany,
+} from './companySlice';
 import premiumReducer, { hydratePremium } from './premiumSlice';
 import appearanceReducer, {
   hydrateAppearance,
@@ -46,6 +57,7 @@ import freelanceReducer, {
   removeOffer,
   replaceAccount,
   saveProfile,
+  setOfferArchived,
   upsertOffer,
 } from './freelanceSlice';
 import servicesCatalogReducer from './servicesCatalogSlice';
@@ -174,7 +186,7 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(upsertLocalJob, removeLocalJob, hydrateLocalJobs.fulfilled, replaceLocalJobs),
+  matcher: isAnyOf(upsertLocalJob, removeLocalJob, hydrateLocalJobs.fulfilled, replaceLocalJobs, stampCompanyOnJobs, setLocalJobArchived),
   effect: async (action, listenerApi) => {
     const items = (listenerApi.getState() as RootState).localJobs.items;
     listenerApi.dispatch(rememberJobs(items));
@@ -182,7 +194,11 @@ listener.startListening({
       await persistLocalJobs(items);
       return;
     }
-    if (upsertLocalJob.match(action) || removeLocalJob.match(action)) {
+    if (stampCompanyOnJobs.match(action)) {
+      await persistLocalJobs(items);
+      return;
+    }
+    if (upsertLocalJob.match(action) || removeLocalJob.match(action) || setLocalJobArchived.match(action)) {
       await persistLocalJobs(items);
       const state = listenerApi.getState() as RootState;
       if (removeLocalJob.match(action) && state.auth.userId) {
@@ -195,7 +211,8 @@ listener.startListening({
 
 listener.startListening({
   matcher: isAnyOf(fetchFeed.fulfilled, fetchFeed.rejected, clearJobsCache),
-  effect: (_action, listenerApi) => {
+  effect: (action, listenerApi) => {
+    if (fetchFeed.rejected.match(action) && isAbortError(action.error)) return;
     const state = listenerApi.getState() as RootState;
     const savedIds = state.saved.items.map((item) => item.id);
     const localIds = state.localJobs.items.map((item) => item.id);
@@ -248,7 +265,7 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(saveProfile, upsertOffer, removeOffer, applyRemoteMedia, replaceAccount),
+  matcher: isAnyOf(saveProfile, upsertOffer, removeOffer, setOfferArchived, applyRemoteMedia, replaceAccount),
   effect: async (action, listenerApi) => {
     const freelance = (listenerApi.getState() as RootState).freelance;
     await persistFreelance(freelance.profile, freelance.offers);
@@ -278,6 +295,22 @@ listener.startListening({
   },
 });
 
+listener.startListening({
+  matcher: isAnyOf(saveCompany, replaceCompany, applyCompanyLogo, resetCompany),
+  effect: async (action, listenerApi) => {
+    const company = (listenerApi.getState() as RootState).company;
+    await persistCompany({ name: company.name, about: company.about, logoUri: company.logoUri });
+    if (resetCompany.match(action) || replaceCompany.match(action)) return;
+    if (saveCompany.match(action) || applyCompanyLogo.match(action)) {
+      listenerApi.dispatch(stampCompanyOnJobs({ name: company.name || undefined, logoUri: company.logoUri }));
+    }
+    if (applyCompanyLogo.match(action)) return;
+    if (canPush(listenerApi.getState() as RootState)) {
+      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    }
+  },
+});
+
 export const store = configureStore({
   reducer: {
     jobs: jobsReducer,
@@ -294,6 +327,7 @@ export const store = configureStore({
     servicesCatalog: servicesCatalogReducer,
     visits: visitsReducer,
     identity: identityReducer,
+    company: companyReducer,
     auth: authReducer,
   },
   middleware: (getDefault) =>
@@ -318,6 +352,7 @@ store.dispatch(hydrateAppearance());
 store.dispatch(hydrateFreelance());
 store.dispatch(hydrateVisits());
 store.dispatch(hydrateIdentity());
+store.dispatch(hydrateCompany());
 store.dispatch(hydrateAuth());
 
 export type RootState = ReturnType<typeof store.getState>;

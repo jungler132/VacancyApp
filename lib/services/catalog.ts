@@ -3,10 +3,15 @@ import type { Href } from 'expo-router';
 import { composeSalary } from '@/lib/format';
 import { APP_LOCALES } from '@/lib/i18n/locale';
 import { keyOf, t } from '@/lib/i18n';
+import { matchesPlaceFilter, placeLabel } from '@/lib/places';
 import type { ServiceKindId, ServiceMaster, ServiceOffer, ServiceProfile } from './types';
 
 export function toServiceMaster(profile: ServiceProfile, offers: ServiceOffer[], mine = false): ServiceMaster {
-  const ranked = [...offers].sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
+  const ranked = [...offers].sort(
+    (a, b) =>
+      Number(Boolean(a.archived)) - Number(Boolean(b.archived)) ||
+      Number(Boolean(b.featured)) - Number(Boolean(a.featured)),
+  );
   return { ...profile, offers: ranked, mine };
 }
 
@@ -19,22 +24,30 @@ export function masterHaystack(master: ServiceMaster): string {
     .flatMap((id) => APP_LOCALES.map((locale) => t(locale, keyOf('kind', id))))
     .join(' ');
   const offers = master.offers.map((item) => `${item.title} ${item.description} ${item.customKind ?? ''}`).join(' ');
-  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${kinds} ${master.customKinds.join(' ')} ${offers}`.toLowerCase();
+  return `${master.displayName} ${master.bio} ${master.address ?? ''} ${placeLabel(master.cityId, 'ru')} ${placeLabel(master.cityId, 'en')} ${placeLabel(master.cityId, 'az')} ${kinds} ${master.customKinds.join(' ')} ${offers}`.toLowerCase();
+}
+
+export function liveOffers(offers: ServiceOffer[]): ServiceOffer[] {
+  return offers.filter((item) => !item.archived);
 }
 
 export function filterServiceMasters(
   masters: ServiceMaster[],
   query: string,
   kind: ServiceKindId | 'all',
+  placeId?: string,
 ): ServiceMaster[] {
   const needle = query.trim().toLowerCase();
   const out: ServiceMaster[] = [];
   for (const master of masters) {
-    const offers =
-      kind === 'all' ? master.offers : master.offers.filter((item) => item.kind === kind);
+    const catalogOffers = liveOffers(master.offers);
+    if (placeId && !matchesPlaceFilter(master.cityId, master.address, placeId) && !catalogOffers.some((item) => matchesPlaceFilter(item.cityId || master.cityId, item.address || master.address, placeId))) {
+      continue;
+    }
+    const offers = kind === 'all' ? catalogOffers : catalogOffers.filter((item) => item.kind === kind);
     const kindsMatch = kind === 'all' || master.kinds.includes(kind) || offers.length > 0;
     if (!kindsMatch) continue;
-    const next = kind === 'all' ? master : { ...master, offers };
+    const next = { ...master, offers };
     if (needle && !masterHaystack(next).includes(needle)) continue;
     out.push(next);
   }
@@ -43,17 +56,18 @@ export function filterServiceMasters(
   );
 }
 
-export function offerContact(offer: ServiceOffer, profile: ServiceProfile): { phone: string; address: string } {
+export function offerContact(offer: ServiceOffer, profile: ServiceProfile): { phone: string; address: string; cityId: string } {
   return prefillOfferContact(offer, profile);
 }
 
 export function prefillOfferContact(
-  offer: { address?: string; phone?: string } | undefined,
-  profile: { address?: string; phone?: string } | null | undefined,
-): { phone: string; address: string } {
+  offer: { address?: string; phone?: string; cityId?: string } | undefined,
+  profile: { address?: string; phone?: string; cityId?: string } | null | undefined,
+): { phone: string; address: string; cityId: string } {
   return {
     phone: offer?.phone?.trim() || profile?.phone?.trim() || '',
     address: offer?.address?.trim() || profile?.address?.trim() || '',
+    cityId: offer?.cityId || profile?.cityId || '',
   };
 }
 
@@ -74,6 +88,7 @@ export function offerViewHref(id: string): Href {
 }
 
 export const SERVICE_ME_HREF = '/service/me' as unknown as Href;
+export const COMPANY_ME_HREF = '/company/me' as unknown as Href;
 export const STATS_HREF = '/stats' as unknown as Href;
 export const SAVED_HREF = '/saved' as unknown as Href;
 export const PIPELINE_HREF = '/pipeline' as unknown as Href;

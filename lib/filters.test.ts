@@ -79,6 +79,14 @@ describe('jobMatchesExtra', () => {
     assert.equal(jobMatchesExtra(stale, extra({ maxAgeDays: 7 })), false);
     assert.equal(jobMatchesExtra(stale, extra({ maxAgeDays: 30 })), true);
   });
+
+  it('фильтрует по городу из списка', () => {
+    const baku = job({ id: 'baku', location: 'Баку', cityId: 'baku' });
+    const moscow = job({ id: 'msk', location: 'Москва', cityId: 'moscow' });
+    assert.equal(jobMatchesExtra(baku, extra({ placeId: 'baku' })), true);
+    assert.equal(jobMatchesExtra(moscow, extra({ placeId: 'baku' })), false);
+    assert.equal(jobMatchesExtra(baku, extra({ placeId: 'country:az' })), true);
+  });
 });
 
 describe('toggleCategory', () => {

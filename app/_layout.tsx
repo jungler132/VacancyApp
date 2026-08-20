@@ -83,6 +83,7 @@ function Navigation() {
         <Stack.Screen name="job/create" options={{ title: t(locale, 'nav.createJob') }} />
         <Stack.Screen name="job/[...id]" options={{ title: t(locale, 'nav.job') }} />
         <Stack.Screen name="service/me" options={{ title: t(locale, 'nav.serviceMe') }} />
+        <Stack.Screen name="company/me" options={{ title: t(locale, 'nav.companyMe') }} />
         <Stack.Screen name="service/[id]" options={{ title: t(locale, 'nav.master') }} />
         <Stack.Screen name="service/view/[id]" options={{ title: t(locale, 'nav.offer') }} />
         <Stack.Screen name="service/offer/[id]" options={{ title: t(locale, 'nav.offer') }} />

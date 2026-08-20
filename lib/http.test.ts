@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { fetchJson } from './http';
+import { DUMP_CACHE_MS, fetchJson } from './http';
 
 describe('fetchJson', () => {
   it('не читает тело, если Content-Length слишком большой', async () => {
@@ -22,6 +22,67 @@ describe('fetchJson', () => {
     try {
       await assert.rejects(() => fetchJson('https://example.com/dump'), /too large/);
       assert.equal(readBody, false);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it('кэширует дамп и не качает его повторно', async () => {
+    const original = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+    try {
+      const first = await fetchJson<{ ok: boolean }>('https://example.com/cache', { cacheTtlMs: DUMP_CACHE_MS });
+      const second = await fetchJson<{ ok: boolean }>('https://example.com/cache', { cacheTtlMs: DUMP_CACHE_MS });
+      assert.deepEqual(first, { ok: true });
+      assert.deepEqual(second, { ok: true });
+      assert.equal(calls, 1);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it('abort не кладёт дамп в кэш', async () => {
+    const original = globalThis.fetch;
+    let calls = 0;
+    let started: () => void = () => undefined;
+    const startedAt = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    globalThis.fetch = (async (_input, init) => {
+      calls += 1;
+      if (calls === 1) {
+        started();
+        await new Promise<never>((_, reject) => {
+          const signal = init?.signal;
+          if (signal?.aborted) {
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+            return;
+          }
+          signal?.addEventListener(
+            'abort',
+            () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })),
+            { once: true },
+          );
+        });
+      }
+      return new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+    try {
+      const controller = new AbortController();
+      const first = fetchJson('https://example.com/abort-cache', {
+        cacheTtlMs: DUMP_CACHE_MS,
+        signal: controller.signal,
+      });
+      await startedAt;
+      controller.abort();
+      await assert.rejects(first, (error: unknown) => error instanceof Error && error.name === 'AbortError');
+      const second = await fetchJson<{ ok: boolean }>('https://example.com/abort-cache', { cacheTtlMs: DUMP_CACHE_MS });
+      assert.deepEqual(second, { ok: true });
+      assert.equal(calls, 2);
     } finally {
       globalThis.fetch = original;
     }

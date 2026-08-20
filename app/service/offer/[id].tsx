@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { ChipWrap } from '@/components/ChipWrap';
 import { SelectChip } from '@/components/FilterChips';
+import { PlacePicker } from '@/components/PlacePicker';
 import { FormField, useFormStyles } from '@/components/FormField';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { runWithOverlay } from '@/components/SyncOverlay';
@@ -65,7 +66,8 @@ function OfferForm() {
   const [kind, setKind] = useState<ServiceKindId>(existing?.kind ?? profile?.kinds[0] ?? 'other');
   const [customKind, setCustomKind] = useState(existing?.customKind ?? '');
   const [featured, setFeatured] = useState(Boolean(existing?.featured));
-  const [address, setAddress] = useState(contact.address);
+  const [cityId, setCityId] = useState(existing?.cityId || profile?.cityId || '');
+  const [address, setAddress] = useState(existing?.address ?? '');
   const [phone, setPhone] = useState(contact.phone);
   const [images, setImages] = useState<string[]>(existing?.images ?? []);
   const [saving, setSaving] = useState(false);
@@ -140,10 +142,12 @@ function OfferForm() {
             currency,
             images,
             address: address.trim() || undefined,
+            cityId: cityId || undefined,
             phone: phone.trim() || undefined,
             kind,
             customKind: customKind.trim() || undefined,
             featured: featured && isPremium,
+            archived: existing?.archived,
             updatedAt: new Date().toISOString(),
           }),
         );
@@ -153,7 +157,7 @@ function OfferForm() {
     } finally {
       setSaving(false);
     }
-  }, [address, currency, customKind, description, dispatch, existing?.id, featured, images, isNew, isPremium, kind, limits.offers, negotiable, offers.length, phone, price, profile?.displayName, router, saving, store, t, title]);
+  }, [address, cityId, currency, customKind, description, dispatch, existing?.archived, existing?.id, featured, images, isNew, isPremium, kind, limits.offers, negotiable, offers.length, phone, price, profile?.displayName, router, saving, store, t, title]);
 
   const onDelete = useCallback(() => {
     if (!existing) return;
@@ -263,6 +267,7 @@ function OfferForm() {
           onRemove={removePhoto}
         />
         <Text style={formStyles.hint}>{t('offer.photoHint')}</Text>
+        <PlacePicker label={t('offer.city')} value={cityId} onChange={setCityId} />
         <FormField label={t('offer.address')} value={address} onChangeText={setAddress} placeholder={t('offer.asProfile')} />
         <FormField
           label={t('offer.phone')}

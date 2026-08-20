@@ -30,6 +30,7 @@ export type Job = {
   company: string;
   companyLogo?: string;
   location: string;
+  cityId?: string;
   remote: boolean;
   salary?: string;
   employment?: string;
@@ -42,6 +43,7 @@ export type Job = {
   description?: string;
   tier?: JobTier;
   contact?: string;
+  archived?: boolean;
 };
 
 export type SearchParams = {

@@ -2,6 +2,7 @@ import type { Dispatch } from '@reduxjs/toolkit';
 
 import { savePrefs, resetIdentity } from '@/lib/store/identitySlice';
 import { applyRemoteMedia, replaceAccount } from '@/lib/store/freelanceSlice';
+import { applyCompanyLogo, replaceCompany, resetCompany } from '@/lib/store/companySlice';
 import { replaceLocalJobs } from '@/lib/store/localJobsSlice';
 import { replaceAppearance } from '@/lib/store/appearanceSlice';
 import { replaceSaved } from '@/lib/store/savedSlice';
@@ -31,6 +32,7 @@ type SyncState = {
   auth: { userId: string | null; email: string | null; anonymous: boolean };
   freelance: { profile: ServiceProfile | null; offers: ServiceOffer[] };
   identity: { seeking: boolean; available: boolean; title: string; format: string };
+  company: { name: string; about: string; logoUri?: string };
   localJobs: { items: Job[] };
   appearance: AccountStateBlob['appearance'];
   saved: AccountStateBlob['saved'];
@@ -92,6 +94,7 @@ export function clearLocalAccount(dispatch: Dispatch) {
     dispatch(replaceSavedServices([]));
     dispatch(replaceAlerts([]));
     dispatch(replaceVisits([]));
+    dispatch(resetCompany());
   });
 }
 
@@ -157,6 +160,13 @@ export async function pullAccount(dispatch: Dispatch, getState: () => SyncState)
     );
     dispatch(replaceLocalJobs(remote.jobs.map((row) => jobFromRow(row, true))));
     if (hasState) applyDeviceBlob(dispatch, parseAccountState(rawState));
+    dispatch(
+      replaceCompany({
+        name: remote.profile?.company_name ?? '',
+        about: remote.profile?.company_about ?? '',
+        logoUri: remote.profile?.company_logo || undefined,
+      }),
+    );
   });
   await writeBoundEmail(email);
   if (!hasState) schedulePush(getState, dispatch);
@@ -187,6 +197,18 @@ function isMissingAccountState(message: string) {
   return /account_state|schema cache|Could not find.*account_state/i.test(message);
 }
 
+function isMissingCompany(message: string) {
+  return /company_name|company_logo|company_about|Could not find.*company_/i.test(message);
+}
+
+function isMissingCity(message: string) {
+  return /city_id|Could not find.*city_/i.test(message);
+}
+
+function isMissingArchived(message: string) {
+  return /archived|Could not find.*archived/i.test(message);
+}
+
 async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
   const supabase = getSupabase();
   if (!supabase || state.auth.anonymous) return;
@@ -202,14 +224,17 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
   const payload = JSON.stringify({
     profile: profile?.updatedAt,
     offers: offers.map((item) => item.id + item.updatedAt),
-    jobs: jobs.map((item) => item.id + (item.publishedAt ?? '')),
+    jobs: jobs.map((item) => item.id + (item.publishedAt ?? '') + Number(Boolean(item.archived))),
     identity: [identity.seeking, identity.available, identity.title, identity.format],
+    company: [state.company?.name, state.company?.about, state.company?.logoUri],
     accountState,
   });
   if (payload === lastPush) return;
 
   let avatar = profile?.avatarUri;
   if (avatar) avatar = await uploadMedia(userId, avatar, 'avatar', 'main');
+  let companyLogo = state.company?.logoUri;
+  if (companyLogo) companyLogo = await uploadMedia(userId, companyLogo, 'company', 'logo');
   const uploadedOffers: ServiceOffer[] = [];
   for (const offer of offers) {
     uploadedOffers.push({ ...offer, images: await uploadMany(userId, offer.images, `offers/${offer.id}`) });
@@ -225,6 +250,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     kinds: profile?.kinds ?? [],
     custom_kinds: profile?.customKinds ?? [],
     address: profile?.address ?? null,
+    city_id: profile?.cityId ?? null,
     hours_open: profile?.hours?.open ?? '09:00',
     hours_close: profile?.hours?.close ?? '18:00',
     hours_days: profile?.hours?.days ?? [1, 2, 3, 4, 5],
@@ -232,6 +258,9 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     available: identity.available,
     seek_title: identity.title,
     seek_format: identity.format,
+    company_name: state.company?.name ?? '',
+    company_logo: companyLogo && isRemoteUri(companyLogo) ? companyLogo : null,
+    company_about: state.company?.about ?? '',
     updated_at: profile?.updatedAt ?? new Date().toISOString(),
     ...(accountState ? { account_state: accountState } : {}),
   };
@@ -241,9 +270,21 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     const { account_state: _omit, ...withoutState } = profileRow;
     profileRes = await supabase.from('profiles').upsert(withoutState);
   }
+  if (profileRes.error && isMissingCompany(profileRes.error.message)) {
+    const { company_name: _n, company_logo: _l, company_about: _a, ...withoutCompany } = profileRow;
+    profileRes = await supabase.from('profiles').upsert(withoutCompany);
+  }
+  if (profileRes.error && isMissingAccountState(profileRes.error.message) && isMissingCompany(profileRes.error.message)) {
+    const { account_state: _s, company_name: _n, company_logo: _l, company_about: _a, ...bare } = profileRow;
+    profileRes = await supabase.from('profiles').upsert(bare);
+  }
+  if (profileRes.error && isMissingCity(profileRes.error.message)) {
+    const { city_id: _c, ...withoutCity } = profileRow;
+    profileRes = await supabase.from('profiles').upsert(withoutCity);
+  }
   if (profileRes.error) throw profileRes.error;
 
-  const offerRes = uploadedOffers.length
+  let offerRes = uploadedOffers.length
     ? await supabase.from('service_offers').upsert(
         uploadedOffers.map((offer) => ({
           id: offer.id,
@@ -254,15 +295,79 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
           currency: offer.currency,
           images: offer.images.filter(isRemoteUri),
           address: offer.address ?? null,
+          city_id: offer.cityId ?? null,
           phone: offer.phone ?? null,
           kind: offer.kind,
           custom_kind: offer.customKind ?? null,
           featured: Boolean(offer.featured),
+          archived: Boolean(offer.archived),
           updated_at: offer.updatedAt,
         })),
         { onConflict: 'user_id,id' },
       )
     : { error: null };
+  if (offerRes.error && isMissingCity(offerRes.error.message)) {
+    offerRes = await supabase.from('service_offers').upsert(
+      uploadedOffers.map((offer) => ({
+        id: offer.id,
+        user_id: userId,
+        title: offer.title,
+        description: offer.description,
+        price: offer.price ?? null,
+        currency: offer.currency,
+        images: offer.images.filter(isRemoteUri),
+        address: offer.address ?? null,
+        phone: offer.phone ?? null,
+        kind: offer.kind,
+        custom_kind: offer.customKind ?? null,
+        featured: Boolean(offer.featured),
+        archived: Boolean(offer.archived),
+        updated_at: offer.updatedAt,
+      })),
+      { onConflict: 'user_id,id' },
+    );
+  }
+  if (offerRes.error && isMissingArchived(offerRes.error.message)) {
+    offerRes = await supabase.from('service_offers').upsert(
+      uploadedOffers.map((offer) => ({
+        id: offer.id,
+        user_id: userId,
+        title: offer.title,
+        description: offer.description,
+        price: offer.price ?? null,
+        currency: offer.currency,
+        images: offer.images.filter(isRemoteUri),
+        address: offer.address ?? null,
+        city_id: offer.cityId ?? null,
+        phone: offer.phone ?? null,
+        kind: offer.kind,
+        custom_kind: offer.customKind ?? null,
+        featured: Boolean(offer.featured),
+        updated_at: offer.updatedAt,
+      })),
+      { onConflict: 'user_id,id' },
+    );
+  }
+  if (offerRes.error && (isMissingCity(offerRes.error.message) || isMissingArchived(offerRes.error.message))) {
+    offerRes = await supabase.from('service_offers').upsert(
+      uploadedOffers.map((offer) => ({
+        id: offer.id,
+        user_id: userId,
+        title: offer.title,
+        description: offer.description,
+        price: offer.price ?? null,
+        currency: offer.currency,
+        images: offer.images.filter(isRemoteUri),
+        address: offer.address ?? null,
+        phone: offer.phone ?? null,
+        kind: offer.kind,
+        custom_kind: offer.customKind ?? null,
+        featured: Boolean(offer.featured),
+        updated_at: offer.updatedAt,
+      })),
+      { onConflict: 'user_id,id' },
+    );
+  }
   if (offerRes.error) throw offerRes.error;
 
   const keepOffers = uploadedOffers.map((item) => item.id);
@@ -274,15 +379,20 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     await Promise.all(dropOffers.map((id) => deleteOfferMedia(userId, id)));
   }
 
-  const jobRes = jobs.length
+  let jobRes = jobs.length
     ? await supabase.from('workly_jobs').upsert(
         jobs.map((job) => ({
           id: job.id,
           user_id: userId,
           title: job.title,
-          company: job.company,
-          company_logo: job.companyLogo ?? null,
+          company: job.company || state.company?.name || '',
+          company_logo: (job.companyLogo && isRemoteUri(job.companyLogo)
+            ? job.companyLogo
+            : companyLogo && isRemoteUri(companyLogo)
+              ? companyLogo
+              : job.companyLogo) ?? null,
           location: job.location,
+          city_id: job.cityId ?? null,
           remote: job.remote,
           salary: job.salary ?? null,
           employment: job.employment ?? null,
@@ -295,10 +405,100 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
           description: job.description ?? null,
           tier: job.tier === 1 ? 1 : 2,
           contact: job.contact ?? null,
+          archived: Boolean(job.archived),
           updated_at: job.publishedAt ?? new Date().toISOString(),
         })),
       )
     : { error: null };
+  if (jobRes.error && isMissingCity(jobRes.error.message)) {
+    jobRes = await supabase.from('workly_jobs').upsert(
+      jobs.map((job) => ({
+        id: job.id,
+        user_id: userId,
+        title: job.title,
+        company: job.company || state.company?.name || '',
+        company_logo: (job.companyLogo && isRemoteUri(job.companyLogo)
+          ? job.companyLogo
+          : companyLogo && isRemoteUri(companyLogo)
+            ? companyLogo
+            : job.companyLogo) ?? null,
+        location: job.location,
+        remote: job.remote,
+        salary: job.salary ?? null,
+        employment: job.employment ?? null,
+        experience: job.experience ?? null,
+        schedule: job.schedule ?? null,
+        category: job.category ?? null,
+        published_at: job.publishedAt ?? null,
+        url: job.url,
+        excerpt: job.excerpt,
+        description: job.description ?? null,
+        tier: job.tier === 1 ? 1 : 2,
+        contact: job.contact ?? null,
+        archived: Boolean(job.archived),
+        updated_at: job.publishedAt ?? new Date().toISOString(),
+      })),
+    );
+  }
+  if (jobRes.error && isMissingArchived(jobRes.error.message)) {
+    jobRes = await supabase.from('workly_jobs').upsert(
+      jobs.map((job) => ({
+        id: job.id,
+        user_id: userId,
+        title: job.title,
+        company: job.company || state.company?.name || '',
+        company_logo: (job.companyLogo && isRemoteUri(job.companyLogo)
+          ? job.companyLogo
+          : companyLogo && isRemoteUri(companyLogo)
+            ? companyLogo
+            : job.companyLogo) ?? null,
+        location: job.location,
+        city_id: job.cityId ?? null,
+        remote: job.remote,
+        salary: job.salary ?? null,
+        employment: job.employment ?? null,
+        experience: job.experience ?? null,
+        schedule: job.schedule ?? null,
+        category: job.category ?? null,
+        published_at: job.publishedAt ?? null,
+        url: job.url,
+        excerpt: job.excerpt,
+        description: job.description ?? null,
+        tier: job.tier === 1 ? 1 : 2,
+        contact: job.contact ?? null,
+        updated_at: job.publishedAt ?? new Date().toISOString(),
+      })),
+    );
+  }
+  if (jobRes.error && (isMissingCity(jobRes.error.message) || isMissingArchived(jobRes.error.message))) {
+    jobRes = await supabase.from('workly_jobs').upsert(
+      jobs.map((job) => ({
+        id: job.id,
+        user_id: userId,
+        title: job.title,
+        company: job.company || state.company?.name || '',
+        company_logo: (job.companyLogo && isRemoteUri(job.companyLogo)
+          ? job.companyLogo
+          : companyLogo && isRemoteUri(companyLogo)
+            ? companyLogo
+            : job.companyLogo) ?? null,
+        location: job.location,
+        remote: job.remote,
+        salary: job.salary ?? null,
+        employment: job.employment ?? null,
+        experience: job.experience ?? null,
+        schedule: job.schedule ?? null,
+        category: job.category ?? null,
+        published_at: job.publishedAt ?? null,
+        url: job.url,
+        excerpt: job.excerpt,
+        description: job.description ?? null,
+        tier: job.tier === 1 ? 1 : 2,
+        contact: job.contact ?? null,
+        updated_at: job.publishedAt ?? new Date().toISOString(),
+      })),
+    );
+  }
   if (jobRes.error) throw jobRes.error;
 
   const keepJobs = jobs.map((item) => item.id);
@@ -311,6 +511,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
 
   const uploadFailed =
     Boolean(profile?.avatarUri && !isRemoteUri(profile.avatarUri) && (!avatar || !isRemoteUri(avatar))) ||
+    Boolean(state.company?.logoUri && !isRemoteUri(state.company.logoUri) && (!companyLogo || !isRemoteUri(companyLogo))) ||
     uploadedOffers.some((offer) => offer.images.some((uri) => uri && !isRemoteUri(uri)));
   if (!uploadFailed) lastPush = payload;
   await writeBoundEmail(state.auth.email);
@@ -321,6 +522,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
         offers: Object.fromEntries(uploadedOffers.map((offer) => [offer.id, offer.images])),
       }),
     );
+    if (companyLogo && isRemoteUri(companyLogo)) dispatch(applyCompanyLogo(companyLogo));
   }
 }
 

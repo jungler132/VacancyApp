@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { composeSalary } from '@/lib/format';
+import { asPlaceId } from '@/lib/places';
 import { LOCAL_JOBS_LIMIT, WORKLY_SOURCE_ID } from '@/lib/tiers';
 import type { Job, JobTier } from '@/lib/types';
 
@@ -36,10 +37,12 @@ export function parseLocalJobs(raw: unknown): Job[] {
     sourceId: WORKLY_SOURCE_ID,
     sourceName: job.sourceName || 'Workly',
     location: job.location ?? '',
+    cityId: asPlaceId((job as Job).cityId),
     remote: Boolean(job.remote),
     url: job.url ?? '',
     excerpt: job.excerpt ?? '',
     tier: job.tier === 1 ? 1 : 2,
+    archived: Boolean(job.archived),
   }));
 }
 
@@ -82,6 +85,21 @@ const localJobsSlice = createSlice({
     replaceLocalJobs(state, action: PayloadAction<Job[]>) {
       state.items = parseLocalJobs(action.payload);
     },
+    stampCompanyOnJobs(state, action: PayloadAction<{ name?: string; logoUri?: string }>) {
+      const name = action.payload.name?.trim();
+      const logoUri = action.payload.logoUri?.trim();
+      if (!name && !logoUri) return;
+      state.items = state.items.map((job) => ({
+        ...job,
+        company: name || job.company,
+        companyLogo: logoUri || job.companyLogo,
+      }));
+    },
+    setLocalJobArchived(state, action: PayloadAction<{ id: string; archived: boolean }>) {
+      const job = state.items.find((item) => item.id === action.payload.id);
+      if (!job || job.archived === action.payload.archived) return;
+      job.archived = action.payload.archived;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -95,19 +113,25 @@ const localJobsSlice = createSlice({
   },
 });
 
-export const { upsertLocalJob, removeLocalJob, replaceLocalJobs } = localJobsSlice.actions;
+export const { upsertLocalJob, removeLocalJob, replaceLocalJobs, stampCompanyOnJobs, setLocalJobArchived } =
+  localJobsSlice.actions;
 export default localJobsSlice.reducer;
 
 export function buildLocalJob(input: {
   title: string;
   company: string;
+  companyLogo?: string;
   location: string;
+  cityId?: string;
   salary?: string;
   currency?: string;
   description: string;
   category?: string;
   contact?: string;
   remote?: boolean;
+  employment?: string;
+  experience?: string;
+  schedule?: string;
   tier: JobTier;
 }): Job {
   const title = input.title.trim();
@@ -118,9 +142,14 @@ export function buildLocalJob(input: {
     sourceName: 'Workly',
     title,
     company: input.company.trim(),
+    companyLogo: input.companyLogo?.trim() || undefined,
     location: input.location.trim(),
+    cityId: asPlaceId(input.cityId),
     remote: Boolean(input.remote),
     salary: composeSalary(input.salary, input.currency),
+    employment: input.employment?.trim() || undefined,
+    experience: input.experience?.trim() || undefined,
+    schedule: input.schedule?.trim() || undefined,
     category: input.category,
     publishedAt: new Date().toISOString(),
     url: '',
@@ -128,5 +157,6 @@ export function buildLocalJob(input: {
     description: input.description.trim(),
     contact: input.contact?.trim() || undefined,
     tier: input.tier === 1 ? 1 : 2,
+    archived: false,
   };
 }

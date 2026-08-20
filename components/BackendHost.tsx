@@ -26,7 +26,8 @@ export function BackendHost() {
       state.filters.ready &&
       state.alerts.ready &&
       state.sources.ready &&
-      state.visits.ready,
+      state.visits.ready &&
+      state.company.ready,
   );
   const userId = useAppSelector((state) => state.auth.userId);
   const email = useAppSelector((state) => state.auth.email);

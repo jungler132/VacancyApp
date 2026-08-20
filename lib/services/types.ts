@@ -27,10 +27,12 @@ export type ServiceOffer = {
   currency: string;
   images: string[];
   address?: string;
+  cityId?: string;
   phone?: string;
   kind: ServiceKindId;
   customKind?: string;
   featured?: boolean;
+  archived?: boolean;
   updatedAt: string;
 };
 
@@ -45,6 +47,7 @@ export type ServiceProfile = {
   kinds: ServiceKindId[];
   customKinds: string[];
   address?: string;
+  cityId?: string;
   hours: ServiceHours;
   updatedAt: string;
 };

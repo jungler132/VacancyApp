@@ -74,7 +74,7 @@ const TabIcon = memo(function TabIcon({
   return (
     <View style={styles.iconWrap}>
       {focused ? <View pointerEvents="none" style={styles.iconPill} /> : null}
-      <MaterialDesignIcons name={icon} color={focused ? colors.onPrimaryContainer : color} size={22} />
+      <MaterialDesignIcons name={icon} color={focused ? colors.accent : color} size={22} />
     </View>
   );
 });
@@ -259,10 +259,10 @@ function tabStyles(colors: ThemeColors) {
     },
     iconPill: {
       position: 'absolute' as const,
-      width: 44,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: colors.primaryContainer,
+      width: 40,
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: colors.accentDim,
     },
     label: {
       fontSize: 10,

@@ -1,7 +1,7 @@
 import type { Job, SearchParams } from '../../types';
 import { jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, htmlToText, toPublishedAt } from '../../format';
-import { fetchJson } from '../../http';
+import { excerptOf, toPublishedAt } from '../../format';
+import { DUMP_CACHE_MS, fetchJson } from '../../http';
 
 type NomadJob = {
   url?: string;
@@ -18,6 +18,7 @@ export async function searchWorkingNomads(params: SearchParams): Promise<Job[]> 
   if (params.page > 0) return [];
   const rows = await fetchJson<NomadJob[]>('https://www.workingnomads.com/api/exposed_jobs/', {
     signal: params.signal,
+    cacheTtlMs: DUMP_CACHE_MS,
   });
   return (Array.isArray(rows) ? rows : [])
     .filter((job) => {
@@ -31,7 +32,6 @@ export async function searchWorkingNomads(params: SearchParams): Promise<Job[]> 
     .slice(0, 25)
     .map((job, index) => {
       const title = job.title?.trim() || 'Remote job';
-      const body = htmlToText(job.description);
       return {
         id: `workingnomads:${job.url ?? `${title}-${index}`}`,
         sourceId: 'workingnomads',
@@ -43,8 +43,7 @@ export async function searchWorkingNomads(params: SearchParams): Promise<Job[]> 
         category: job.category_name,
         publishedAt: toPublishedAt(job.pub_date),
         url: job.url?.trim() || 'https://www.workingnomads.com',
-        excerpt: excerptOf(body || title),
-        description: body,
+        excerpt: excerptOf((job.description ?? '').slice(0, 400) || title),
       };
     });
 }

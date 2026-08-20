@@ -5,6 +5,7 @@ import { apiCategory } from '@/lib/catalog';
 import { DEFAULT_EXTRA_FILTERS, filterFeedIds, parseExtraFilters, type ExtraFilters } from '@/lib/filters';
 import { keyOf, t } from '@/lib/i18n';
 import { DEFAULT_LOCALE, type AppLocale } from '@/lib/i18n/locale';
+import { placeLabel } from '@/lib/places';
 import { notifyNewJobs } from '@/lib/notifications';
 import { readStoredLocale } from '@/lib/store/appearanceSlice';
 import { DISABLED_SOURCES_KEY } from '@/lib/store/sourcesSlice';
@@ -47,6 +48,7 @@ export function makeAlertKey(search: SearchSnapshot): string {
     extra.format,
     extra.employment,
     extra.maxAgeDays,
+    extra.placeId || '',
   ].join('|');
 }
 
@@ -65,6 +67,7 @@ export function alertLabel(search: SearchSnapshot, locale: AppLocale = DEFAULT_L
   }
   if (extra.format === 'remote') parts.push(t(locale, 'filters.format.remote'));
   if (extra.format === 'office') parts.push(t(locale, 'filters.format.office'));
+  if (extra.placeId) parts.push(placeLabel(extra.placeId, locale) || extra.placeId);
   return parts.slice(0, 4).join(' · ') || t(locale, 'alerts.all');
 }
 

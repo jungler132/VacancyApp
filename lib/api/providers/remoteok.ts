@@ -1,7 +1,7 @@
 import type { Job, SearchParams } from '../../types';
 import { jobMatchesRegion, jobMatchesSearch } from '../../catalog';
-import { excerptOf, formatSalary, htmlToText, toPublishedAt } from '../../format';
-import { fetchJson } from '../../http';
+import { excerptOf, formatSalary, toPublishedAt } from '../../format';
+import { DUMP_CACHE_MS, fetchJson } from '../../http';
 
 type RemoteOkJob = {
   id?: string | number;
@@ -18,7 +18,10 @@ type RemoteOkJob = {
 };
 
 export async function searchRemoteOK(params: SearchParams): Promise<Job[]> {
-  const data = await fetchJson<RemoteOkJob[]>('https://remoteok.com/api', { signal: params.signal });
+  const data = await fetchJson<RemoteOkJob[]>('https://remoteok.com/api', {
+    signal: params.signal,
+    cacheTtlMs: DUMP_CACHE_MS,
+  });
   const jobs = Array.isArray(data) ? data.slice(1) : [];
 
   return jobs
@@ -41,7 +44,6 @@ export async function searchRemoteOK(params: SearchParams): Promise<Job[]> {
       salary: formatSalary(job.salary_min, job.salary_max, 'USD'),
       publishedAt: toPublishedAt(job.date),
       url: job.url ?? 'https://remoteok.com',
-      excerpt: excerptOf(job.description || job.position || ''),
-      description: htmlToText(job.description),
+      excerpt: excerptOf((job.description ?? '').slice(0, 400) || job.position || ''),
     }));
 }

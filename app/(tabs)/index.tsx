@@ -3,6 +3,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { JobCard } from '@/components/JobCard';
 import { JobSkeletonList } from '@/components/JobSkeleton';
 import { JobsHeader } from '@/components/JobsHeader';
@@ -28,11 +29,13 @@ export default function JobsScreen() {
     setHeaderH(height);
   }, []);
 
+  const { visibleIds, loadingMore, loadMore } = feed;
+
   const onEndReached = useCallback(() => {
-    if (endGuard.current || feed.loadingMore || !feed.visibleIds.length) return;
+    if (endGuard.current || loadingMore || !visibleIds.length) return;
     endGuard.current = true;
-    feed.loadMore();
-  }, [feed]);
+    loadMore();
+  }, [loadMore, loadingMore, visibleIds.length]);
 
   const unlockEnd = useCallback(() => {
     endGuard.current = false;
@@ -69,6 +72,11 @@ export default function JobsScreen() {
             progressViewOffset={headerH}
           />
         }
+        ListHeaderComponent={
+          feed.errors.length ? (
+            <ErrorBanner errors={feed.errors} onRetry={feed.refresh} onDismiss={feed.dismissErrors} />
+          ) : null
+        }
         ListEmptyComponent={
           feed.loading ? (
             <JobSkeletonList />
@@ -82,7 +90,7 @@ export default function JobsScreen() {
           )
         }
         ListFooterComponent={
-          <View style={styles.footer}>{feed.loadingMore ? <ActivityIndicator /> : null}</View>
+          <View style={styles.footer}>{feed.loadingMore || feed.waitingBoards ? <ActivityIndicator /> : null}</View>
         }
       />
 

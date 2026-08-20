@@ -3,8 +3,9 @@ import { View } from 'react-native';
 import { Switch } from 'react-native-paper';
 
 import { Text } from '@/components/AppText';
+import { ToneCard } from '@/components/ToneCard';
 import { useT } from '@/lib/i18n/useT';
-import { fonts, premiumGlow, premiumSurface, radius, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export const PlanSwitch = memo(function PlanSwitch({
   premium,
@@ -27,8 +28,7 @@ export const PlanSwitch = memo(function PlanSwitch({
   );
 
   return (
-    <View style={[styles.card, premium && styles.cardOn]}>
-      {premium ? <View style={styles.stripe} /> : null}
+    <ToneCard tone={premium ? 'premium' : 'default'} style={styles.card}>
       <View style={styles.copy}>
         <Text style={styles.title}>{t('profile.plan')}</Text>
         <Text style={styles.meta}>{premium ? t('profile.accountPremium') : t('profile.accountFree')}</Text>
@@ -39,33 +39,16 @@ export const PlanSwitch = memo(function PlanSwitch({
         <Switch value={premium} onValueChange={onToggle} color={colors.orange} />
         <Text style={[styles.side, styles.sideRight, premium && styles.sidePrem]}>{t('common.premium')}</Text>
       </View>
-    </View>
+    </ToneCard>
   );
 });
 
-function planSwitchStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+function planSwitchStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
     card: {
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      borderRadius: radius.lg,
       paddingHorizontal: 16,
       paddingVertical: 14,
       gap: 12,
-      overflow: 'hidden' as const,
-    },
-    cardOn: {
-      ...premiumSurface(colors),
-      ...premiumGlow(scheme),
-    },
-    stripe: {
-      position: 'absolute' as const,
-      left: 0,
-      top: 0,
-      bottom: 0,
-      width: 4,
-      backgroundColor: colors.orange,
     },
     copy: { paddingLeft: 6, gap: 2 },
     title: { color: colors.text, fontFamily: fonts.semibold, fontSize: 15 },

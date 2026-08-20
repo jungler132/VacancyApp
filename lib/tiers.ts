@@ -46,6 +46,7 @@ export function filterLocalJobs(
   const category = apiCategory(opts.categories);
   const out: Job[] = [];
   for (const job of jobs) {
+    if (job.archived) continue;
     if (opts.tierFilter !== 'all' && jobTier(job) !== opts.tierFilter) continue;
     if (!jobMatchesExtra(job, extra)) continue;
     const hay = `${job.title} ${job.company} ${job.excerpt} ${job.description ?? ''} ${job.category ?? ''}`;

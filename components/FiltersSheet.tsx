@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { FilterSheetFrame, FilterSheetSection } from '@/components/FilterSheetFrame';
 import { SelectChip } from '@/components/FilterChips';
+import { PlacePicker } from '@/components/PlacePicker';
 import { Text } from '@/components/AppText';
 import { CATEGORIES, REGIONS } from '@/lib/catalog';
 import {
@@ -121,6 +122,15 @@ export const FiltersSheet = memo(function FiltersSheet({
             onChange={onChangeRegion as (id: string | number) => void}
           />
         ))}
+      </FilterSheetSection>
+      <FilterSheetSection title={t('filters.place')} chips={false}>
+        <PlacePicker
+          label=""
+          value={current.placeId}
+          region={region}
+          allowCountry
+          onChange={(id) => onChangeExtra({ ...current, placeId: id })}
+        />
       </FilterSheetSection>
       <FilterSheetSection title={t('filters.category')}>
         {CATEGORIES.map((item) => (

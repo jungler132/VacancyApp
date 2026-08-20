@@ -6,8 +6,7 @@ import * as Clipboard from 'expo-clipboard';
 
 import { AccountCard } from '@/components/AccountCard';
 import { AppHeader } from '@/components/AppHeader';
-import { ChipWrap } from '@/components/ChipWrap';
-import { SelectChip } from '@/components/FilterChips';
+import { ChoiceBar } from '@/components/ChoiceBar';
 import { NavRow } from '@/components/NavRow';
 import { Text } from '@/components/AppText';
 import { SOURCES, availableSourceIds } from '@/lib/api/aggregator';
@@ -60,15 +59,28 @@ export default function SettingsScreen() {
     [copyEmail, t],
   );
 
-  const onFont = useCallback((id: string | number) => dispatch(setFontSize(id as FontSizeId)), [dispatch]);
-  const onLocale = useCallback((id: string | number) => dispatch(setLocale(id as AppLocale)), [dispatch]);
+  const onFont = useCallback((id: string) => dispatch(setFontSize(id as FontSizeId)), [dispatch]);
+  const onLocale = useCallback((id: string) => dispatch(setLocale(id as AppLocale)), [dispatch]);
   const onTheme = useCallback(
-    (id: string | number) => {
+    (id: string) => {
       const next = id as ThemePreference;
       dispatch(setTheme(next));
       Appearance.setColorScheme(next === 'system' ? 'unspecified' : next);
     },
     [dispatch],
+  );
+
+  const localeOptions = useMemo(
+    () => APP_LOCALES.map((id) => ({ id, label: t(keyOf('lang', id)) })),
+    [t],
+  );
+  const themeOptions = useMemo(
+    () => THEME_OPTIONS.map((id) => ({ id, label: t(keyOf('theme', id)) })),
+    [t],
+  );
+  const fontOptions = useMemo(
+    () => FONT_SIZE_OPTIONS.map((item) => ({ id: item.id, label: t(keyOf('font', item.id)) })),
+    [t],
   );
 
   return (
@@ -78,38 +90,15 @@ export default function SettingsScreen() {
         <Text style={styles.section}>{t('auth.section')}</Text>
         <AccountCard />
 
-        <Text style={styles.section}>{t('settings.language')}</Text>
-        <ChipWrap>
-          {APP_LOCALES.map((id) => (
-            <SelectChip key={id} id={id} label={t(keyOf('lang', id))} selected={locale === id} onChange={onLocale} />
-          ))}
-        </ChipWrap>
-
-        <Text style={styles.section}>{t('settings.theme')}</Text>
-        <ChipWrap>
-          {THEME_OPTIONS.map((id) => (
-            <SelectChip
-              key={id}
-              id={id}
-              label={t(keyOf('theme', id))}
-              selected={themePref === id}
-              onChange={onTheme}
-            />
-          ))}
-        </ChipWrap>
-
-        <Text style={styles.section}>{t('settings.font')}</Text>
-        <ChipWrap>
-          {FONT_SIZE_OPTIONS.map((item) => (
-            <SelectChip
-              key={item.id}
-              id={item.id}
-              label={t(keyOf('font', item.id))}
-              selected={fontSize === item.id}
-              onChange={onFont}
-            />
-          ))}
-        </ChipWrap>
+        <Text style={styles.section}>{t('settings.look')}</Text>
+        <View style={styles.look}>
+          <Text style={styles.lookLabel}>{t('settings.language')}</Text>
+          <ChoiceBar value={locale} options={localeOptions} onChange={onLocale} />
+          <Text style={styles.lookLabel}>{t('settings.theme')}</Text>
+          <ChoiceBar value={themePref} options={themeOptions} onChange={onTheme} />
+          <Text style={styles.lookLabel}>{t('settings.font')}</Text>
+          <ChoiceBar value={fontSize} options={fontOptions} onChange={onFont} />
+        </View>
 
         <Pressable onPress={() => setSourcesOpen((value) => !value)} style={styles.rowBetween}>
           <Text style={styles.section}>{t('settings.sources')}</Text>
@@ -170,15 +159,31 @@ export default function SettingsScreen() {
 function settingsStyles(colors: ThemeColors) {
   return {
     screen: { flex: 1, backgroundColor: 'transparent' },
-    content: { padding: 16, gap: 8 },
+    content: { padding: 16, gap: 6 },
     section: {
       color: colors.muted,
       fontFamily: fonts.semibold,
       fontSize: 12,
       letterSpacing: 0.4,
       textTransform: 'uppercase' as const,
-      marginTop: 16,
-      marginBottom: 4,
+      marginTop: 10,
+      marginBottom: 2,
+    },
+    look: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: radius.lg,
+      paddingHorizontal: 12,
+      paddingTop: 8,
+      paddingBottom: 12,
+      gap: 8,
+    },
+    lookLabel: {
+      color: colors.faint,
+      fontFamily: fonts.medium,
+      fontSize: 11,
+      marginTop: 4,
     },
     rowBetween: {
       flexDirection: 'row' as const,

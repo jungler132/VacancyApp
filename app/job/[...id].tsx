@@ -25,12 +25,14 @@ import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { isHhJobId } from '@/lib/api/providers/hh';
 import { hydrateJob } from '@/lib/store/jobsSlice';
-import { removeLocalJob } from '@/lib/store/localJobsSlice';
+import { removeLocalJob, setLocalJobArchived } from '@/lib/store/localJobsSlice';
 import { matchRouteJobId, parseJobIdParam } from '@/lib/jobRoute';
 import { selectIsSaved, selectJobById, selectViewedJob } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
-import { isLocalJob, jobTier } from '@/lib/tiers';
-import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { jobTier } from '@/lib/tiers';
+import { ToneCard } from '@/components/ToneCard';
+import { inferPlaceId, placeLabel } from '@/lib/places';
+import { fonts, radius, toneForTier, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function JobDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
@@ -50,6 +52,8 @@ export default function JobDetailsScreen() {
   const saved = useAppSelector(selectIsSaved(job?.id ?? lookupId));
   const applyStatus = useAppSelector((state) => state.saved.statuses[job?.id ?? lookupId]);
   const pipelineCount = useAppSelector((state) => Object.keys(state.saved.statuses).length);
+  const jobId = job?.id;
+  const ownJob = useAppSelector((state) => (jobId ? state.localJobs.items.find((item) => item.id === jobId) : undefined));
   const limits = useLimits();
 
   useEffect(() => {
@@ -79,10 +83,15 @@ export default function JobDetailsScreen() {
   }, [dispatch, job]);
 
   const onDelete = useCallback(() => {
-    if (!job || !isLocalJob(job)) return;
-    dispatch(removeLocalJob(job.id));
+    if (!ownJob) return;
+    dispatch(removeLocalJob(ownJob.id));
     router.back();
-  }, [dispatch, job, router]);
+  }, [dispatch, ownJob, router]);
+
+  const onArchive = useCallback(() => {
+    if (!ownJob) return;
+    dispatch(setLocalJobArchived({ id: ownJob.id, archived: !ownJob.archived }));
+  }, [dispatch, ownJob]);
 
   const onStatus = useCallback(
     (id: string | number) => {
@@ -106,7 +115,10 @@ export default function JobDetailsScreen() {
 
   const meta = useMemo(() => {
     if (!job) return '';
-    const place = formatPlace(job.location, job.remote) || (job.remote ? t('fact.remote') : '');
+    const place =
+      placeLabel(job.cityId || inferPlaceId(job.location), locale) ||
+      formatPlace(job.location, job.remote) ||
+      (job.remote ? t('fact.remote') : '');
     return joinMeta([place, formatDate(job.publishedAt, locale)]);
   }, [job, locale, t]);
 
@@ -195,13 +207,14 @@ export default function JobDetailsScreen() {
   const title = showTranslated && translated ? translated.title : job.title;
   const company = showTranslated && translated ? translated.company : displayName(job.company);
   const text = showTranslated && translated ? translated.body : body;
-  const premium = jobTier(job) === 1;
+  const premium = jobTier(job) === 1 && !ownJob?.archived;
+  const workly = jobTier(job) === 2 && !ownJob?.archived;
+  const cardTone = ownJob?.archived ? 'default' : toneForTier(jobTier(job));
 
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={[styles.content, job.url && styles.contentCta]}>
-        <View style={[styles.hero, premium && styles.heroPremium]}>
-          {premium ? <View style={styles.stripe} /> : null}
+        <ToneCard tone={cardTone} style={styles.hero}>
           <View style={styles.logo}>
             <CompanyLogo uri={job.companyLogo || logoFromApplyUrl(job.url)} name={company} size={80} />
           </View>
@@ -212,15 +225,16 @@ export default function JobDetailsScreen() {
           <Text variant="bodyMedium" style={styles.company}>
             {company}
           </Text>
-        </View>
+        </ToneCard>
 
         <ChipWrap center style={{ marginBottom: 16 }}>
+          {ownJob?.archived ? <AppChip label={t('common.archived')} selected /> : null}
           {job.salary ? <AppChip label={job.salary} selected /> : null}
           {meta ? <AppChip label={meta} /> : null}
           {facts.map((fact) => (
             <AppChip key={fact.id} label={tokenLabel(locale, fact.value)} />
           ))}
-          <AppChip label={premium ? t('common.premium') : job.sourceName} selected />
+          <AppChip label={premium ? t('common.premium') : workly ? t('common.workly') : job.sourceName} selected />
         </ChipWrap>
 
         {job.contact ? (
@@ -229,12 +243,12 @@ export default function JobDetailsScreen() {
           </Text>
         ) : null}
 
-        <View style={[styles.companyCard, premium && styles.companyCardPremium]}>
+        <ToneCard tone={cardTone} style={styles.companyCard}>
           <Text variant="titleSmall">{company}</Text>
           <Text variant="bodySmall" style={styles.companyNote}>
-            {premium ? t('common.premium') : job.sourceName}
+            {premium ? t('common.premium') : workly ? t('common.workly') : job.sourceName}
           </Text>
-        </View>
+        </ToneCard>
 
         <Text variant="labelSmall" style={styles.statusTitle}>
           {t('job.status')}
@@ -272,10 +286,15 @@ export default function JobDetailsScreen() {
         <Button mode="outlined" onPress={toggle} icon={saved ? 'star' : 'star-outline'} style={styles.secondary}>
           {saved ? t('common.unsave') : t('common.save')}
         </Button>
-        {isLocalJob(job) ? (
-          <Button mode="text" onPress={onDelete} textColor={colors.danger} style={styles.secondary}>
-            {t('job.delete')}
-          </Button>
+        {ownJob ? (
+          <>
+            <Button mode="outlined" onPress={onArchive} style={styles.secondary}>
+              {ownJob.archived ? t('job.restore') : t('job.archive')}
+            </Button>
+            <Button mode="text" onPress={onDelete} textColor={colors.danger} style={styles.secondary}>
+              {t('job.delete')}
+            </Button>
+          </>
         ) : null}
       </ScrollView>
       {job.url ? (
@@ -289,49 +308,29 @@ export default function JobDetailsScreen() {
   );
 }
 
-function jobDetailsStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+function jobDetailsStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
     screen: { flex: 1, backgroundColor: colors.bg },
     content: { padding: 20, paddingBottom: 48 },
     contentCta: { paddingBottom: 24 },
     center: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center' as const, padding: 24 },
-    hero: { alignItems: 'center' as const, marginBottom: 16, paddingVertical: 8 },
-    heroPremium: {
-      ...premiumSurface(colors),
-      ...premiumGlow(scheme),
-      borderRadius: radius.xl,
-      borderWidth: 1,
+    hero: {
+      alignItems: 'center' as const,
+      marginBottom: 16,
       paddingHorizontal: 16,
       paddingVertical: 20,
-      overflow: 'hidden' as const,
+      borderRadius: radius.xl,
       gap: 8,
-    },
-    stripe: {
-      position: 'absolute' as const,
-      left: 0,
-      top: 0,
-      bottom: 0,
-      width: 4,
-      backgroundColor: colors.orange,
     },
     logo: { marginBottom: 16 },
     headline: { textAlign: 'center' as const },
     company: { marginTop: 6, opacity: 0.75, textAlign: 'center' as const },
     meta: { marginTop: 8, opacity: 0.85 },
     companyCard: {
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      borderRadius: radius.lg,
       padding: 16,
       marginTop: 8,
       marginBottom: 16,
       gap: 4,
-      ...shadowsFor(scheme).card,
-    },
-    companyCardPremium: {
-      ...premiumSurface(colors),
-      ...premiumGlow(scheme),
     },
     companyNote: { opacity: 0.65 },
     statusTitle: { marginTop: 8, marginBottom: 8, opacity: 0.7 },

@@ -1,7 +1,7 @@
 import type { CategoryId, Job, SearchParams } from '../../types';
 import { jobMatchesAnyLang } from '../../catalog';
 import { excerptOf, toPublishedAt } from '../../format';
-import { fetchJson } from '../../http';
+import { DUMP_CACHE_MS, fetchJson } from '../../http';
 
 type BirJobItem = {
   title?: string;
@@ -34,10 +34,12 @@ export async function searchBirJob(params: SearchParams): Promise<Job[]> {
 
   const data = await fetchJson<BirJobResponse>('https://www.birjob.com/api/llm/jobs', {
     signal: params.signal,
+    cacheTtlMs: DUMP_CACHE_MS,
   });
 
   return (data.jobs ?? [])
     .filter((job) => matchesBirJob(job, params))
+    .slice(0, 25)
     .map((job, index) => {
       const title = job.title?.trim() || 'Vakansiya';
       const url = job.apply_url ?? 'https://www.birjob.com';

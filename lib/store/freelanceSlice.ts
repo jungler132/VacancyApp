@@ -3,6 +3,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 
 import { DEFAULT_HOURS, normalizeClock, parseWeekdays, WEEKDAYS } from '@/lib/services/hours';
 import { isServiceKindId } from '@/lib/services/kinds';
+import { asPlaceId } from '@/lib/places';
 import type { ServiceHours, ServiceKindId, ServiceOffer, ServiceProfile } from '@/lib/services/types';
 
 import { MAX_OFFERS, MAX_OFFER_PHOTOS, MAX_PROFILE_PHOTOS } from '@/lib/limits';
@@ -88,6 +89,7 @@ export function parseProfile(raw: unknown): ServiceProfile | null {
     kinds,
     customKinds: parseCustomKinds(row.customKinds),
     address: asString(row.address).trim() || undefined,
+    cityId: asPlaceId(row.cityId),
     hours: parseHours(row.hours),
     updatedAt: asString(row.updatedAt) || new Date().toISOString(),
   };
@@ -107,10 +109,12 @@ export function parseOffer(raw: unknown): ServiceOffer | null {
     currency: asString(row.currency).trim() || 'RUB',
     images: parseImages(row.images, OFFER_PHOTOS_LIMIT),
     address: asString(row.address).trim() || undefined,
+    cityId: asPlaceId(row.cityId),
     phone: asString(row.phone).trim() || undefined,
     kind: row.kind,
     customKind: asString(row.customKind).trim().slice(0, 32) || undefined,
     featured: Boolean(row.featured),
+    archived: Boolean(row.archived),
     updatedAt: asString(row.updatedAt) || new Date().toISOString(),
   };
 }
@@ -181,6 +185,12 @@ const freelanceSlice = createSlice({
     removeOffer(state, action: PayloadAction<string>) {
       state.offers = state.offers.filter((item) => item.id !== action.payload);
     },
+    setOfferArchived(state, action: PayloadAction<{ id: string; archived: boolean }>) {
+      const offer = state.offers.find((item) => item.id === action.payload.id);
+      if (!offer || offer.archived === action.payload.archived) return;
+      offer.archived = action.payload.archived;
+      offer.updatedAt = new Date().toISOString();
+    },
     applyRemoteMedia(state, action: PayloadAction<{ avatarUri?: string; offers: Record<string, string[]> }>) {
       if (state.profile && action.payload.avatarUri) {
         state.profile.avatarUri = action.payload.avatarUri;
@@ -209,5 +219,6 @@ const freelanceSlice = createSlice({
   },
 });
 
-export const { saveProfile, upsertOffer, removeOffer, applyRemoteMedia, replaceAccount } = freelanceSlice.actions;
+export const { saveProfile, upsertOffer, removeOffer, setOfferArchived, applyRemoteMedia, replaceAccount } =
+  freelanceSlice.actions;
 export default freelanceSlice.reducer;

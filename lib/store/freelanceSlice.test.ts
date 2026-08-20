@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import reducer, { OWN_PROFILE_ID, applyRemoteMedia, parseFreelance, saveProfile, upsertOffer } from './freelanceSlice';
+import reducer, { OWN_PROFILE_ID, applyRemoteMedia, parseFreelance, parseOffer, saveProfile, setOfferArchived, upsertOffer } from './freelanceSlice';
 
 describe('freelance persist', () => {
   it('отбрасывает профиль без имени и кривые услуги', () => {
@@ -94,6 +94,30 @@ describe('freelance persist', () => {
     );
     assert.equal(saved.offers[0]?.customKind, 'Сварка');
     assert.equal(saved.offers[0]?.featured, true);
+  });
+
+  it('читает архив из persist и переключает флаг', () => {
+    const parsed = parseOffer({ title: 'Маникюр', kind: 'beauty', archived: true });
+    assert.equal(parsed?.archived, true);
+    const live = parseOffer({ title: 'Маникюр', kind: 'beauty' });
+    assert.equal(live?.archived, false);
+    const first = reducer(
+      { profile: null, offers: [], ready: true },
+      upsertOffer({
+        id: 'offer:arch',
+        profileId: 'x',
+        title: 'Маникюр',
+        description: '',
+        currency: 'RUB',
+        images: [],
+        kind: 'beauty',
+        updatedAt: '2020-01-01T00:00:00.000Z',
+      }),
+    );
+    const archived = reducer(first, setOfferArchived({ id: 'offer:arch', archived: true }));
+    assert.equal(archived.offers[0]?.archived, true);
+    const restored = reducer(archived, setOfferArchived({ id: 'offer:arch', archived: false }));
+    assert.equal(restored.offers[0]?.archived, false);
   });
 
   it('подставляет https-фото без смены updatedAt', () => {

@@ -92,17 +92,52 @@ describe('services catalog', () => {
     assert.equal(byCustom[0]?.id, FIXTURES[0]?.id);
   });
 
+  it('фильтрует мастеров по городу', () => {
+    const withCity = [
+      { ...FIXTURES[0], cityId: 'baku' },
+      { ...FIXTURES[1], cityId: 'moscow' },
+    ];
+    const baku = filterServiceMasters(withCity, '', 'all', 'baku');
+    assert.equal(baku.length, 1);
+    assert.equal(baku[0]?.id, 'm:anna');
+  });
+
   it('подписывает услугу своей категорией', () => {
     assert.equal(offerKindLabel({ kind: 'other', customKind: 'Сварка' }, (id) => id), 'Сварка');
     assert.equal(offerKindLabel({ kind: 'repair' }, (id) => id), 'repair');
   });
 
   it('берёт адрес и телефон из профиля если в услуге пусто', () => {
-    const fromProfile = prefillOfferContact(undefined, { address: 'Zaqatala', phone: '+994' });
+    const fromProfile = prefillOfferContact(undefined, { address: 'Zaqatala', phone: '+994', cityId: 'zaqatala' });
     assert.equal(fromProfile.address, 'Zaqatala');
     assert.equal(fromProfile.phone, '+994');
+    assert.equal(fromProfile.cityId, 'zaqatala');
     const own = prefillOfferContact({ address: 'Баку', phone: '' }, { address: 'Zaqatala', phone: '+994' });
     assert.equal(own.address, 'Баку');
     assert.equal(own.phone, '+994');
+  });
+
+  it('прячет архивные услуги из каталога', () => {
+    const masters = [
+      master({
+        id: 'm:anna',
+        displayName: 'Анна',
+        kinds: ['beauty'],
+        offers: [
+          offer({
+            id: 'o:old',
+            profileId: 'm:anna',
+            title: 'Старый маникюр archivedonly',
+            kind: 'beauty',
+            archived: true,
+          }),
+          offer({ id: 'o:live', profileId: 'm:anna', title: 'Маникюр', kind: 'beauty' }),
+        ],
+      }),
+    ];
+    const visible = filterServiceMasters(masters, '', 'all');
+    assert.deepEqual(visible[0]?.offers.map((item) => item.id), ['o:live']);
+    const hidden = filterServiceMasters(masters, 'archivedonly', 'all');
+    assert.equal(hidden.length, 0);
   });
 });

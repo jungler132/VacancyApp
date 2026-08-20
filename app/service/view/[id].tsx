@@ -11,15 +11,19 @@ import { ReportSheet } from '@/components/ReportSheet';
 import { SaveStar } from '@/components/SaveStar';
 import { Text } from '@/components/AppText';
 import { keyOf } from '@/lib/i18n';
-import { useT } from '@/lib/i18n/useT';
+import { useLocale, useT } from '@/lib/i18n/useT';
+import { ToneCard } from '@/components/ToneCard';
+import { formatPlaceLine } from '@/lib/places';
 import { offerContact, offerEditorHref, offerKindLabel, offerPriceLabel } from '@/lib/services/catalog';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { setOfferArchived } from '@/lib/store/freelanceSlice';
 import { toSavedOffer, toggleSavedService } from '@/lib/store/savedServicesSlice';
 import { selectIsServiceSaved, selectOfferView } from '@/lib/store/selectors';
-import { fonts, premiumGlow, premiumSurface, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 export default function ServiceOfferViewScreen() {
   const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
@@ -42,6 +46,7 @@ export default function ServiceOfferViewScreen() {
     () => (offer && master ? offerContact(offer, master) : { phone: '', address: '' }),
     [master, offer],
   );
+  const place = offer && master ? formatPlaceLine(locale, offer.cityId || master.cityId, contact.address) : '';
   const kind = offer ? offerKindLabel(offer, (item) => t(keyOf('kind', item))) : '';
 
   useLayoutEffect(() => {
@@ -56,6 +61,10 @@ export default function ServiceOfferViewScreen() {
   const edit = useCallback(() => {
     if (offer) router.push(offerEditorHref(offer.id));
   }, [offer, router]);
+  const onArchive = useCallback(() => {
+    if (!offer || !master?.mine) return;
+    dispatch(setOfferArchived({ id: offer.id, archived: !offer.archived }));
+  }, [dispatch, master?.mine, offer]);
   const openReport = useCallback(() => setReportOpen(true), []);
   const closeReport = useCallback(() => setReportOpen(false), []);
   const onToggleSave = useCallback(() => {
@@ -74,12 +83,15 @@ export default function ServiceOfferViewScreen() {
     <ScrollView
       style={formStyles.screen}
       contentContainerStyle={[formStyles.content, { paddingBottom: Math.max(insets.bottom, 16) + 32 }]}>
-      {offer.featured ? (
-        <View style={styles.hero}>
-          <View style={styles.stripe} />
+      {offer.archived ? (
+        <ToneCard tone="default" style={styles.hero}>
+          <Text style={styles.heroNote}>{t('common.archived')}</Text>
+        </ToneCard>
+      ) : offer.featured ? (
+        <ToneCard tone="premium" style={styles.hero}>
           <PremiumBadge />
           <Text style={styles.heroNote}>{t('offer.featuredOn')}</Text>
-        </View>
+        </ToneCard>
       ) : null}
       {offer.images.map((uri) => (
         <AppImage key={uri} uri={uri} style={styles.photo} />
@@ -91,16 +103,21 @@ export default function ServiceOfferViewScreen() {
       <Text style={styles.price}>{offerPriceLabel(offer, t('services.priceNegotiable'))}</Text>
       {kind ? <Text style={styles.kind}>{kind}</Text> : null}
       {offer.description ? <Text style={styles.body}>{offer.description}</Text> : null}
-      {contact.address ? <Text style={styles.meta}>{t('master.address', { value: contact.address })}</Text> : null}
+      {place ? <Text style={styles.meta}>{t('master.address', { value: place })}</Text> : null}
       {contact.phone ? (
         <Pressable onPress={call}>
           <Text style={styles.link}>{t('master.phone', { value: contact.phone })}</Text>
         </Pressable>
       ) : null}
       {master.mine ? (
-        <Pressable onPress={edit} style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
-          <Text style={formStyles.secondaryText}>{t('offer.edit')}</Text>
-        </Pressable>
+        <>
+          <Pressable onPress={edit} style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
+            <Text style={formStyles.secondaryText}>{t('offer.edit')}</Text>
+          </Pressable>
+          <Pressable onPress={onArchive} style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
+            <Text style={formStyles.secondaryText}>{offer.archived ? t('offer.restore') : t('offer.archive')}</Text>
+          </Pressable>
+        </>
       ) : signedIn ? (
         <Pressable onPress={openReport} style={({ pressed }) => [formStyles.secondary, pressed && formStyles.pressed]}>
           <Text style={formStyles.secondaryText}>{t('report.action')}</Text>
@@ -120,25 +137,12 @@ export default function ServiceOfferViewScreen() {
   );
 }
 
-function offerViewStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+function offerViewStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
     hero: {
-      ...premiumSurface(colors),
-      ...premiumGlow(scheme),
-      borderRadius: radius.lg,
-      borderWidth: 1,
       paddingHorizontal: 16,
       paddingVertical: 14,
-      overflow: 'hidden' as const,
       gap: 8,
-    },
-    stripe: {
-      position: 'absolute' as const,
-      left: 0,
-      top: 0,
-      bottom: 0,
-      width: 4,
-      backgroundColor: colors.orange,
     },
     heroNote: { color: colors.text, fontFamily: fonts.medium, fontSize: 13, lineHeight: 18, paddingLeft: 4 },
     photo: {

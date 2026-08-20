@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { apiCategory } from '@/lib/catalog';
+import { makeFeedKey } from '@/lib/feedKey';
 import {
   closeFilters,
   openFilters,
@@ -22,6 +23,8 @@ import {
 import { DEFAULT_EXTRA_FILTERS, type ExtraFilters } from '@/lib/filters';
 import type { CategoryId, RegionId } from '@/lib/types';
 
+let feedInFlight: { key: string; abort: () => void } | null = null;
+
 export function useJobsQuery() {
   const dispatch = useAppDispatch();
   const query = useAppSelector((state) => state.filters.query);
@@ -31,9 +34,15 @@ export function useJobsQuery() {
   const sourcesReady = useAppSelector((state) => state.sources.ready);
   const filtersReady = useAppSelector((state) => state.filters.ready);
   const category = apiCategory(categories);
+  const feedStatus = useAppSelector((state) => selectActiveFeed(state).status);
 
   useEffect(() => {
     if (!sourcesReady || !filtersReady) return;
+    const key = makeFeedKey(query, region, category, enabledSources);
+    if (feedInFlight?.key === key) return;
+    if (feedStatus === 'loading' || feedStatus === 'loadingMore' || feedStatus === 'refreshing') return;
+    if (feedStatus === 'ready' || feedStatus === 'error') return;
+    if (feedInFlight) feedInFlight.abort();
     const action = dispatch(
       fetchFeed({
         query,
@@ -44,8 +53,11 @@ export function useJobsQuery() {
         mode: 'replace',
       }),
     );
-    return () => action.abort();
-  }, [dispatch, query, region, category, enabledSources, sourcesReady, filtersReady]);
+    feedInFlight = { key, abort: () => action.abort() };
+    void action.finally(() => {
+      if (feedInFlight?.key === key) feedInFlight = null;
+    });
+  }, [dispatch, query, region, category, enabledSources, sourcesReady, filtersReady, feedStatus]);
 }
 
 export function useFilterSheet() {
@@ -88,6 +100,7 @@ export function useJobsFeed() {
   const hasMore = feed.hasMore;
   const page = feed.page;
   const loading = ids.length === 0 && (status === 'loading' || status === 'idle');
+  const waitingBoards = loading && visibleIds.length > 0;
   const loadingMore = status === 'loadingMore';
   const refreshing = status === 'refreshing';
   const cacheAge = feed.fetchedAt ? Date.now() - feed.fetchedAt : 0;
@@ -144,6 +157,7 @@ export function useJobsFeed() {
     visibleIds,
     status,
     loading,
+    waitingBoards,
     loadingMore,
     refreshing,
     fromCache,

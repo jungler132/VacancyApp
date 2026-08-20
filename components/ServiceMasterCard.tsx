@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { SaveStar } from '@/components/SaveStar';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
@@ -7,9 +7,11 @@ import { PremiumBadge } from '@/components/PremiumBadge';
 import { Text } from '@/components/AppText';
 import { formatServiceSchedule } from '@/lib/services/hours';
 import type { ServiceMaster } from '@/lib/services/types';
-import { fonts, premiumGlow, premiumSurface, radius, shadowsFor, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { ToneCard } from '@/components/ToneCard';
+import { formatPlaceLine } from '@/lib/places';
+import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { keyOf } from '@/lib/i18n';
-import { useT } from '@/lib/i18n/useT';
+import { useLocale, useT } from '@/lib/i18n/useT';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { toSavedMaster, toggleSavedService } from '@/lib/store/savedServicesSlice';
 import { selectIsServiceSaved } from '@/lib/store/selectors';
@@ -22,12 +24,14 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   onPress: (id: string) => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const dispatch = useAppDispatch();
   const styles = useThemedStyles(serviceMasterCardStyles);
   const kinds = [...master.kinds.map((id) => t(keyOf('kind', id))), ...(master.customKinds ?? [])]
     .filter(Boolean)
     .join(' · ');
   const hours = formatServiceSchedule(master.hours, (id) => t(keyOf('week', id)), t('week.all'));
+  const place = formatPlaceLine(locale, master.cityId, master.address);
   const count = master.offers.length;
   const featured = master.offers.some((item) => item.featured);
   const savedRef = useMemo(
@@ -41,7 +45,7 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   }, [dispatch, master]);
 
   return (
-    <Pressable onPress={open} style={({ pressed }) => [styles.card, featured && styles.premium, pressed && styles.pressed]}>
+    <ToneCard tone={featured ? 'premium' : 'default'} onPress={open} style={styles.card}>
       <ServiceAvatar uri={master.avatarUri} name={master.displayName} size={56} />
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={2}>
@@ -54,7 +58,7 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
           </View>
         ) : null}
         <Text style={styles.meta} numberOfLines={2}>
-          {[kinds, master.address].filter(Boolean).join(' · ')}
+          {[kinds, place].filter(Boolean).join(' · ')}
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
           {[hours || null, count ? t('services.offerCount', { count }) : t('services.noOffers')]
@@ -69,29 +73,19 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
           <SaveStar saved={saved} onToggle={onToggle} />
         </View>
       )}
-    </Pressable>
+    </ToneCard>
   );
 });
 
-function serviceMasterCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
+function serviceMasterCardStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
   return {
     card: {
       flexDirection: 'row' as const,
       alignItems: 'flex-start' as const,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      borderRadius: radius.lg,
       paddingVertical: 16,
       paddingLeft: 14,
       paddingRight: 12,
       gap: 12,
-      overflow: 'hidden' as const,
-      ...shadowsFor(scheme).card,
-    },
-    premium: {
-      ...premiumSurface(colors),
-      ...premiumGlow(scheme),
     },
     body: { flex: 1, minWidth: 0, gap: 4 },
     name: { color: colors.text, fontFamily: fonts.semibold, fontSize: 16, lineHeight: 22 },
@@ -107,6 +101,5 @@ function serviceMasterCardStyles(colors: ThemeColors, scheme: ColorSchemeName) {
       marginTop: 8,
     },
     star: { marginTop: 6 },
-    pressed: { opacity: 0.86 },
   };
 }
