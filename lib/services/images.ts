@@ -1,3 +1,4 @@
+import { cacheDirectory, copyAsync } from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -28,6 +29,17 @@ export async function compressImage(uri: string, kind: 'avatar' | 'photo' = 'pho
   }
 }
 
+async function persistPicked(uri: string): Promise<string> {
+  if (!uri || isRemoteUri(uri) || !cacheDirectory) return uri;
+  const dest = `${cacheDirectory}vakano-pick-${Date.now().toString(36)}.jpg`;
+  try {
+    await copyAsync({ from: uri, to: dest });
+    return dest;
+  } catch {
+    return uri;
+  }
+}
+
 export async function pickServiceImage(opts?: { square?: boolean }): Promise<string | undefined> {
   try {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -41,7 +53,7 @@ export async function pickServiceImage(opts?: { square?: boolean }): Promise<str
     if (result.canceled) return undefined;
     const uri = result.assets[0]?.uri;
     if (!uri) return undefined;
-    return compressImage(uri, opts?.square ? 'avatar' : 'photo');
+    return persistPicked(await compressImage(uri, opts?.square ? 'avatar' : 'photo'));
   } catch {
     return undefined;
   }

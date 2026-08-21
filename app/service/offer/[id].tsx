@@ -172,7 +172,12 @@ function OfferForm() {
             updatedAt: new Date().toISOString(),
           }),
         );
-        await flushAccount(() => store.getState(), dispatch);
+        try {
+          await flushAccount(() => store.getState(), dispatch);
+        } catch {
+          showAppNotice(t('common.missing'), t('auth.syncFailed'));
+          return;
+        }
         router.back();
       });
     } finally {

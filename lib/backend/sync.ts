@@ -24,7 +24,7 @@ import { collectAccountState, parseAccountState, type AccountStateBlob } from '.
 import { signOutAccount } from './auth';
 import { readBoundEmail, writeBoundEmail } from './boundEmail';
 import { fetchOwnRows, fetchPublicCatalog, fetchPublicJobs, jobFromRow, offerFromRow, profileFromRow } from './rows';
-import { isRemoteUri } from './merge';
+import { isRemoteUri, keepRemoteUrl, preferMediaUri } from './merge';
 import { JOBS_TABLE } from './config';
 import { getSupabase } from './supabase';
 import { deleteOfferMedia, uploadMany, uploadMedia } from './storage';
@@ -102,7 +102,11 @@ export function clearLocalAccount(dispatch: Dispatch) {
 
 /** Flush to cloud, drop the session, then wipe this phone. Cloud stays. */
 export async function leaveAccount(dispatch: Dispatch, getState: () => SyncState) {
-  await flushAccount(getState, dispatch);
+  try {
+    await flushAccount(getState, dispatch);
+  } catch {
+    // still leave; cloud retry is not required to sign out
+  }
   resetPushCache();
   await signOutAccount();
   clearLocalAccount(dispatch);
@@ -152,7 +156,11 @@ export async function pullAccount(dispatch: Dispatch, getState: () => SyncState)
     return;
   }
 
+  const localAvatar = getState().freelance.profile?.avatarUri;
   const remoteProfile = remote.profile ? profileFromRow(remote.profile, true) : null;
+  if (remoteProfile) {
+    remoteProfile.avatarUri = preferMediaUri(remoteProfile.avatarUri, localAvatar);
+  }
   const rawState = remote.profile?.account_state;
   const hasState = Boolean(rawState && typeof rawState === 'object' && Object.keys(rawState as object).length);
   withPushPaused(() => {
@@ -202,7 +210,7 @@ export async function flushAccount(getState: () => SyncState, dispatch?: Dispatc
     .catch(() => undefined)
     .then(() => pushAccount(getState(), dispatch));
   pushLock = next.then(() => undefined, () => undefined);
-  await next.catch(() => undefined);
+  await next;
 }
 
 function isMissingAccountState(message: string) {
@@ -239,6 +247,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
   const accountState = deviceBlob(state);
   const payload = JSON.stringify({
     profile: profile?.updatedAt,
+    avatar: profile?.avatarUri,
     offers: offers.map((item) => item.id + item.updatedAt),
     jobs: jobs.map((item) => item.id + (item.publishedAt ?? '') + Number(Boolean(item.archived))),
     identity: [identity.seeking, identity.available, identity.title, identity.format],
@@ -248,7 +257,8 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
   if (payload === lastPush) return;
 
   let avatar = profile?.avatarUri;
-  if (avatar) avatar = await uploadMedia(userId, avatar, 'avatar', 'main');
+  if (avatar && !isRemoteUri(avatar)) avatar = await uploadMedia(userId, avatar, 'avatar', 'main');
+  if (profile?.avatarUri && avatar && !isRemoteUri(avatar)) throw new Error('avatar upload failed');
   let companyLogo = state.company?.logoUri;
   if (companyLogo) companyLogo = await uploadMedia(userId, companyLogo, 'company', 'logo');
   const uploadedOffers: ServiceOffer[] = [];
@@ -256,11 +266,10 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     uploadedOffers.push({ ...offer, images: await uploadMany(userId, offer.images, `offers/${offer.id}`) });
   }
 
-  const profileRow = {
+  const profileRow: Record<string, unknown> = {
     id: userId,
     display_name: profile?.displayName ?? '',
     bio: profile?.bio ?? '',
-    avatar_url: avatar && isRemoteUri(avatar) ? avatar : profile?.avatarUri && isRemoteUri(profile.avatarUri) ? profile.avatarUri : null,
     email: profile?.email || email,
     phone: profile?.phone ?? '',
     kinds: profile?.kinds ?? [],
@@ -275,14 +284,13 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     seek_title: identity.title,
     seek_format: identity.format,
     company_name: state.company?.name ?? '',
-    company_logo: companyLogo && isRemoteUri(companyLogo)
-      ? companyLogo
-      : state.company?.logoUri && isRemoteUri(state.company.logoUri)
-        ? state.company.logoUri
-        : null,
     company_about: state.company?.about ?? '',
     updated_at: profile?.updatedAt ?? new Date().toISOString(),
   };
+  const avatarUrl = keepRemoteUrl(avatar, profile?.avatarUri);
+  if (avatarUrl) profileRow.avatar_url = avatarUrl;
+  const logoUrl = keepRemoteUrl(companyLogo, state.company?.logoUri);
+  if (logoUrl) profileRow.company_logo = logoUrl;
 
   let profileRes = await supabase.from('profiles').upsert(profileRow);
   if (profileRes.error && isMissingCompany(profileRes.error.message)) {

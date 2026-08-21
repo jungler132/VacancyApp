@@ -53,7 +53,12 @@ function CompanyForm() {
     try {
       await runWithOverlay(t('company.saving'), async () => {
         dispatch(saveCompany({ name: next, about: about.trim(), logoUri }));
-        await flushAccount(() => store.getState(), dispatch);
+        try {
+          await flushAccount(() => store.getState(), dispatch);
+        } catch {
+          setNotice(t('auth.syncFailed'));
+          return;
+        }
         router.back();
       });
     } finally {

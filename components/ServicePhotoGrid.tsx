@@ -1,7 +1,8 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppImage } from '@/components/AppImage';
+import { PhotoLightbox } from '@/components/PhotoLightbox';
 import { Text } from '@/components/AppText';
 import { fonts, radius, useThemedStyles, type ThemeColors } from '@/lib/theme';
 
@@ -17,16 +18,24 @@ export const ServicePhotoGrid = memo(function ServicePhotoGrid({
   onRemove?: (uri: string) => void;
 }) {
   const styles = useThemedStyles(photoGridStyles);
+  const [preview, setPreview] = useState<number | null>(null);
+  const close = useCallback(() => setPreview(null), []);
   return (
     <View style={styles.row}>
-      {uris.map((uri) => (
-        <PhotoThumb key={uri} uri={uri} onRemove={onRemove} />
+      {uris.map((uri, index) => (
+        <PhotoThumb
+          key={uri}
+          uri={uri}
+          onRemove={onRemove}
+          onOpen={onRemove ? undefined : () => setPreview(index)}
+        />
       ))}
       {canAdd && onAdd ? (
         <Pressable onPress={onAdd} style={styles.add}>
           <Text style={styles.addText}>+</Text>
         </Pressable>
       ) : null}
+      {preview != null ? <PhotoLightbox uris={uris} index={preview} onClose={close} /> : null}
     </View>
   );
 });
@@ -34,13 +43,18 @@ export const ServicePhotoGrid = memo(function ServicePhotoGrid({
 const PhotoThumb = memo(function PhotoThumb({
   uri,
   onRemove,
+  onOpen,
 }: {
   uri: string;
   onRemove?: (uri: string) => void;
+  onOpen?: () => void;
 }) {
   const styles = useThemedStyles(photoGridStyles);
-  const press = useCallback(() => onRemove?.(uri), [onRemove, uri]);
-  if (!onRemove) return <AppImage uri={uri} style={styles.photo} />;
+  const press = useCallback(() => {
+    if (onRemove) onRemove(uri);
+    else onOpen?.();
+  }, [onOpen, onRemove, uri]);
+  if (!onRemove && !onOpen) return <AppImage uri={uri} style={styles.photo} />;
   return (
     <Pressable onPress={press}>
       <AppImage uri={uri} style={styles.photo} />

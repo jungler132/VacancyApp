@@ -78,7 +78,7 @@ export function BackendHost() {
       lastEmail.current = email;
       schedulePush(() => store.getState(), dispatch);
     }
-    refreshPublic(dispatch, userId).catch(() => undefined);
+    refreshPublic(dispatch, userId, true).catch(() => undefined);
   }, [dispatch, email, ready, store, userId]);
 
   return null;

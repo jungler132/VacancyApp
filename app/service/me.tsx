@@ -14,6 +14,8 @@ import { WeekdayStrip } from '@/components/WeekdayStrip';
 import { Text } from '@/components/AppText';
 import { showAppNotice } from '@/lib/appNotice';
 import { flushAccount } from '@/lib/backend/sync';
+import { isRemoteUri } from '@/lib/backend/merge';
+import { uploadMedia } from '@/lib/backend/storage';
 import { keyOf } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { offerEditorHref, offerPriceLabel } from '@/lib/services/catalog';
@@ -43,6 +45,7 @@ function ProfileForm() {
   const styles = useThemedStyles(serviceMeStyles);
   const own = useAppSelector(selectOwnMaster);
   const userId = useAppSelector((state) => state.auth.userId);
+  const anonymous = useAppSelector((state) => state.auth.anonymous);
   const limits = useLimits();
   const seed = useMemo(() => own ?? emptyProfile(), [own]);
   const [displayName, setDisplayName] = useState(seed.displayName);
@@ -122,6 +125,15 @@ function ProfileForm() {
     setSaving(true);
     try {
       await runWithOverlay(t('me.saving'), async () => {
+        let nextAvatar = avatarUri;
+        if (userId && !anonymous && nextAvatar && !isRemoteUri(nextAvatar)) {
+          try {
+            nextAvatar = await uploadMedia(userId, nextAvatar, 'avatar', 'main');
+          } catch {
+            showAppNotice(t('common.missing'), t('me.avatarFail'));
+            return;
+          }
+        }
         dispatch(
           saveProfile({
             ...(own ?? emptyProfile()),
@@ -131,7 +143,7 @@ function ProfileForm() {
             phone: phone.trim(),
             address: address.trim() || undefined,
             cityId: cityId || undefined,
-            avatarUri,
+            avatarUri: nextAvatar,
             photos: own?.photos ?? [],
             kinds,
             customKinds,
@@ -139,13 +151,18 @@ function ProfileForm() {
             updatedAt: new Date().toISOString(),
           }),
         );
-        await flushAccount(() => store.getState(), dispatch);
+        try {
+          await flushAccount(() => store.getState(), dispatch);
+        } catch {
+          showAppNotice(t('common.missing'), t('auth.syncFailed'));
+          return;
+        }
         router.back();
       });
     } finally {
       setSaving(false);
     }
-  }, [address, avatarUri, bio, cityId, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, saving, store, t]);
+  }, [address, anonymous, avatarUri, bio, cityId, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, saving, store, t, userId]);
 
   return (
     <View style={formStyles.screen}>

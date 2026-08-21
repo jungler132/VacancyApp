@@ -4,6 +4,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 
 import { EmptyState } from '@/components/EmptyState';
 import { useFormStyles } from '@/components/FormField';
+import { PhotoLightbox } from '@/components/PhotoLightbox';
 import { ReportSheet } from '@/components/ReportSheet';
 import { SaveStar } from '@/components/SaveStar';
 import { ServiceAvatar } from '@/components/ServiceAvatar';
@@ -40,6 +41,7 @@ export default function ServicePublicScreen() {
   const saved = useAppSelector(selectIsServiceSaved(savedRef));
   const signedIn = useAppSelector((state) => Boolean(state.auth.userId && state.auth.email && !state.auth.anonymous));
   const [reportOpen, setReportOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const limits = useLimits();
   const hours = formatServiceSchedule(
     master?.hours,
@@ -101,7 +103,9 @@ export default function ServicePublicScreen() {
   return (
     <ScrollView style={formStyles.screen} contentContainerStyle={formStyles.content}>
       <View style={styles.head}>
-        <ServiceAvatar uri={master.avatarUri} name={master.displayName} size={72} />
+        <Pressable onPress={() => (master.avatarUri ? setAvatarOpen(true) : undefined)}>
+          <ServiceAvatar uri={master.avatarUri} name={master.displayName} size={72} />
+        </Pressable>
         <View style={styles.headBody}>
           <View style={styles.nameRow}>
             <Text style={styles.name}>{master.displayName}</Text>
@@ -161,6 +165,9 @@ export default function ServicePublicScreen() {
         target={master ? { kind: 'master', id: master.id, title: master.displayName } : null}
         onClose={closeReport}
       />
+      {avatarOpen && master.avatarUri ? (
+        <PhotoLightbox uris={[master.avatarUri]} index={0} onClose={() => setAvatarOpen(false)} />
+      ) : null}
     </ScrollView>
   );
 }

@@ -7,6 +7,7 @@ import { AppImage } from '@/components/AppImage';
 import { EmptyState } from '@/components/EmptyState';
 import { useFormStyles } from '@/components/FormField';
 import { PremiumBadge } from '@/components/PremiumBadge';
+import { PhotoLightbox } from '@/components/PhotoLightbox';
 import { ReportSheet } from '@/components/ReportSheet';
 import { SaveStar } from '@/components/SaveStar';
 import { Text } from '@/components/AppText';
@@ -35,6 +36,7 @@ export default function ServiceOfferViewScreen() {
   const view = useAppSelector((state) => selectOfferView(state, offerId));
   const signedIn = useAppSelector((state) => Boolean(state.auth.userId && state.auth.email && !state.auth.anonymous));
   const [reportOpen, setReportOpen] = useState(false);
+  const [preview, setPreview] = useState<number | null>(null);
   const offer = view?.offer;
   const master = view?.master;
   const savedRef = useMemo(
@@ -93,8 +95,10 @@ export default function ServiceOfferViewScreen() {
           <Text style={styles.heroNote}>{t('offer.featuredOn')}</Text>
         </ToneCard>
       ) : null}
-      {offer.images.map((uri) => (
-        <AppImage key={uri} uri={uri} style={styles.photo} />
+      {offer.images.map((uri, index) => (
+        <Pressable key={uri} onPress={() => setPreview(index)}>
+          <AppImage uri={uri} style={styles.photo} />
+        </Pressable>
       ))}
       <View style={styles.titleRow}>
         <Text style={styles.title}>{offer.title}</Text>
@@ -133,6 +137,9 @@ export default function ServiceOfferViewScreen() {
         target={offer && master ? { kind: 'offer', id: offer.id, title: `${offer.title} · ${master.displayName}` } : null}
         onClose={closeReport}
       />
+      {preview != null ? (
+        <PhotoLightbox uris={offer.images} index={preview} onClose={() => setPreview(null)} />
+      ) : null}
     </ScrollView>
   );
 }

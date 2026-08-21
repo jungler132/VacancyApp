@@ -21,7 +21,9 @@ import { DEFAULT_HOURS } from '@/lib/services/hours';
 import { filterServiceMasters } from '@/lib/services/catalog';
 import type { ServiceKindId, ServiceMaster, ServiceOffer } from '@/lib/services/types';
 import { dismissOnboarding, hideOnboarding } from '@/lib/store/onboardingSlice';
+import { setLocale } from '@/lib/store/appearanceSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
+import { APP_LOCALES, type AppLocale } from '@/lib/i18n/locale';
 import { TELEGRAM_GROUPS, JOB_SITES } from '@/lib/telegramGroups';
 import { fonts, radius, useAppTheme, useThemedStyles, type ThemeColors } from '@/lib/theme';
 import type { Job } from '@/lib/types';
@@ -436,6 +438,30 @@ function StepVisual({ visual }: { visual: StepVisualId }) {
   );
 }
 
+function OnboardLangSwitch() {
+  const dispatch = useAppDispatch();
+  const locale = useAppSelector((state) => state.appearance.locale);
+  const styles = useThemedStyles(onboardStyles);
+  return (
+    <View style={styles.langRow}>
+      {APP_LOCALES.map((id) => {
+        const on = locale === id;
+        return (
+          <Pressable
+            key={id}
+            hitSlop={6}
+            onPress={() => dispatch(setLocale(id as AppLocale))}
+            style={[styles.langChip, on && styles.langChipOn]}>
+            <Text numberOfLines={1} style={[styles.langText, on && styles.langTextOn]}>
+              {id.toUpperCase()}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export const OnboardingHost = memo(function OnboardingHost() {
   const dispatch = useAppDispatch();
   const t = useT();
@@ -489,7 +515,10 @@ export const OnboardingHost = memo(function OnboardingHost() {
     <Modal visible={open} animationType="fade" presentationStyle="fullScreen" onRequestClose={onBack}>
       {open ? <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} /> : null}
       <View style={[styles.root, { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <Text style={styles.kicker}>{t('onboard.kicker')}</Text>
+        <View style={styles.topRow}>
+          <Text style={styles.kicker}>{t('onboard.kicker')}</Text>
+          {step === 0 ? <OnboardLangSwitch /> : null}
+        </View>
         <PagerView
           ref={pager}
           style={styles.pager}
@@ -551,14 +580,42 @@ export const OnboardingHost = memo(function OnboardingHost() {
 function onboardStyles(colors: ThemeColors) {
   return {
     root: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
+    topRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: 12,
+      marginBottom: 4,
+      minHeight: 28,
+    },
     kicker: {
       color: colors.accent,
       fontFamily: fonts.semibold,
       fontSize: 12,
       letterSpacing: 1.4,
       textTransform: 'uppercase' as const,
-      marginBottom: 4,
+      flexShrink: 1,
     },
+    langRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4 },
+    langChip: {
+      minWidth: 36,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.chip,
+      alignItems: 'center' as const,
+    },
+    langChipOn: { borderColor: colors.accent, backgroundColor: colors.accentDim },
+    langText: {
+      color: colors.muted,
+      fontFamily: fonts.semibold,
+      fontSize: 11,
+      lineHeight: 14,
+      letterSpacing: 0.4,
+    },
+    langTextOn: { color: colors.accent },
     pager: { flex: 1 },
     page: { flex: 1 },
     slide: { flex: 1 },

@@ -1,7 +1,8 @@
-import { memo, useCallback, useMemo } from 'react';
-import { View } from 'react-native';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { Pressable, View } from 'react-native';
 
 import { AppImage } from '@/components/AppImage';
+import { PhotoLightbox } from '@/components/PhotoLightbox';
 import { SaveStar } from '@/components/SaveStar';
 import { ServicePhotoGrid } from '@/components/ServicePhotoGrid';
 import { PremiumBadge } from '@/components/PremiumBadge';
@@ -45,13 +46,26 @@ export const ServiceOfferCard = memo(function ServiceOfferCard({
   const onToggle = useCallback(() => {
     dispatch(toggleSavedService(toSavedOffer(offer, profile)));
   }, [dispatch, offer, profile]);
+  const [preview, setPreview] = useState<number | null>(null);
+  const openPhoto = useCallback(
+    (index: number) => (event: { stopPropagation?: () => void }) => {
+      event.stopPropagation?.();
+      setPreview(index);
+    },
+    [],
+  );
+  const closePhoto = useCallback(() => setPreview(null), []);
 
   return (
     <ToneCard
       tone={offer.archived ? 'default' : offer.featured ? 'premium' : 'default'}
       onPress={onPress ? press : undefined}
       style={[styles.card, offer.archived && styles.archived]}>
-      {offer.images[0] ? <AppImage uri={offer.images[0]} style={styles.image} /> : null}
+      {offer.images[0] ? (
+        <Pressable onPress={openPhoto(0)}>
+          <AppImage uri={offer.images[0]} style={styles.image} />
+        </Pressable>
+      ) : null}
       <View style={styles.titleRow}>
         <Text style={styles.title}>{offer.title}</Text>
         {offer.featured && !offer.archived ? <PremiumBadge compact /> : null}
@@ -68,6 +82,7 @@ export const ServiceOfferCard = memo(function ServiceOfferCard({
       {extras.length ? <ServicePhotoGrid uris={extras} /> : null}
       {place ? <Text style={styles.meta}>{place}</Text> : null}
       {contact.phone ? <Text style={styles.meta}>{contact.phone}</Text> : null}
+      {preview != null ? <PhotoLightbox uris={offer.images} index={preview} onClose={closePhoto} /> : null}
     </ToneCard>
   );
 });

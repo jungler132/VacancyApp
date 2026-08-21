@@ -24,7 +24,12 @@ export const ToneCard = memo(function ToneCard({
   const chrome = [styles.base, tone === 'premium' && styles.premium, tone === 'app' && styles.app, style];
   if (onPress) {
     return (
-      <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [...chrome, pressed && styles.pressed]}>
+      <Pressable
+        android_ripple={null}
+        unstable_pressDelay={50}
+        onPress={onPress}
+        disabled={disabled}
+        style={({ pressed }) => [...chrome, pressed && styles.pressed]}>
         {children}
       </Pressable>
     );

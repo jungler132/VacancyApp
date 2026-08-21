@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { catalogFromRows, PUBLIC_PROFILE_COLUMNS, type OfferRow, type ProfileRow } from './rows';
+import { catalogFromRows, PUBLIC_PROFILE_COLUMNS, withoutMissingProfileColumn, type OfferRow, type ProfileRow } from './rows';
 
 describe('public profile columns', () => {
   it('не включает account_state', () => {
@@ -10,6 +10,16 @@ describe('public profile columns', () => {
     assert.ok(cols.includes('display_name'));
     assert.ok(cols.includes('avatar_url'));
     assert.ok(cols.includes('company_name'));
+  });
+
+  it('выбрасывает отсутствующий city_id из select', () => {
+    const next = withoutMissingProfileColumn(
+      PUBLIC_PROFILE_COLUMNS,
+      'column profiles.city_id does not exist',
+    );
+    assert.ok(next);
+    assert.equal(next.includes('city_id'), false);
+    assert.ok(next.includes('avatar_url'));
   });
 });
 
@@ -93,5 +103,35 @@ describe('catalogFromRows', () => {
       [offer({ id: 'offer:old', user_id: 'u1', title: 'Старое', archived: true })],
     );
     assert.equal(masters.length, 0);
+  });
+
+  it('не подменяет аватарку фотографией услуги', () => {
+    const masters = catalogFromRows(
+      [profile({ id: 'u1', display_name: 'Анна', avatar_url: 'https://cdn.example/avatar.jpg' })],
+      [
+        offer({
+          id: 'offer:a',
+          user_id: 'u1',
+          title: 'Маникюр',
+          images: ['https://cdn.example/work.jpg'],
+        }),
+      ],
+    );
+    assert.equal(masters[0]?.avatarUri, 'https://cdn.example/avatar.jpg');
+  });
+
+  it('без avatar_url не берёт фото услуги', () => {
+    const masters = catalogFromRows(
+      [profile({ id: 'u1', display_name: 'Анна', avatar_url: null })],
+      [
+        offer({
+          id: 'offer:a',
+          user_id: 'u1',
+          title: 'Маникюр',
+          images: ['https://cdn.example/work.jpg'],
+        }),
+      ],
+    );
+    assert.equal(masters[0]?.avatarUri, undefined);
   });
 });

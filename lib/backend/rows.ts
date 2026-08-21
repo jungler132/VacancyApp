@@ -6,6 +6,7 @@ import type { ServiceMaster, ServiceOffer, ServiceProfile } from '@/lib/services
 import { APP_SOURCE_ID } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
 import { CATALOG_PAGE, JOBS_TABLE } from './config';
+import { isRemoteUri } from './merge';
 import { getPublicSupabase, getSupabase } from './supabase';
 
 type ProfileRow = {
@@ -80,7 +81,7 @@ export function profileFromRow(row: ProfileRow, own = false): ServiceProfile {
     id: own ? OWN_PROFILE_ID : `user:${row.id}`,
     displayName: row.display_name,
     bio: row.bio,
-    avatarUri: row.avatar_url || undefined,
+    avatarUri: row.avatar_url && (own || isRemoteUri(row.avatar_url)) ? row.avatar_url : undefined,
     photos: [],
     email: row.email,
     phone: row.phone,
@@ -142,6 +143,41 @@ export const PUBLIC_PROFILE_COLUMNS = [
   'company_about',
 ].join(',');
 
+const AVATAR_PROFILE_COLUMNS =
+  'id,display_name,bio,avatar_url,email,phone,kinds,custom_kinds,address,hours_open,hours_close,hours_days,updated_at';
+
+export function withoutMissingProfileColumn(columns: string, message: string): string | null {
+  const match = message.match(/column (?:[\w]+\.)?(\w+) does not exist/i);
+  const missing = match?.[1];
+  if (!missing || missing === 'id' || missing === 'avatar_url') return null;
+  const next = columns.split(',').filter((col) => col !== missing);
+  if (next.length === columns.split(',').length) return null;
+  return next.join(',');
+}
+
+async function selectProfileRows(
+  run: (cols: string) => Promise<{ data: unknown; error: { message: string } | null }>,
+): Promise<ProfileRow[]> {
+  let cols = PUBLIC_PROFILE_COLUMNS;
+  for (let i = 0; i < 10; i++) {
+    const { data, error } = await run(cols);
+    if (!error) {
+      if (Array.isArray(data)) return data as ProfileRow[];
+      return data ? [data as ProfileRow] : [];
+    }
+    const next = withoutMissingProfileColumn(cols, error.message);
+    if (!next) break;
+    cols = next;
+  }
+  for (const fallback of [AVATAR_PROFILE_COLUMNS, 'id,display_name,avatar_url']) {
+    const { data, error } = await run(fallback);
+    if (error || data == null) continue;
+    if (Array.isArray(data)) return data as ProfileRow[];
+    return [data as ProfileRow];
+  }
+  return [];
+}
+
 function isMissingTable(message: string | undefined, table: string) {
   if (!message) return false;
   return new RegExp(`${table}|schema cache|Could not find the table`, 'i').test(message);
@@ -177,13 +213,13 @@ export function jobFromRow(row: JobRow, own = false): Job {
 export async function fetchOwnRows(userId: string) {
   const supabase = getSupabase();
   if (!supabase) return { profile: null, offers: [] as OfferRow[], jobs: [] as JobRow[] };
-  const [profile, offers, jobs, privateState] = await Promise.all([
-    supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', userId).maybeSingle(),
+  const [profileRows, offers, jobs, privateState] = await Promise.all([
+    selectProfileRows((cols) => supabase.from('profiles').select(cols).eq('id', userId).maybeSingle()),
     supabase.from('service_offers').select('*').eq('user_id', userId),
     supabase.from(JOBS_TABLE).select('*').eq('user_id', userId),
     supabase.from('profile_state').select('account_state').eq('id', userId).maybeSingle(),
   ]);
-  const row = (profile.data as ProfileRow | null) ?? null;
+  const row = profileRows[0] ?? null;
   let accountState = (privateState.data as { account_state?: unknown } | null)?.account_state;
   if (accountState == null && isMissingTable(privateState.error?.message, 'profile_state')) {
     const legacy = await supabase.from('profiles').select('account_state').eq('id', userId).maybeSingle();
@@ -216,6 +252,7 @@ export function catalogFromRows(profiles: ProfileRow[], offers: OfferRow[]): Ser
       masters.push({
         ...profile,
         displayName: profile.displayName.trim() || fallbackName,
+        avatarUri: profile.avatarUri && isRemoteUri(profile.avatarUri) ? profile.avatarUri : undefined,
         offers: userOffers,
       });
       continue;
@@ -243,13 +280,7 @@ export function catalogFromRows(profiles: ProfileRow[], offers: OfferRow[]): Ser
 async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
   const supabase = getPublicSupabase();
   if (!supabase || !ids.length) return [];
-  const { data, error } = await supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).in('id', ids);
-  if (!error) return (data as ProfileRow[] | null) ?? [];
-  const { data: fallback } = await supabase
-    .from('profiles')
-    .select('id,display_name,bio,avatar_url,email,phone,kinds,custom_kinds,address,city_id,hours_open,hours_close,hours_days,updated_at')
-    .in('id', ids);
-  return (fallback as ProfileRow[] | null) ?? [];
+  return selectProfileRows((cols) => supabase.from('profiles').select(cols).in('id', ids));
 }
 
 export async function fetchPublicCatalog(_excludeUserId?: string | null): Promise<ServiceMaster[]> {

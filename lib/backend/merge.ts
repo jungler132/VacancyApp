@@ -24,3 +24,16 @@ export function mergeById<T extends { id: string; updatedAt?: string; publishedA
 export function isRemoteUri(uri: string): boolean {
   return /^https?:\/\//i.test(uri);
 }
+
+export function keepRemoteUrl(next?: string, prev?: string): string | undefined {
+  if (next && isRemoteUri(next)) return next;
+  if (prev && isRemoteUri(prev)) return prev;
+  return undefined;
+}
+
+/** Prefer a public URL; otherwise keep the local file so the next sync can upload it. */
+export function preferMediaUri(remote?: string, local?: string): string | undefined {
+  if (remote && isRemoteUri(remote)) return remote;
+  if (local) return local;
+  return remote || undefined;
+}

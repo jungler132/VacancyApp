@@ -53,7 +53,6 @@ export default function ServicesScreen() {
   const own = useAppSelector(selectOwnMaster);
   const masters = useAppSelector(selectCatalogMasters);
   const userId = useAppSelector((state) => state.auth.userId);
-  const remoteCount = useAppSelector((state) => state.servicesCatalog.items.length);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ServiceKindId | 'all'>('all');
   const [placeId, setPlaceId] = useState('');
@@ -69,9 +68,8 @@ export default function ServicesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (remoteCount > 0) return;
       void refreshPublic(dispatch, userId, true).catch(() => undefined);
-    }, [dispatch, remoteCount, userId]),
+    }, [dispatch, userId]),
   );
 
   const onRefresh = useCallback(() => {

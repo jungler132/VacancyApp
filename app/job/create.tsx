@@ -149,7 +149,12 @@ export default function CreateJobScreen() {
       });
       dispatch(upsertLocalJob(job));
       dispatch(pinViewedJob(job));
-      await flushAccount(() => store.getState(), dispatch);
+      try {
+        await flushAccount(() => store.getState(), dispatch);
+      } catch {
+        setNotice(t('auth.syncFailed'));
+        return;
+      }
       router.replace(jobHref(job.id));
     },
     [dispatch, limits.jobs, locale, localCount, router, store, t],

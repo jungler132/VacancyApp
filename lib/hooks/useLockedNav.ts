@@ -1,13 +1,13 @@
 import { useCallback } from 'react';
 import { useRouter, type Href } from 'expo-router';
 
-import { beginNav } from '@/lib/navLock';
+import { beginNav, hrefKey } from '@/lib/navLock';
 
 export function useLockedNav() {
   const router = useRouter();
   const push = useCallback(
     (href: Href) => {
-      if (!beginNav()) return false;
+      if (!beginNav(hrefKey(href))) return false;
       router.push(href);
       return true;
     },
@@ -15,7 +15,7 @@ export function useLockedNav() {
   );
   const replace = useCallback(
     (href: Href) => {
-      if (!beginNav()) return false;
+      if (!beginNav(hrefKey(href))) return false;
       router.replace(href);
       return true;
     },
