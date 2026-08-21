@@ -1,8 +1,10 @@
--- Paste into Supabase → SQL Editor → Run.
--- Wipes Vakano users so you can register emails again.
--- Do not DELETE storage.objects here: Dashboard blocks that. Empty the `media` bucket in Storage UI if you want files gone too.
+-- FULL RESET. Paste into Supabase → SQL Editor → Run.
+-- Drops all users, offers, jobs, reports and private state.
+-- Schema / RLS stay. You can register the same emails again.
 
+delete from public.service_reports;
 delete from public.service_offers;
+
 do $$ begin
   if to_regclass('public.profile_state') is not null then
     delete from public.profile_state;
@@ -14,5 +16,13 @@ do $$ begin
     delete from public.workly_jobs;
   end if;
 end $$;
+
 delete from public.profiles;
+
+do $$ begin
+  delete from storage.objects where bucket_id = 'media';
+exception when others then
+  raise notice 'storage.objects skipped: %', sqlerrm;
+end $$;
+
 delete from auth.users;

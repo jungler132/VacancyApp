@@ -361,7 +361,7 @@ function StepVisual({ visual }: { visual: StepVisualId }) {
           <ToneCard style={styles.profileHead}>
             <ServiceAvatar name={t('common.guest')} size={64} />
             <Text style={styles.profileName}>{t('common.guest')}</Text>
-            <Text style={styles.profileRole}>{t('common.guest')}</Text>
+            <Text style={styles.profileRole}>{t('identity.seeking')}</Text>
             <Text style={styles.profileMeta}>{t('profile.guestMeta')}</Text>
           </ToneCard>
           <NavRow title={t('nav.prefs')} meta={t('prefs.empty')} onPress={noop} />
@@ -626,16 +626,38 @@ function onboardStyles(colors: ThemeColors) {
     segText: { color: colors.text, fontSize: 12, fontFamily: fonts.medium },
     segOnText: { color: colors.accentText, fontSize: 12, fontFamily: fonts.medium },
     profilePad: { paddingHorizontal: 20, gap: 8, paddingBottom: 8 },
-    profileHead: { alignItems: 'center' as const, paddingVertical: 20, paddingHorizontal: 16 },
-    profileName: { color: colors.text, fontFamily: fonts.bold, fontSize: 20, marginTop: 10, textAlign: 'center' as const },
-    profileRole: { color: colors.accent, fontFamily: fonts.semibold, fontSize: 13, marginTop: 4, textAlign: 'center' as const },
+    profileHead: {
+      alignItems: 'center' as const,
+      paddingVertical: 20,
+      paddingHorizontal: 16,
+      overflow: 'hidden' as const,
+      gap: 4,
+    },
+    profileName: {
+      color: colors.text,
+      fontFamily: fonts.bold,
+      fontSize: 20,
+      lineHeight: 26,
+      marginTop: 10,
+      textAlign: 'center' as const,
+      includeFontPadding: false,
+    },
+    profileRole: {
+      color: colors.accent,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center' as const,
+      includeFontPadding: false,
+    },
     profileMeta: {
       color: colors.faint,
       fontFamily: fonts.medium,
       fontSize: 13,
-      marginTop: 8,
       lineHeight: 18,
+      marginTop: 4,
       textAlign: 'center' as const,
+      includeFontPadding: false,
     },
     sectionLabel: {
       color: colors.muted,

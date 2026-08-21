@@ -76,6 +76,7 @@ process.env.JAVA_HOME = javaHome;
 process.env.ANDROID_HOME = androidHome;
 process.env.ANDROID_SDK_ROOT = androidHome;
 process.env.EXPO_NO_TELEMETRY = '1';
+process.env.CI = '1';
 process.env.PATH = `${path.join(javaHome, 'bin')}${path.delimiter}${process.env.PATH}`;
 
 console.log(`JDK: ${javaHome}`);

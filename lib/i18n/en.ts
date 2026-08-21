@@ -621,19 +621,6 @@ export const en: Record<MsgId, string> = {
   'fact.y6': '6+ years',
 
   'ads.kicker': 'Ad',
-  'ads.soon': 'Soon',
-  'ads.title': 'An ad will appear here',
-  'ads.note': 'Placeholder. Real ads come later.',
-  'ads.skip': 'Skip',
-  'ads.skipIn': 'Skip in {sec}s',
-
-  'errors.retry': 'Retry',
-  'errors.close': 'Close',
-  'errors.details': 'Details',
-  'errors.one': '1 source did not respond',
-  'errors.few': '{count} sources did not respond',
-  'errors.many': '{count} sources did not respond',
-
   'alerts.all': 'All jobs',
 
   'notify.channel': 'New jobs',

@@ -642,19 +642,6 @@ export const ru = {
   'fact.y6': 'От 6 лет',
 
   'ads.kicker': 'Реклама',
-  'ads.soon': 'Скоро',
-  'ads.title': 'Здесь будет объявление',
-  'ads.note': 'Заглушка. Настоящая реклама подключится позже.',
-  'ads.skip': 'Пропустить',
-  'ads.skipIn': 'Пропустить через {sec} с',
-
-  'errors.retry': 'Повтор',
-  'errors.close': 'Закрыть',
-  'errors.details': 'Подробнее',
-  'errors.one': '1 источник не ответил',
-  'errors.few': '{count} источника не ответили',
-  'errors.many': '{count} источников не ответили',
-
   'alerts.all': 'Все вакансии',
 
   'notify.channel': 'Новые вакансии',

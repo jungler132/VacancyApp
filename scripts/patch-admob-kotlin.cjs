@@ -18,12 +18,12 @@ if (fs.existsSync(pkgFile)) {
 }
 
 if (fs.existsSync(ktFile)) {
-  let source = fs.readFileSync(ktFile, 'utf8');
+  let source = fs.readFileSync(ktFile, 'utf8').replace(/\r\n/g, '\n');
   const next = source
     .replace('import com.google.android.gms.ads.AgeRestrictedTreatment\n', '')
     .replace(
-      /    if \(requestConfiguration\.hasKey\("ageRestrictedTreatment"\)\) \{[\s\S]*?\n    \}\n\n/,
-      '',
+      /\n    if \(requestConfiguration\.hasKey\("ageRestrictedTreatment"\)\) \{[\s\S]*?\n    \}\n/,
+      '\n',
     );
   if (next !== source) {
     fs.writeFileSync(ktFile, next);

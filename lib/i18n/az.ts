@@ -621,19 +621,6 @@ export const az: Record<MsgId, string> = {
   'fact.y6': '6 ildən',
 
   'ads.kicker': 'Reklam',
-  'ads.soon': 'Tezliklə',
-  'ads.title': 'Elan burada olacaq',
-  'ads.note': 'Zərf. Real reklam sonra qoşulacaq.',
-  'ads.skip': 'Keç',
-  'ads.skipIn': '{sec} s sonra keç',
-
-  'errors.retry': 'Təkrar',
-  'errors.close': 'Bağla',
-  'errors.details': 'Ətraflı',
-  'errors.one': '1 mənbə cavab vermədi',
-  'errors.few': '{count} mənbə cavab vermədi',
-  'errors.many': '{count} mənbə cavab vermədi',
-
   'alerts.all': 'Bütün vakansiyalar',
 
   'notify.channel': 'Yeni vakansiyalar',
