@@ -122,6 +122,8 @@ export function isAuthCancelled(error: unknown): boolean {
 export async function signInWithGoogle() {
   const supabase = getSupabase();
   if (!supabase) throw new Error('off');
+  const { data: current } = await supabase.auth.getSession();
+  if (current.session) await supabase.auth.signOut();
   const redirectTo = Linking.createURL('auth/callback');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

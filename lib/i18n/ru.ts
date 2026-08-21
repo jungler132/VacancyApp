@@ -97,6 +97,7 @@ export const ru = {
   'profile.pageEmpty': 'Имя, фото, услуги и цены',
   'profile.master': 'Мастер',
   'profile.activity': 'Недавно',
+  'profile.account': 'Аккаунт',
   'identity.seeking': 'Ищу работу',
   'identity.available': 'Беру заказы',
   'identity.more': 'Ещё',

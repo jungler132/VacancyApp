@@ -6,7 +6,8 @@ import { extraFiltersActive } from '@/lib/filters';
 import { computeJobStats } from '@/lib/stats';
 import { mergeVisibleIds } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
-import { toServiceMaster } from '@/lib/services/catalog';
+import { liveOffers, mergeCatalogMasters, toServiceMaster } from '@/lib/services/catalog';
+import { DEFAULT_HOURS } from '@/lib/services/hours';
 import { OWN_PROFILE_ID } from './freelanceSlice';
 import { resolveCatalogItem } from './savedCatalogSlice';
 import { serviceSaveKey, type SavedServiceItem } from './savedServicesSlice';
@@ -177,23 +178,38 @@ export const selectSourceErrorMap = createSelector([(state: RootState) => state.
   return Object.keys(map).length ? map : EMPTY_ERROR_MAP;
 });
 
-function isOwnCatalogEntry(
-  id: string,
-  email: string | undefined,
-  own: { id: string; email?: string } | undefined,
-  userId: string | null,
-) {
+function isOwnCatalogEntry(id: string, own: { id: string } | undefined, userId: string | null) {
   if (!id) return false;
   if (id === OWN_PROFILE_ID || own?.id === id) return true;
-  if (userId && (id === userId || id === `user:${userId}`)) return true;
-  const ownEmail = own?.email?.trim().toLowerCase();
-  const nextEmail = email?.trim().toLowerCase();
-  return Boolean(ownEmail && nextEmail && ownEmail === nextEmail);
+  return Boolean(userId && (id === userId || id === `user:${userId}`));
 }
 
 export const selectOwnMaster = createSelector(
   [(state: RootState) => state.freelance.profile, (state: RootState) => state.freelance.offers],
-  (profile, offers) => (profile ? toServiceMaster(profile, offers, true) : undefined),
+  (profile, offers) => {
+    if (profile) return toServiceMaster(profile, offers, true);
+    const live = liveOffers(offers);
+    if (!live.length) return undefined;
+    const first = live[0];
+    return toServiceMaster(
+      {
+        id: OWN_PROFILE_ID,
+        displayName: first.title.trim() || 'Vakano',
+        bio: '',
+        email: '',
+        phone: first.phone ?? '',
+        photos: [],
+        kinds: first.kind ? [first.kind] : [],
+        customKinds: first.customKind ? [first.customKind] : [],
+        address: first.address,
+        cityId: first.cityId,
+        hours: { ...DEFAULT_HOURS, days: [...DEFAULT_HOURS.days] },
+        updatedAt: first.updatedAt,
+      },
+      offers,
+      true,
+    );
+  },
 );
 
 export const selectCatalogMasters = createSelector(
@@ -203,9 +219,7 @@ export const selectCatalogMasters = createSelector(
     (state: RootState) => state.auth.userId,
   ],
   function selectCatalogMastersResult(remote, own, userId) {
-    const items = remote.filter((item) => !isOwnCatalogEntry(item.id, item.email, own, userId));
-    if (own?.displayName.trim()) return [own, ...items];
-    return items;
+    return mergeCatalogMasters(remote, own, (id) => isOwnCatalogEntry(id, own, userId));
   },
 );
 
@@ -218,7 +232,7 @@ export const selectMasterById = createSelector(
   ],
   function selectMasterByIdResult(items, own, userId, id) {
     if (!id) return undefined;
-    if (isOwnCatalogEntry(id, undefined, own, userId)) return own;
+    if (isOwnCatalogEntry(id, own, userId)) return own;
     return items.find((item) => item.id === id);
   },
 );

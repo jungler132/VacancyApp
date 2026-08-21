@@ -8,7 +8,16 @@ export const AdsHost = memo(function AdsHost() {
   const premiumRef = useRef(premium);
   premiumRef.current = premium;
 
-  useEffect(() => startAds(() => premiumRef.current), []);
+  useEffect(() => {
+    let stop: (() => void) | undefined;
+    const timer = setTimeout(() => {
+      stop = startAds(() => premiumRef.current);
+    }, 2500);
+    return () => {
+      clearTimeout(timer);
+      stop?.();
+    };
+  }, []);
 
   return null;
 });

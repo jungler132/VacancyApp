@@ -42,6 +42,7 @@ export default function ProfileScreen() {
   const company = useAppSelector((state) => state.company);
   const isPremium = useAppSelector((state) => state.premium.isPremium);
   const signedIn = useAppSelector((state) => Boolean(state.auth.userId && state.auth.email && !state.auth.anonymous));
+  const authEmail = useAppSelector((state) => state.auth.email);
   const showPremium = isPremium && signedIn;
   const locale = useLocale();
   const identity = useAppSelector((state) => state.identity);
@@ -57,7 +58,9 @@ export default function ProfileScreen() {
   const localJobs = useAppSelector((state) => state.localJobs.items);
   const visits = useAppSelector((state) => state.visits.items);
   const hasPage = Boolean(own?.displayName.trim());
-  const name = own?.displayName.trim() || t('common.guest');
+  const name =
+    own?.displayName.trim() ||
+    (signedIn ? authEmail?.split('@')[0] || t('profile.account') : t('common.guest'));
   const frequent = useMemo(() => visits.slice(0, 4), [visits]);
   const stats = useMemo(() => pipelineStats(savedJobs, statuses, statusAt), [savedJobs, statusAt, statuses]);
   const prefsMeta =
@@ -84,7 +87,7 @@ export default function ProfileScreen() {
     showPremium ? t('common.premium') : null,
   ]
     .filter(Boolean)
-    .join(' · ') || t('common.guest');
+    .join(' · ') || (signedIn ? t('profile.account') : t('common.guest'));
   const pageMeta = hasPage
     ? t('profile.pageMeta', { count: own?.offers.length ?? 0 })
     : t('profile.pageEmpty');

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { AppImage } from '@/components/AppImage';
@@ -16,10 +16,18 @@ export const ServiceAvatar = memo(function ServiceAvatar({
   size: number;
 }) {
   const styles = useThemedStyles(serviceAvatarStyles);
+  const [failed, setFailed] = useState(false);
   const radius = size / 2;
   const box = { width: size, height: size, borderRadius: radius };
+  const showImage = Boolean(uri) && !failed;
 
-  if (uri) return <AppImage uri={uri} style={[styles.image, box]} />;
+  useEffect(() => {
+    setFailed(false);
+  }, [uri]);
+
+  if (showImage) {
+    return <AppImage uri={uri!} style={[styles.image, box]} onError={() => setFailed(true)} />;
+  }
 
   return (
     <View style={[styles.fallback, box]}>

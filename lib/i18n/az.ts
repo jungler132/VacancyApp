@@ -94,6 +94,7 @@ export const az: Record<MsgId, string> = {
   'profile.pageEmpty': 'Ad, foto, xidmət və qiymət',
   'profile.master': 'Usta',
   'profile.activity': 'Son',
+  'profile.account': 'Hesab',
   'identity.seeking': 'İş axtarıram',
   'identity.available': 'Sifariş götürürəm',
   'identity.more': 'Daha',

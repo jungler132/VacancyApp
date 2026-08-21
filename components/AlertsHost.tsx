@@ -54,13 +54,14 @@ export function AlertsHost() {
         .catch(() => undefined);
     };
 
-    run();
+    const start = setTimeout(run, 4000);
     const app = AppState.addEventListener('change', (next) => {
       if (next === 'active') run();
     });
     const stopTaps = listenNotificationTaps(applyAlertFromNotification);
 
     return () => {
+      clearTimeout(start);
       app.remove();
       stopTaps();
     };

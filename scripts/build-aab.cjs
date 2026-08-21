@@ -100,5 +100,21 @@ if (!exists(built)) {
 
 fs.mkdirSync(distDir, { recursive: true });
 fs.copyFileSync(built, outAab);
+
+const jarsigner = path.join(javaHome, 'bin', process.platform === 'win32' ? 'jarsigner.exe' : 'jarsigner');
+const verify = spawnSync(jarsigner, ['-verify', '-verbose', '-certs', outAab], {
+  encoding: 'utf8',
+  env: process.env,
+});
+const certs = `${verify.stdout || ''}\n${verify.stderr || ''}`;
+if (/CN=Android Debug/i.test(certs)) {
+  console.error('AAB подписан debug-ключом. Play его не примет. Проверь keystore.properties и android/app/build.gradle.');
+  process.exit(1);
+}
+if (verify.status !== 0) {
+  console.error('Не удалось проверить подпись AAB.');
+  process.exit(verify.status ?? 1);
+}
+
 console.log(`\nГотово: ${outAab}`);
-console.log('Этот файл заливать в Play Console → Closed testing → Create new release.');
+console.log('Этот файл заливать в Play Console → Internal / Closed testing → Create new release.');

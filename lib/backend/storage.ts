@@ -5,7 +5,17 @@ import { isRemoteUri } from './merge';
 import { getSupabase } from './supabase';
 
 function extPath(userId: string, kind: string, name: string) {
-  return `${userId}/${kind}/${name}.jpg`;
+  return `${userId}/${kind}/${name}-${Date.now().toString(36)}.jpg`;
+}
+
+async function readBytes(uri: string): Promise<Uint8Array | null> {
+  try {
+    const response = await fetch(uri);
+    if (!response.ok) return null;
+    return new Uint8Array(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
 }
 
 export async function uploadMedia(userId: string, uri: string, kind: string, name: string): Promise<string> {
@@ -14,9 +24,8 @@ export async function uploadMedia(userId: string, uri: string, kind: string, nam
   if (!supabase) return uri;
   try {
     const local = await compressImage(uri, kind === 'avatar' ? 'avatar' : 'photo');
-    const response = await fetch(local);
-    if (!response.ok) return uri;
-    const body = new Uint8Array(await response.arrayBuffer());
+    const body = (await readBytes(local)) ?? (local !== uri ? await readBytes(uri) : null);
+    if (!body?.length) return uri;
     const path = extPath(userId, kind, name);
     const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, body, {
       contentType: 'image/jpeg',
@@ -25,7 +34,8 @@ export async function uploadMedia(userId: string, uri: string, kind: string, nam
     });
     if (error) return uri;
     const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
-    return data.publicUrl || uri;
+    if (!data.publicUrl) return uri;
+    return `${data.publicUrl}?v=${Date.now().toString(36)}`;
   } catch {
     return uri;
   }

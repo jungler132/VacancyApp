@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { apiCategory } from '@/lib/catalog';
 import { feedKeyOf, makeFeedKey } from '@/lib/feedKey';
@@ -61,8 +61,15 @@ export function useJobsQuery() {
   const category = apiCategory(categories);
   const placeId = useAppSelector((state) => state.filters.extra.placeId);
   const feedStatus = useAppSelector((state) => selectActiveFeed(state).status);
+  const [allowFetch, setAllowFetch] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setAllowFetch(true), 400);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!allowFetch) return;
     if (!sourcesReady || !filtersReady) {
       feedLog('query:wait', { sourcesReady: Number(sourcesReady), filtersReady: Number(filtersReady) });
       return;
@@ -90,7 +97,7 @@ export function useJobsQuery() {
       mode: 'replace',
       placeId,
     });
-  }, [dispatch, query, region, category, enabledSources, placeId, sourcesReady, filtersReady, feedStatus]);
+  }, [allowFetch, dispatch, query, region, category, enabledSources, placeId, sourcesReady, filtersReady, feedStatus]);
 }
 
 export function useFilterSheet() {

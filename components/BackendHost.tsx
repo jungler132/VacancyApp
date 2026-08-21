@@ -61,26 +61,24 @@ export function BackendHost() {
 
   useEffect(() => {
     if (!ready) return;
-    refreshPublic(dispatch, userId).catch(() => undefined);
     const prev = lastUser.current;
-    if (prev === userId) {
-      if (userId && email && lastEmail.current !== email) {
-        lastEmail.current = email;
-        schedulePush(() => store.getState(), dispatch);
+    if (prev !== userId) {
+      lastUser.current = userId;
+      lastEmail.current = email ?? null;
+      resetPushCache();
+      if (!userId) {
+        if (prev) {
+          clearLocalAccount(dispatch);
+          void writeBoundEmail(null);
+        }
+      } else {
+        pullAccount(dispatch, () => store.getState()).catch(() => undefined);
       }
-      return;
+    } else if (userId && email && lastEmail.current !== email) {
+      lastEmail.current = email;
+      schedulePush(() => store.getState(), dispatch);
     }
-    lastUser.current = userId;
-    lastEmail.current = email ?? null;
-    resetPushCache();
-    if (!userId) {
-      if (prev) {
-        clearLocalAccount(dispatch);
-        void writeBoundEmail(null);
-      }
-      return;
-    }
-    pullAccount(dispatch, () => store.getState()).catch(() => undefined);
+    refreshPublic(dispatch, userId).catch(() => undefined);
   }, [dispatch, email, ready, store, userId]);
 
   return null;

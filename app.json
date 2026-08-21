@@ -15,6 +15,7 @@
     "android": {
       "package": "app.vakano.jobs",
       "versionCode": 1,
+      "backgroundColor": "#00236f",
       "userInterfaceStyle": "automatic",
       "icon": "./assets/images/icon.png",
       "adaptiveIcon": {

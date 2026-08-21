@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import PagerView from 'react-native-pager-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -213,7 +213,7 @@ function SearchRow({ placeholder }: { placeholder: string }) {
   );
 }
 
-function StepVisual({ visual }: { visual: StepVisualId }) {
+function JobsPreview() {
   const t = useT();
   const { colors } = useAppTheme();
   const styles = useThemedStyles(onboardStyles);
@@ -252,6 +252,34 @@ function StepVisual({ visual }: { visual: StepVisualId }) {
     ],
     [t],
   );
+
+  return (
+    <MockPhone active="magnify">
+      <View style={styles.mockHeader}>
+        <Text style={styles.mockTitle}>{t('tab.jobs')}</Text>
+        <View style={styles.mockActions}>
+          <CreateJobButton />
+          <MaterialDesignIcons name="refresh" size={20} color={colors.muted} />
+        </View>
+      </View>
+      <SearchRow placeholder={t('search.jobs')} />
+      <View style={styles.banner}>
+        <Text style={styles.bannerTitle}>{t('onboard.publishTitle')}</Text>
+        <Text style={styles.bannerMeta}>{t('onboard.publishJob')}</Text>
+        <Text style={styles.bannerMeta}>{t('onboard.publishService')}</Text>
+      </View>
+      <View style={styles.list}>
+        {jobs.map((job) => (
+          <JobCardView key={job.id} job={job} saved={false} />
+        ))}
+      </View>
+    </MockPhone>
+  );
+}
+
+function ServicesPreview() {
+  const t = useT();
+  const styles = useThemedStyles(onboardStyles);
   const masters = useMemo(
     () =>
       filterServiceMasters(
@@ -274,6 +302,33 @@ function StepVisual({ visual }: { visual: StepVisualId }) {
       ),
     [t],
   );
+
+  return (
+    <MockPhone active="briefcase-account">
+      <View style={styles.mockHeader}>
+        <View style={styles.titles}>
+          <Text style={styles.mockTitle}>{t('tab.services')}</Text>
+          <Text style={styles.subtitle}>{t('services.subtitle', { count: masters.length })}</Text>
+        </View>
+      </View>
+      <SearchRow placeholder={t('search.services')} />
+      <View style={styles.banner}>
+        <Text style={styles.bannerTitle}>{t('services.createTitle')}</Text>
+        <Text style={styles.bannerMeta}>{t('services.createMeta')}</Text>
+      </View>
+      <View style={styles.serviceList}>
+        {masters.map((master) => (
+          <ServiceMasterCard key={master.id} master={master} onPress={noop} />
+        ))}
+      </View>
+    </MockPhone>
+  );
+}
+
+function StepVisual({ visual }: { visual: StepVisualId }) {
+  const t = useT();
+  const { colors } = useAppTheme();
+  const styles = useThemedStyles(onboardStyles);
 
   if (visual === 'tabs') {
     return (
@@ -299,53 +354,8 @@ function StepVisual({ visual }: { visual: StepVisualId }) {
     );
   }
 
-  if (visual === 'jobs') {
-    return (
-      <MockPhone active="magnify">
-        <View style={styles.mockHeader}>
-          <Text style={styles.mockTitle}>{t('tab.jobs')}</Text>
-          <View style={styles.mockActions}>
-            <CreateJobButton />
-            <MaterialDesignIcons name="refresh" size={20} color={colors.muted} />
-          </View>
-        </View>
-        <SearchRow placeholder={t('search.jobs')} />
-        <View style={styles.banner}>
-          <Text style={styles.bannerTitle}>{t('onboard.publishTitle')}</Text>
-          <Text style={styles.bannerMeta}>{t('onboard.publishJob')}</Text>
-          <Text style={styles.bannerMeta}>{t('onboard.publishService')}</Text>
-        </View>
-        <View style={styles.list}>
-          {jobs.map((job) => (
-            <JobCardView key={job.id} job={job} saved={false} />
-          ))}
-        </View>
-      </MockPhone>
-    );
-  }
-
-  if (visual === 'services') {
-    return (
-      <MockPhone active="briefcase-account">
-        <View style={styles.mockHeader}>
-          <View style={styles.titles}>
-            <Text style={styles.mockTitle}>{t('tab.services')}</Text>
-            <Text style={styles.subtitle}>{t('services.subtitle', { count: masters.length })}</Text>
-          </View>
-        </View>
-        <SearchRow placeholder={t('search.services')} />
-        <View style={styles.banner}>
-          <Text style={styles.bannerTitle}>{t('services.createTitle')}</Text>
-          <Text style={styles.bannerMeta}>{t('services.createMeta')}</Text>
-        </View>
-        <View style={styles.serviceList}>
-          {masters.map((master) => (
-            <ServiceMasterCard key={master.id} master={master} onPress={noop} />
-          ))}
-        </View>
-      </MockPhone>
-    );
-  }
+  if (visual === 'jobs') return <JobsPreview />;
+  if (visual === 'services') return <ServicesPreview />;
 
   if (visual === 'resources') {
     return <ResourcesPreview />;
@@ -360,8 +370,12 @@ function StepVisual({ visual }: { visual: StepVisualId }) {
         <View style={styles.profilePad}>
           <ToneCard style={styles.profileHead}>
             <ServiceAvatar name={t('common.guest')} size={64} />
-            <Text style={styles.profileName}>{t('common.guest')}</Text>
-            <Text style={styles.profileRole}>{t('identity.seeking')}</Text>
+            <Text style={styles.profileName} numberOfLines={1}>
+              {t('common.guest')}
+            </Text>
+            <Text style={styles.profileRole} numberOfLines={1}>
+              {t('identity.seeking')}
+            </Text>
             <Text style={styles.profileMeta}>{t('profile.guestMeta')}</Text>
           </ToneCard>
           <NavRow title={t('nav.prefs')} meta={t('prefs.empty')} onPress={noop} />
@@ -429,18 +443,26 @@ export const OnboardingHost = memo(function OnboardingHost() {
   const { scheme, colors } = useAppTheme();
   const styles = useThemedStyles(onboardStyles);
   const pager = useRef<PagerView>(null);
+  const { width: windowWidth } = useWindowDimensions();
+  const pageWidth = Math.max(280, windowWidth - 40);
   const appearanceReady = useAppSelector((state) => state.appearance.ready);
   const onboard = useAppSelector((state) => state.onboarding);
   const [step, setStep] = useState(0);
   const [hideNext, setHideNext] = useState(false);
+  const [neighborsReady, setNeighborsReady] = useState(false);
   const last = step >= STEPS.length - 1;
   const open = appearanceReady && onboard.ready && !onboard.dismissed;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setNeighborsReady(false);
+      return;
+    }
     setStep(0);
     setHideNext(false);
     pager.current?.setPage(0);
+    const timer = setTimeout(() => setNeighborsReady(true), 80);
+    return () => clearTimeout(timer);
   }, [open]);
 
   const goTo = useCallback((next: number) => {
@@ -472,9 +494,10 @@ export const OnboardingHost = memo(function OnboardingHost() {
           ref={pager}
           style={styles.pager}
           initialPage={0}
+          offscreenPageLimit={1}
           onPageSelected={(event) => setStep(event.nativeEvent.position)}>
-          {STEPS.map((item) => (
-            <View key={item.title} collapsable={false} style={styles.page}>
+          {STEPS.map((item, index) => (
+            <View key={item.title} collapsable={false} style={[styles.page, { width: pageWidth }]}>
               <ScrollView
                 style={styles.slide}
                 contentContainerStyle={styles.slideBody}
@@ -483,7 +506,9 @@ export const OnboardingHost = memo(function OnboardingHost() {
                 <Text style={styles.title}>{t(item.title)}</Text>
                 <Text style={styles.body}>{t(item.body)}</Text>
                 <View style={styles.stage}>
-                  <StepVisual visual={item.visual} />
+                  {index === step || (neighborsReady && Math.abs(index - step) <= 1) ? (
+                    <StepVisual visual={item.visual} />
+                  ) : null}
                 </View>
               </ScrollView>
             </View>
@@ -509,7 +534,13 @@ export const OnboardingHost = memo(function OnboardingHost() {
             </Pressable>
           ) : null}
           <Pressable onPress={onNext} style={({ pressed }) => [styles.cta, pressed && styles.pressed]}>
-            <Text style={styles.ctaText}>{t(last ? 'onboard.gotIt' : 'onboard.next')}</Text>
+            <Text
+              numberOfLines={1}
+              android_hyphenationFrequency="none"
+              textBreakStrategy="simple"
+              style={styles.ctaText}>
+              {t(last ? 'onboard.gotIt' : 'onboard.next')}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -722,9 +753,18 @@ function onboardStyles(colors: ThemeColors) {
       backgroundColor: colors.accent,
       borderRadius: radius.full,
       paddingVertical: 16,
+      paddingHorizontal: 20,
+      minHeight: 54,
       alignItems: 'center' as const,
+      justifyContent: 'center' as const,
     },
-    ctaText: { color: colors.accentText, fontFamily: fonts.bold, fontSize: 16 },
+    ctaText: {
+      color: colors.accentText,
+      fontFamily: fonts.bold,
+      fontSize: 16,
+      lineHeight: 22,
+      includeFontPadding: false,
+    },
     check: {
       alignSelf: 'flex-end' as const,
       flexDirection: 'row' as const,

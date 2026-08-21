@@ -73,6 +73,7 @@ let pushTimer: ReturnType<typeof setTimeout> | undefined;
 let lastPush = '';
 let lastPublic = 0;
 let lastPublicUser: string | null = null;
+let lastPublicCount = 0;
 let suppressPush = 0;
 let pushLock = Promise.resolve();
 
@@ -108,13 +109,23 @@ export async function leaveAccount(dispatch: Dispatch, getState: () => SyncState
   await writeBoundEmail(null);
 }
 
-export async function refreshPublic(dispatch: Dispatch, userId?: string | null) {
+let publicGen = 0;
+
+export async function refreshPublic(dispatch: Dispatch, _userId?: string | null, force = false) {
   const now = Date.now();
-  const userKey = userId ?? null;
-  if (userKey === lastPublicUser && now - lastPublic < 5 * 60 * 1000) return;
-  lastPublic = now;
-  lastPublicUser = userKey;
-  const [masters, jobs] = await Promise.all([fetchPublicCatalog(userId), fetchPublicJobs(userId)]);
+  const ttl = lastPublicCount > 0 ? 5 * 60 * 1000 : 15 * 1000;
+  if (!force && now - lastPublic < ttl) return;
+  const gen = ++publicGen;
+  const [masters, jobs] = await Promise.all([fetchPublicCatalog(), fetchPublicJobs()]);
+  if (gen !== publicGen) return;
+  if (!masters.length && lastPublicCount > 0 && !force) {
+    lastPublic = Date.now();
+    dispatch(setAppPublic(jobs));
+    return;
+  }
+  lastPublic = Date.now();
+  lastPublicUser = _userId ?? null;
+  lastPublicCount = masters.length;
   dispatch(setRemoteMasters(masters));
   dispatch(setAppPublic(jobs));
 }
@@ -249,7 +260,7 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     id: userId,
     display_name: profile?.displayName ?? '',
     bio: profile?.bio ?? '',
-    avatar_url: avatar && isRemoteUri(avatar) ? avatar : null,
+    avatar_url: avatar && isRemoteUri(avatar) ? avatar : profile?.avatarUri && isRemoteUri(profile.avatarUri) ? profile.avatarUri : null,
     email: profile?.email || email,
     phone: profile?.phone ?? '',
     kinds: profile?.kinds ?? [],
@@ -264,7 +275,11 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     seek_title: identity.title,
     seek_format: identity.format,
     company_name: state.company?.name ?? '',
-    company_logo: companyLogo && isRemoteUri(companyLogo) ? companyLogo : null,
+    company_logo: companyLogo && isRemoteUri(companyLogo)
+      ? companyLogo
+      : state.company?.logoUri && isRemoteUri(state.company.logoUri)
+        ? state.company.logoUri
+        : null,
     company_about: state.company?.about ?? '',
     updated_at: profile?.updatedAt ?? new Date().toISOString(),
   };
@@ -575,4 +590,5 @@ export function resetPushCache() {
   lastPush = '';
   lastPublic = 0;
   lastPublicUser = null;
+  lastPublicCount = 0;
 }

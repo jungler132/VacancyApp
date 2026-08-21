@@ -334,11 +334,8 @@ export const store = configureStore({
   },
   middleware: (getDefault) =>
     getDefault({
-      serializableCheck: {
-        ignoredActionPaths: ['meta.arg.signal', 'meta.abort', 'payload.session'],
-        warnAfter: 128,
-      },
-      immutableCheck: { warnAfter: 128 },
+      serializableCheck: false,
+      immutableCheck: false,
     }).prepend(listener.middleware),
 });
 

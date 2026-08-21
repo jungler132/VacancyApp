@@ -6,16 +6,25 @@ import { isRemoteUri } from '@/lib/backend/merge';
 const AVATAR = 512;
 const PHOTO = 1280;
 
+async function toJpeg(uri: string, width?: number): Promise<string | undefined> {
+  const saved = await manipulateAsync(uri, width ? [{ resize: { width } }] : [], {
+    compress: width ? 0.7 : 0.8,
+    format: SaveFormat.JPEG,
+  });
+  return saved.uri || undefined;
+}
+
 export async function compressImage(uri: string, kind: 'avatar' | 'photo' = 'photo'): Promise<string> {
-  if (!uri || isRemoteUri(uri) || /ImageManipulator/i.test(uri)) return uri;
+  if (!uri || isRemoteUri(uri)) return uri;
+  const width = kind === 'avatar' ? AVATAR : PHOTO;
   try {
-    const saved = await manipulateAsync(uri, [{ resize: { width: kind === 'avatar' ? AVATAR : PHOTO } }], {
-      compress: 0.7,
-      format: SaveFormat.JPEG,
-    });
-    return saved.uri || uri;
+    return (await toJpeg(uri, width)) || uri;
   } catch {
-    return uri;
+    try {
+      return (await toJpeg(uri)) || uri;
+    } catch {
+      return uri;
+    }
   }
 }
 
@@ -26,6 +35,8 @@ export async function pickServiceImage(opts?: { square?: boolean }): Promise<str
       allowsEditing: Boolean(opts?.square),
       aspect: opts?.square ? [1, 1] : undefined,
       quality: 0.8,
+      exif: false,
+      preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode?.Compatible,
     });
     if (result.canceled) return undefined;
     const uri = result.assets[0]?.uri;

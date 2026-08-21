@@ -1,5 +1,5 @@
 import '@/lib/alertsTask';
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { Provider } from 'react-redux';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
@@ -107,6 +107,8 @@ function Navigation() {
   );
 }
 
+const SPLASH_BG = '#00236f';
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     IBMPlexMono_400Regular,
@@ -114,13 +116,17 @@ export default function RootLayout() {
     IBMPlexMono_600SemiBold,
     IBMPlexMono_700Bold,
   });
+  const [painted, setPainted] = useState(false);
+  const fontsReady = loaded || Boolean(error);
+  const onPainted = useCallback(() => setPainted(true), []);
 
   useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync().catch(() => undefined);
-  }, [loaded, error]);
+    if (!fontsReady || !painted) return;
+    SplashScreen.hideAsync().catch(() => undefined);
+  }, [fontsReady, painted]);
 
   useEffect(() => {
-    const timer = setTimeout(() => SplashScreen.hideAsync().catch(() => undefined), 1500);
+    const timer = setTimeout(() => SplashScreen.hideAsync().catch(() => undefined), 8000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -129,14 +135,14 @@ export default function RootLayout() {
       <ThemeBridge>
         <AppShell>
           <BillingHost>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, backgroundColor: SPLASH_BG }} onLayout={onPainted}>
               <AlertsHost />
               <BackendHost />
               <AdsHost />
               <PaywallHost />
               <Navigation />
               <FilterSheetHost />
-              <OnboardingHost />
+              {fontsReady ? <OnboardingHost /> : null}
               <SyncOverlayHost />
               <AppNoticeHost />
             </View>

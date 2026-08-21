@@ -193,12 +193,14 @@ const freelanceSlice = createSlice({
       offer.updatedAt = new Date().toISOString();
     },
     applyRemoteMedia(state, action: PayloadAction<{ avatarUri?: string; offers: Record<string, string[]> }>) {
-      if (state.profile && action.payload.avatarUri) {
+      if (state.profile && action.payload.avatarUri && /^https?:\/\//i.test(action.payload.avatarUri)) {
         state.profile.avatarUri = action.payload.avatarUri;
       }
       for (const offer of state.offers) {
         const images = action.payload.offers[offer.id];
-        if (images) offer.images = images;
+        if (!images) continue;
+        const remote = images.filter((uri) => /^https?:\/\//i.test(uri));
+        if (remote.length) offer.images = remote;
       }
     },
     replaceAccount(state, action: PayloadAction<{ profile: ServiceProfile | null; offers: ServiceOffer[] }>) {

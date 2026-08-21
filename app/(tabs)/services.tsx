@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useLockedNav } from '@/lib/hooks/useLockedNav';
 
 import { AdBanner } from '@/components/AdBanner';
@@ -9,12 +10,13 @@ import { EmptyState } from '@/components/EmptyState';
 import { SearchField } from '@/components/SearchField';
 import { ServiceMasterCard } from '@/components/ServiceMasterCard';
 import { ServicesFiltersSheet } from '@/components/ServicesFiltersSheet';
+import { refreshPublic } from '@/lib/backend/sync';
 import { filterServiceMasters, masterHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
 import type { ServiceKindId, ServiceMaster } from '@/lib/services/types';
 import { useTabBarLayout } from '@/lib/layout';
-import { useAppSelector } from '@/lib/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
 import { selectCatalogMasters, selectOwnMaster } from '@/lib/store/selectors';
-import { fonts, radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
+import { fonts, radius, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { useT } from '@/lib/i18n/useT';
 
 const Separator = memo(function Separator() {
@@ -43,22 +45,41 @@ const CreatePageBanner = memo(function CreatePageBanner({
 export default function ServicesScreen() {
   const t = useT();
   const nav = useLockedNav();
+  const dispatch = useAppDispatch();
+  const colors = useColors();
   const styles = useThemedStyles(servicesStyles);
   const tabBar = useTabBarLayout();
   const [adH, setAdH] = useState(0);
   const own = useAppSelector(selectOwnMaster);
   const masters = useAppSelector(selectCatalogMasters);
+  const userId = useAppSelector((state) => state.auth.userId);
+  const remoteCount = useAppSelector((state) => state.servicesCatalog.items.length);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ServiceKindId | 'all'>('all');
   const [placeId, setPlaceId] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetReady, setSheetReady] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const visible = useMemo(() => filterServiceMasters(masters, query, kind, placeId), [masters, query, kind, placeId]);
   const filtersActive = kind !== 'all' || Boolean(placeId);
   const listPadding = useMemo(
     () => [styles.content, { paddingBottom: tabBar.listPaddingBottom + adH }],
     [adH, styles.content, tabBar.listPaddingBottom],
   );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (remoteCount > 0) return;
+      void refreshPublic(dispatch, userId, true).catch(() => undefined);
+    }, [dispatch, remoteCount, userId]),
+  );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    void refreshPublic(dispatch, userId, true)
+      .catch(() => undefined)
+      .finally(() => setRefreshing(false));
+  }, [dispatch, userId]);
 
   const openSheet = useCallback(() => {
     setSheetReady(true);
@@ -90,6 +111,8 @@ export default function ServicesScreen() {
       <FlatList
         data={visible}
         keyExtractor={keyExtractor}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={onRefresh} />}
         renderItem={renderItem}
         contentContainerStyle={listPadding}
         ItemSeparatorComponent={Separator}

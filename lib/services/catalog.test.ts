@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { filterServiceMasters, offerKindLabel, prefillOfferContact } from './catalog';
+import { filterServiceMasters, mergeCatalogMasters, offerKindLabel, prefillOfferContact } from './catalog';
 import { SERVICE_KINDS } from './kinds';
 import type { ServiceMaster, ServiceOffer } from './types';
 
@@ -139,5 +139,19 @@ describe('services catalog', () => {
     assert.deepEqual(visible[0]?.offers.map((item) => item.id), ['o:live']);
     const hidden = filterServiceMasters(masters, 'archivedonly', 'all');
     assert.equal(hidden.length, 0);
+  });
+
+  it('гостю и залогиненному показывает все удалённые услуги', () => {
+    const remote = [
+      master({ id: 'user:a', displayName: 'Анна', offers: [offer({ id: 'o1', profileId: 'user:a', title: 'Маникюр', kind: 'beauty' })] }),
+      master({ id: 'user:b', displayName: 'Dev', offers: [offer({ id: 'o2', profileId: 'user:b', title: 'App developing', kind: 'it_help' })] }),
+    ];
+    const guest = mergeCatalogMasters(remote, undefined, () => false);
+    assert.equal(guest.length, 2);
+    const own = { ...remote[0], mine: true as const };
+    const signedIn = mergeCatalogMasters(remote, own, (id) => id === 'user:a');
+    assert.equal(signedIn.length, 2);
+    assert.equal(signedIn.filter((item) => item.mine).length, 1);
+    assert.ok(signedIn.some((item) => item.id === 'user:b'));
   });
 });

@@ -94,6 +94,7 @@ export const en: Record<MsgId, string> = {
   'profile.pageEmpty': 'Name, photos, services and prices',
   'profile.master': 'Specialist',
   'profile.activity': 'Recent',
+  'profile.account': 'Account',
   'identity.seeking': 'Looking for work',
   'identity.available': 'Open for freelance',
   'identity.more': 'More',

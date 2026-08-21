@@ -1,10 +1,12 @@
 import { OWN_PROFILE_ID } from '@/lib/store/freelanceSlice';
 import { asPlaceId } from '@/lib/places';
+import { DEFAULT_HOURS } from '@/lib/services/hours';
+import { isServiceKindId } from '@/lib/services/kinds';
 import type { ServiceMaster, ServiceOffer, ServiceProfile } from '@/lib/services/types';
 import { APP_SOURCE_ID } from '@/lib/tiers';
 import type { Job } from '@/lib/types';
 import { CATALOG_PAGE, JOBS_TABLE } from './config';
-import { getSupabase } from './supabase';
+import { getPublicSupabase, getSupabase } from './supabase';
 
 type ProfileRow = {
   id: string;
@@ -107,7 +109,7 @@ export function offerFromRow(row: OfferRow, own = false): ServiceOffer {
     address: row.address || undefined,
     cityId: asPlaceId(row.city_id),
     phone: row.phone || undefined,
-    kind: row.kind as ServiceOffer['kind'],
+    kind: isServiceKindId(row.kind) ? row.kind : 'other',
     customKind: row.custom_kind || undefined,
     featured: row.featured,
     archived: Boolean(row.archived),
@@ -194,39 +196,83 @@ export async function fetchOwnRows(userId: string) {
   };
 }
 
-export async function fetchPublicCatalog(excludeUserId?: string | null): Promise<ServiceMaster[]> {
-  const supabase = getSupabase();
-  if (!supabase) return [];
-  let query = supabase
-    .from('profiles')
-    .select(PUBLIC_PROFILE_COLUMNS)
-    .neq('display_name', '')
-    .order('updated_at', { ascending: false })
-    .limit(CATALOG_PAGE);
-  if (excludeUserId) query = query.neq('id', excludeUserId);
-  const { data: profiles } = await query;
-  const rows = (profiles as ProfileRow[] | null) ?? [];
-  if (!rows.length) return [];
-  const ids = rows.map((row) => row.id);
-  const { data: offers } = await supabase.from('service_offers').select('*').in('user_id', ids);
+export function catalogFromRows(profiles: ProfileRow[], offers: OfferRow[]): ServiceMaster[] {
   const byUser = new Map<string, OfferRow[]>();
-  for (const offer of (offers as OfferRow[] | null) ?? []) {
+  for (const offer of offers) {
+    if (offer.archived) continue;
     const list = byUser.get(offer.user_id) ?? [];
     list.push(offer);
     byUser.set(offer.user_id, list);
   }
-  return rows.map((row) => ({
-    ...profileFromRow(row),
-    offers: (byUser.get(row.id) ?? []).map((item) => offerFromRow(item)).filter((item) => !item.archived),
-  }));
+  const profileById = new Map(profiles.map((row) => [row.id, row]));
+  const masters: ServiceMaster[] = [];
+  for (const [userId, rows] of byUser) {
+    const userOffers = rows.map((item) => offerFromRow(item)).filter((item) => !item.archived);
+    if (!userOffers.length) continue;
+    const fallbackName = userOffers[0]?.title.trim() || 'Vakano';
+    const row = profileById.get(userId);
+    if (row) {
+      const profile = profileFromRow(row);
+      masters.push({
+        ...profile,
+        displayName: profile.displayName.trim() || fallbackName,
+        offers: userOffers,
+      });
+      continue;
+    }
+    const first = userOffers[0];
+    masters.push({
+      id: `user:${userId}`,
+      displayName: fallbackName,
+      bio: '',
+      email: '',
+      phone: first?.phone ?? '',
+      photos: [],
+      kinds: first?.kind ? [first.kind] : [],
+      customKinds: first?.customKind ? [first.customKind] : [],
+      address: first?.address,
+      cityId: first?.cityId,
+      hours: { ...DEFAULT_HOURS, days: [...DEFAULT_HOURS.days] },
+      updatedAt: first?.updatedAt ?? '',
+      offers: userOffers,
+    });
+  }
+  return masters;
 }
 
-export async function fetchPublicJobs(excludeUserId?: string | null): Promise<Job[]> {
-  const supabase = getSupabase();
+async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
+  const supabase = getPublicSupabase();
+  if (!supabase || !ids.length) return [];
+  const { data, error } = await supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).in('id', ids);
+  if (!error) return (data as ProfileRow[] | null) ?? [];
+  const { data: fallback } = await supabase
+    .from('profiles')
+    .select('id,display_name,bio,avatar_url,email,phone,kinds,custom_kinds,address,city_id,hours_open,hours_close,hours_days,updated_at')
+    .in('id', ids);
+  return (fallback as ProfileRow[] | null) ?? [];
+}
+
+export async function fetchPublicCatalog(_excludeUserId?: string | null): Promise<ServiceMaster[]> {
+  const supabase = getPublicSupabase();
   if (!supabase) return [];
-  let query = supabase.from(JOBS_TABLE).select('*').order('published_at', { ascending: false }).limit(80);
-  if (excludeUserId) query = query.neq('user_id', excludeUserId);
-  const { data } = await query;
+  const { data: offers, error } = await supabase
+    .from('service_offers')
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(CATALOG_PAGE);
+  if (error) throw new Error(error.message);
+  const rows = (offers as OfferRow[] | null) ?? [];
+  if (!rows.length) return [];
+  const ids = [...new Set(rows.map((row) => row.user_id))];
+  const profiles = await fetchProfilesByIds(ids);
+  return catalogFromRows(profiles, rows);
+}
+
+export async function fetchPublicJobs(_excludeUserId?: string | null): Promise<Job[]> {
+  const supabase = getPublicSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase.from(JOBS_TABLE).select('*').order('published_at', { ascending: false }).limit(80);
+  if (error) throw new Error(error.message);
   return ((data as JobRow[] | null) ?? []).map((row) => jobFromRow(row)).filter((job) => !job.archived);
 }
 

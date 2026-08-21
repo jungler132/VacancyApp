@@ -31,6 +31,24 @@ export function liveOffers(offers: ServiceOffer[]): ServiceOffer[] {
   return offers.filter((item) => !item.archived);
 }
 
+export function mergeCatalogMasters(
+  remote: ServiceMaster[],
+  own: ServiceMaster | undefined,
+  isMine: (id: string) => boolean,
+): ServiceMaster[] {
+  const out: ServiceMaster[] = [];
+  let ownOnRemote = false;
+  for (const item of remote) {
+    const mine = isMine(item.id);
+    if (mine) ownOnRemote = true;
+    out.push(mine && own ? { ...own, id: item.id, mine: true } : { ...item, mine });
+  }
+  if (own && liveOffers(own.offers).length && !ownOnRemote) {
+    out.unshift({ ...own, mine: true });
+  }
+  return out;
+}
+
 export function filterServiceMasters(
   masters: ServiceMaster[],
   query: string,
