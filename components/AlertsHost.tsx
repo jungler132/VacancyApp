@@ -45,11 +45,13 @@ export function AlertsHost() {
         skipKey: makeAlertKey(state.filters),
         alerts: state.alerts.items,
         persist: false,
-      }).then(({ alerts, jobs, changed }) => {
-        if (gen !== checkGen) return;
-        if (jobs.length) dispatch(rememberJobs(jobs));
-        if (changed) dispatch(replaceAlerts(alerts));
-      });
+      })
+        .then(({ alerts, jobs, changed }) => {
+          if (gen !== checkGen) return;
+          if (jobs.length) dispatch(rememberJobs(jobs));
+          if (changed) dispatch(replaceAlerts(alerts));
+        })
+        .catch(() => undefined);
     };
 
     run();

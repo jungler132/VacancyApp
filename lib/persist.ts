@@ -4,14 +4,18 @@ const NEW_PREFIX = 'vakano:';
 const LEGACY_PREFIX = 'workly:';
 
 export async function readPersisted(key: string): Promise<string | null> {
-  const raw = await AsyncStorage.getItem(key);
-  if (raw != null) return raw;
-  if (!key.startsWith(NEW_PREFIX)) return null;
-  const legacy = await AsyncStorage.getItem(`${LEGACY_PREFIX}${key.slice(NEW_PREFIX.length)}`);
-  if (legacy != null) {
-    await AsyncStorage.setItem(key, legacy).catch(() => undefined);
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    if (raw != null) return raw;
+    if (!key.startsWith(NEW_PREFIX)) return null;
+    const legacy = await AsyncStorage.getItem(`${LEGACY_PREFIX}${key.slice(NEW_PREFIX.length)}`);
+    if (legacy != null) {
+      await AsyncStorage.setItem(key, legacy).catch(() => undefined);
+    }
+    return legacy;
+  } catch {
+    return null;
   }
-  return legacy;
 }
 
 export async function removePersisted(key: string): Promise<void> {

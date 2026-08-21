@@ -46,7 +46,11 @@ export default function SettingsScreen() {
   const available = useMemo(() => new Set(availableSourceIds()), []);
 
   const copyEmail = useCallback(async () => {
-    await Clipboard.setStringAsync(FEEDBACK_EMAIL);
+    try {
+      await Clipboard.setStringAsync(FEEDBACK_EMAIL);
+    } catch {
+      return;
+    }
     setCopied(true);
     if (copyTimer.current) clearTimeout(copyTimer.current);
     copyTimer.current = setTimeout(() => setCopied(false), 1600);

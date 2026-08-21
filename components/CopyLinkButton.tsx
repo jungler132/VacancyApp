@@ -17,7 +17,11 @@ export const CopyLinkButton = memo(function CopyLinkButton({
 
   const copy = useCallback(async () => {
     if (!url) return;
-    await Clipboard.setStringAsync(url);
+    try {
+      await Clipboard.setStringAsync(url);
+    } catch {
+      return;
+    }
     setCopied(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(false), 1600);

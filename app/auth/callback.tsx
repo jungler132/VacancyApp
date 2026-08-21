@@ -13,6 +13,7 @@ export default function AuthCallbackScreen() {
   useEffect(() => {
     Linking.getInitialURL()
       .then((url) => (url ? exchangeAuthUrl(url) : undefined))
+      .catch(() => undefined)
       .finally(() => router.replace('/(tabs)/settings'));
   }, [router]);
 

@@ -552,14 +552,22 @@ export function schedulePush(getState: () => SyncState, dispatch?: Dispatch) {
 export async function deleteRemoteOffer(userId: string, id: string) {
   const supabase = getSupabase();
   if (!supabase) return;
-  await supabase.from('service_offers').delete().eq('user_id', userId).eq('id', id);
-  await deleteOfferMedia(userId, id);
+  try {
+    await supabase.from('service_offers').delete().eq('user_id', userId).eq('id', id);
+    await deleteOfferMedia(userId, id);
+  } catch {
+    // local delete already happened; remote cleanup can retry on next sync
+  }
 }
 
 export async function deleteRemoteJob(userId: string, id: string) {
   const supabase = getSupabase();
   if (!supabase) return;
-  await supabase.from(JOBS_TABLE).delete().eq('user_id', userId).eq('id', id);
+  try {
+    await supabase.from(JOBS_TABLE).delete().eq('user_id', userId).eq('id', id);
+  } catch {
+    // local delete already happened; remote cleanup can retry on next sync
+  }
 }
 
 export function resetPushCache() {

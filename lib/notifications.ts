@@ -48,13 +48,17 @@ async function ensureChannel(locale: AppLocale = DEFAULT_LOCALE) {
 }
 
 export async function requestAlertPermission(): Promise<boolean> {
-  const api = notifications();
-  if (!api) return false;
-  setupNotificationHandler();
-  await ensureChannel();
-  const current = await api.getPermissionsAsync();
-  const next = current.status === 'granted' ? current : await api.requestPermissionsAsync();
-  return next.status === 'granted';
+  try {
+    const api = notifications();
+    if (!api) return false;
+    setupNotificationHandler();
+    await ensureChannel();
+    const current = await api.getPermissionsAsync();
+    const next = current.status === 'granted' ? current : await api.requestPermissionsAsync();
+    return next.status === 'granted';
+  } catch {
+    return false;
+  }
 }
 
 export async function notifyNewJobs(
@@ -63,21 +67,25 @@ export async function notifyNewJobs(
   alertId: string,
   locale: AppLocale = DEFAULT_LOCALE,
 ): Promise<void> {
-  const api = notifications();
-  if (!api || count <= 0) return;
-  setupNotificationHandler();
-  await ensureChannel(locale);
-  const allowed = await api.getPermissionsAsync();
-  if (allowed.status !== 'granted') return;
-  await api.scheduleNotificationAsync({
-    content: {
-      title: t(locale, 'notify.title'),
-      body: t(locale, 'notify.body', { count, label }),
-      data: { type: 'alert', alertId },
-      color: '#00236f',
-    },
-    trigger: null,
-  });
+  try {
+    const api = notifications();
+    if (!api || count <= 0) return;
+    setupNotificationHandler();
+    await ensureChannel(locale);
+    const allowed = await api.getPermissionsAsync();
+    if (allowed.status !== 'granted') return;
+    await api.scheduleNotificationAsync({
+      content: {
+        title: t(locale, 'notify.title'),
+        body: t(locale, 'notify.body', { count, label }),
+        data: { type: 'alert', alertId },
+        color: '#00236f',
+      },
+      trigger: null,
+    });
+  } catch {
+    return;
+  }
 }
 
 export function listenNotificationTaps(
@@ -88,9 +96,11 @@ export function listenNotificationTaps(
   const tap = api.addNotificationResponseReceivedListener((response) => {
     onTap(response.notification.request.content.data?.alertId, response.notification.request.identifier);
   });
-  api.getLastNotificationResponseAsync().then((response) => {
-    if (!response) return;
-    onTap(response.notification.request.content.data?.alertId, response.notification.request.identifier);
-  });
+  api.getLastNotificationResponseAsync()
+    .then((response) => {
+      if (!response) return;
+      onTap(response.notification.request.content.data?.alertId, response.notification.request.identifier);
+    })
+    .catch(() => undefined);
   return () => tap.remove();
 }

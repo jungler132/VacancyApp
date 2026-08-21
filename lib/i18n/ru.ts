@@ -613,6 +613,10 @@ export const ru = {
   'notFound.body': 'Экран не найден',
   'notFound.back': 'К вакансиям',
 
+  'crash.title': 'Экран сломался',
+  'crash.body': 'Это сбой интерфейса, данные на месте. Можно открыть экран заново.',
+  'crash.retry': 'Повторить',
+
   'lang.ru': 'Русский',
   'lang.en': 'English',
   'lang.az': 'Azərbaycan',

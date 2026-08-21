@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/ibm-plex-mono';
 import { PaperProvider } from 'react-native-paper';
 
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import { AlertsHost } from '@/components/AlertsHost';
 import { AppNoticeHost } from '@/components/AppNoticeHost';
 import { BackendHost } from '@/components/BackendHost';
@@ -30,7 +31,9 @@ import { fonts, makePaperTheme, useAppTheme } from '@/lib/theme';
 import { ThemeBridge } from '@/lib/themeContext';
 import { t } from '@/lib/i18n';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+export { RouteErrorBoundary as ErrorBoundary };
 
 function AppShell({ children }: { children: ReactNode }) {
   const fontSize = useAppSelector((state) => state.appearance.fontSize);
@@ -113,11 +116,11 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync();
+    if (loaded || error) SplashScreen.hideAsync().catch(() => undefined);
   }, [loaded, error]);
 
   useEffect(() => {
-    const timer = setTimeout(() => SplashScreen.hideAsync(), 1500);
+    const timer = setTimeout(() => SplashScreen.hideAsync().catch(() => undefined), 1500);
     return () => clearTimeout(timer);
   }, []);
 

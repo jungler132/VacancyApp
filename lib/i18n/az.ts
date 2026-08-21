@@ -592,6 +592,10 @@ export const az: Record<MsgId, string> = {
   'notFound.body': 'Ekran tapılmadı',
   'notFound.back': 'Vakansiyalara',
 
+  'crash.title': 'Ekran sıradan çıxdı',
+  'crash.body': 'Görünüş qırıldı, məlumatlar yerindədir. Ekranı yenidən aça bilərsiniz.',
+  'crash.retry': 'Yenidən cəhd et',
+
   'lang.ru': 'Русский',
   'lang.en': 'English',
   'lang.az': 'Azərbaycan',

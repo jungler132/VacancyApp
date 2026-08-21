@@ -22,12 +22,16 @@ if (Platform.OS !== 'web') {
 
 export async function syncAlertTask(enabled: boolean) {
   if (Platform.OS === 'web') return;
-  const registered = await TaskManager.isTaskRegisteredAsync(ALERT_TASK);
-  if (enabled && !registered) {
-    await BackgroundTask.registerTaskAsync(ALERT_TASK, { minimumInterval: 60 });
+  try {
+    const registered = await TaskManager.isTaskRegisteredAsync(ALERT_TASK);
+    if (enabled && !registered) {
+      await BackgroundTask.registerTaskAsync(ALERT_TASK, { minimumInterval: 60 });
+      return;
+    }
+    if (!enabled && registered) {
+      await BackgroundTask.unregisterTaskAsync(ALERT_TASK);
+    }
+  } catch {
     return;
-  }
-  if (!enabled && registered) {
-    await BackgroundTask.unregisterTaskAsync(ALERT_TASK);
   }
 }

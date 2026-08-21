@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { Component, memo, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { PieChart } from 'react-native-gifted-charts';
@@ -9,6 +9,18 @@ import type { StatSlice } from '@/lib/stats';
 import { radius, useColors, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 
 const STAT_PREFIXES = ['stats.age', 'stats', 'fact', 'category', 'kind'];
+
+class ChartGuard extends Component<{ children: ReactNode; fallback: ReactNode }, { ok: boolean }> {
+  state = { ok: true };
+
+  static getDerivedStateFromError() {
+    return { ok: false };
+  }
+
+  render() {
+    return this.state.ok ? this.props.children : this.props.fallback;
+  }
+}
 
 export const StatsDonut = memo(function StatsDonut({
   title,
@@ -34,19 +46,26 @@ export const StatsDonut = memo(function StatsDonut({
       <Text variant="titleMedium">{title}</Text>
       <View style={styles.chartRow}>
         {data.length ? (
-          <PieChart
-            data={data}
-            donut
-            radius={96}
-            innerRadius={58}
-            innerCircleColor={colors.card}
-            isAnimated={false}
-            centerLabelComponent={() => (
-              <Text variant="titleMedium" style={styles.center}>
-                {total}
-              </Text>
-            )}
-          />
+          <ChartGuard
+            fallback={
+              <View style={styles.emptyChart}>
+                <Text variant="bodySmall">{t('stats.empty')}</Text>
+              </View>
+            }>
+            <PieChart
+              data={data}
+              donut
+              radius={96}
+              innerRadius={58}
+              innerCircleColor={colors.card}
+              isAnimated={false}
+              centerLabelComponent={() => (
+                <Text variant="titleMedium" style={styles.center}>
+                  {total}
+                </Text>
+              )}
+            />
+          </ChartGuard>
         ) : (
           <View style={styles.emptyChart}>
             <Text variant="bodySmall">{t('stats.empty')}</Text>

@@ -48,9 +48,11 @@ export function BackendHost() {
     const sub = Linking.addEventListener('url', ({ url }) => {
       exchangeAuthUrl(url).catch(() => undefined);
     });
-    Linking.getInitialURL().then((url) => {
-      if (url) exchangeAuthUrl(url).catch(() => undefined);
-    });
+    Linking.getInitialURL()
+      .then((url) => {
+        if (url) exchangeAuthUrl(url).catch(() => undefined);
+      })
+      .catch(() => undefined);
     return () => {
       data.subscription.unsubscribe();
       sub.remove();

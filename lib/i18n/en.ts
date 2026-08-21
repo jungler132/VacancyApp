@@ -592,6 +592,10 @@ export const en: Record<MsgId, string> = {
   'notFound.body': 'Screen not found',
   'notFound.back': 'Back to jobs',
 
+  'crash.title': 'This screen crashed',
+  'crash.body': 'The layout broke, your data is still here. You can open the screen again.',
+  'crash.retry': 'Try again',
+
   'lang.ru': 'Русский',
   'lang.en': 'English',
   'lang.az': 'Azərbaycan',

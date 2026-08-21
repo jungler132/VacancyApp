@@ -54,7 +54,11 @@ export const CatalogLinkCard = memo(function CatalogLinkCard({
   }, [dispatch, item, telegram]);
 
   const onCopy = useCallback(async () => {
-    await Clipboard.setStringAsync(item.url);
+    try {
+      await Clipboard.setStringAsync(item.url);
+    } catch {
+      return;
+    }
     setCopied(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(false), 1600);

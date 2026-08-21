@@ -34,7 +34,9 @@ export function startAds(isPremium: () => boolean): () => void {
     if (!loaded) return;
     loaded = false;
     markInterstitialShown();
-    void interstitial.show();
+    void interstitial.show().catch(() => {
+      loaded = false;
+    });
   });
 
   void (async () => {
