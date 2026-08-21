@@ -40,6 +40,7 @@ yarn-error.*
 keystore.properties
 *.keystore
 upload-keystore.jks
+credentials.json
 
 # generated native folders
 /ios

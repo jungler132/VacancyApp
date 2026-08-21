@@ -1,20 +1,57 @@
 const { withAppBuildGradle } = require('expo/config-plugins');
 
-/**
- * Local sideload only: release builds use the debug keystore.
- * Do not upload that AAB/APK to Google Play — create an upload keystore first.
- */
+const MARKER = 'VAKANO_UPLOAD_SIGNING';
+
+const LOAD_BLOCK = `
+// ${MARKER}
+def vakanoKsFile = rootProject.file("../keystore.properties")
+def vakanoKs = new Properties()
+if (vakanoKsFile.exists()) {
+    vakanoKsFile.withInputStream { vakanoKs.load(it) }
+}
+`;
+
+const UPLOAD_CONFIG = `        upload {
+            if (vakanoKsFile.exists()) {
+                keyAlias vakanoKs['keyAlias']
+                keyPassword vakanoKs['keyPassword']
+                storeFile rootProject.file("../" + vakanoKs['storeFile'])
+                storePassword vakanoKs['storePassword']
+            }
+        }
+`;
+
+const RELEASE_SIGNING =
+  'signingConfig vakanoKsFile.exists() ? signingConfigs.upload : signingConfigs.debug';
+
 function withAndroidReleaseSigning(config) {
   return withAppBuildGradle(config, (mod) => {
-    const src = mod.modResults.contents;
-    const releaseIdx = src.search(/release\s*\{/);
-    if (releaseIdx === -1) return mod;
+    let src = mod.modResults.contents;
+    if (src.includes(MARKER)) return mod;
 
-    const brace = src.indexOf('{', releaseIdx);
-    const window = src.slice(brace, brace + 500);
-    if (window.includes('signingConfig')) return mod;
+    if (!/\nandroid\s*\{/.test(src)) return mod;
+    src = src.replace(/\nandroid\s*\{/, `${LOAD_BLOCK}\nandroid {`);
 
-    mod.modResults.contents = src.replace(/release\s*\{/, 'release {\n            signingConfig signingConfigs.debug');
+    if (!src.includes('signingConfigs.upload') && /signingConfigs\s*\{/.test(src)) {
+      src = src.replace(/signingConfigs\s*\{/, `signingConfigs {\n${UPLOAD_CONFIG}`);
+    }
+
+    if (src.includes(RELEASE_SIGNING)) {
+      mod.modResults.contents = src;
+      return mod;
+    }
+
+    const releaseWithDebug = /release\s*\{\s*signingConfig signingConfigs\.debug/;
+    if (releaseWithDebug.test(src)) {
+      src = src.replace(
+        releaseWithDebug,
+        `release {\n            ${RELEASE_SIGNING}`,
+      );
+    } else {
+      src = src.replace(/release\s*\{/, `release {\n            ${RELEASE_SIGNING}`);
+    }
+
+    mod.modResults.contents = src;
     return mod;
   });
 }

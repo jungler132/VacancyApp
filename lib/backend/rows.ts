@@ -115,6 +115,36 @@ export function offerFromRow(row: OfferRow, own = false): ServiceOffer {
   };
 }
 
+/** Public catalog must never request account_state (kanban, filters, alerts). */
+export const PUBLIC_PROFILE_COLUMNS = [
+  'id',
+  'display_name',
+  'bio',
+  'avatar_url',
+  'email',
+  'phone',
+  'kinds',
+  'custom_kinds',
+  'address',
+  'city_id',
+  'hours_open',
+  'hours_close',
+  'hours_days',
+  'seeking',
+  'available',
+  'seek_title',
+  'seek_format',
+  'updated_at',
+  'company_name',
+  'company_logo',
+  'company_about',
+].join(',');
+
+function isMissingTable(message: string | undefined, table: string) {
+  if (!message) return false;
+  return new RegExp(`${table}|schema cache|Could not find the table`, 'i').test(message);
+}
+
 export function jobFromRow(row: JobRow, own = false): Job {
   const raw = row.id.replace(/^(?:vakano|workly):/, '');
   return {
@@ -145,13 +175,20 @@ export function jobFromRow(row: JobRow, own = false): Job {
 export async function fetchOwnRows(userId: string) {
   const supabase = getSupabase();
   if (!supabase) return { profile: null, offers: [] as OfferRow[], jobs: [] as JobRow[] };
-  const [profile, offers, jobs] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+  const [profile, offers, jobs, privateState] = await Promise.all([
+    supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', userId).maybeSingle(),
     supabase.from('service_offers').select('*').eq('user_id', userId),
     supabase.from(JOBS_TABLE).select('*').eq('user_id', userId),
+    supabase.from('profile_state').select('account_state').eq('id', userId).maybeSingle(),
   ]);
+  const row = (profile.data as ProfileRow | null) ?? null;
+  let accountState = (privateState.data as { account_state?: unknown } | null)?.account_state;
+  if (accountState == null && isMissingTable(privateState.error?.message, 'profile_state')) {
+    const legacy = await supabase.from('profiles').select('account_state').eq('id', userId).maybeSingle();
+    accountState = (legacy.data as { account_state?: unknown } | null)?.account_state;
+  }
   return {
-    profile: (profile.data as ProfileRow | null) ?? null,
+    profile: row ? { ...row, account_state: accountState } : null,
     offers: (offers.data as OfferRow[] | null) ?? [],
     jobs: (jobs.data as JobRow[] | null) ?? [],
   };
@@ -162,7 +199,7 @@ export async function fetchPublicCatalog(excludeUserId?: string | null): Promise
   if (!supabase) return [];
   let query = supabase
     .from('profiles')
-    .select('*')
+    .select(PUBLIC_PROFILE_COLUMNS)
     .neq('display_name', '')
     .order('updated_at', { ascending: false })
     .limit(CATALOG_PAGE);

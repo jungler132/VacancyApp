@@ -81,7 +81,7 @@ EXPO_PUBLIC_ADMOB_BANNER_ID=ca-app-pub-…/…
 | Кнопка «Купить» без Play Billing, которая включает премиум | **Убрано.** Пока биллинга нет — премиум не продаём |
 | Экран-заглушка, который выглядит как реклама | **Убран**, стоит живой AdMob |
 | Политика пишет AdMob, а в APK рекламы нет | Политика совпадает с AdMob |
-| AAB, подписанный **debug-keystore** | **Нельзя заливать в Play.** Сейчас Gradle для local release как раз подписывает debug-ключом (`plugins/withAndroidReleaseSigning.js`) — это только для своей установки на телефон |
+| AAB, подписанный **debug-keystore** | **Нельзя заливать в Play.** Если нет `keystore.properties`, Gradle ещё подпишет debug-ключом (sideload). Для Closed testing нужен `yarn aab` с upload-ключом |
 | Скрапинг HTML площадок в обход ToS | В коде используются API, не парсинг страниц. HeadHunter без OAuth часто отвечает 403 — это не нарушение Play, но и не повод писать в сторе «полный HH» |
 | Платежи картой / внешний магазин за цифровые фичи | Не делайте, пока нет Play Billing (или официальной программы alternative billing) |
 
@@ -169,19 +169,25 @@ Support: worklysupport@proton.me
 Privacy policy: https://jungler132.github.io/VacancyApp/
 ```
 
-## Подпись (когда будете собирать AAB)
+## Подпись (AAB для Play)
 
-Сейчас **не собирайте и не заливайте** AAB: release подписывается debug-ключом, Play такой пакет отклонит.
+Плагин `plugins/withAndroidReleaseSigning.js` читает `keystore.properties` в корне. Если файла нет — release остаётся на debug (только sideload). Если есть — AAB подписывается upload-ключом.
 
-Когда решите публиковать:
+Один раз на машине разработчика:
 
-1. Создайте отдельный upload-keystore (один раз, бэкап в надёжном месте). Не коммитьте `.jks` и пароли.
-2. Скопируйте `keystore.properties.example` → `keystore.properties` и заполните.
-3. Подключите этот keystore в Gradle **вместо** debug для `release` (плагин `withAndroidReleaseSigning.js` для Play нужно будет сменить).
-4. Соберите AAB уже **после** этого.
-5. В Play Console: приложение, политика, Data safety, UGC, скриншоты, возрастной рейтинг, затем загрузка AAB.
+```bash
+node scripts/make-upload-keystore.cjs
+```
 
-Потерять upload-ключ = нельзя обновлять приложение. Храните копию вне репозитория.
+Потом:
+
+```bash
+yarn aab
+```
+
+Готовый файл: `dist/Vakano.aab` → Play Console → **Closed testing** → Create new release.
+
+Не коммитьте `upload-keystore.jks` и `keystore.properties`. Потерять ключ = нельзя обновлять приложение. Храните копию `.jks` и пароль вне репозитория (менеджер паролей + флешка).
 
 ## Структура
 

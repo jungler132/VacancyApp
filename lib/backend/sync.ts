@@ -198,6 +198,10 @@ function isMissingAccountState(message: string) {
   return /account_state|schema cache|Could not find.*account_state/i.test(message);
 }
 
+function isMissingProfileState(message: string) {
+  return /profile_state/i.test(message);
+}
+
 function isMissingCompany(message: string) {
   return /company_name|company_logo|company_about|Could not find.*company_/i.test(message);
 }
@@ -263,27 +267,30 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
     company_logo: companyLogo && isRemoteUri(companyLogo) ? companyLogo : null,
     company_about: state.company?.about ?? '',
     updated_at: profile?.updatedAt ?? new Date().toISOString(),
-    ...(accountState ? { account_state: accountState } : {}),
   };
 
   let profileRes = await supabase.from('profiles').upsert(profileRow);
-  if (profileRes.error && isMissingAccountState(profileRes.error.message)) {
-    const { account_state: _omit, ...withoutState } = profileRow;
-    profileRes = await supabase.from('profiles').upsert(withoutState);
-  }
   if (profileRes.error && isMissingCompany(profileRes.error.message)) {
     const { company_name: _n, company_logo: _l, company_about: _a, ...withoutCompany } = profileRow;
     profileRes = await supabase.from('profiles').upsert(withoutCompany);
-  }
-  if (profileRes.error && isMissingAccountState(profileRes.error.message) && isMissingCompany(profileRes.error.message)) {
-    const { account_state: _s, company_name: _n, company_logo: _l, company_about: _a, ...bare } = profileRow;
-    profileRes = await supabase.from('profiles').upsert(bare);
   }
   if (profileRes.error && isMissingCity(profileRes.error.message)) {
     const { city_id: _c, ...withoutCity } = profileRow;
     profileRes = await supabase.from('profiles').upsert(withoutCity);
   }
   if (profileRes.error) throw profileRes.error;
+
+  let stateRes = await supabase.from('profile_state').upsert({
+    id: userId,
+    account_state: accountState ?? {},
+    updated_at: new Date().toISOString(),
+  });
+  if (stateRes.error && isMissingProfileState(stateRes.error.message)) {
+    const legacy = await supabase.from('profiles').update({ account_state: accountState }).eq('id', userId);
+    if (legacy.error && !isMissingAccountState(legacy.error.message)) throw legacy.error;
+  } else if (stateRes.error) {
+    throw stateRes.error;
+  }
 
   let offerRes = uploadedOffers.length
     ? await supabase.from('service_offers').upsert(
