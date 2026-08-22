@@ -1,4 +1,4 @@
-import { configureStore, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
+import { configureStore, createListenerMiddleware, isAnyOf, type Dispatch } from '@reduxjs/toolkit';
 
 import { isAbortError } from '@/lib/api/errors';
 import { apiCategory } from '@/lib/catalog';
@@ -94,10 +94,25 @@ import identityReducer, {
 } from './identitySlice';
 import authReducer, { hydrateAuth } from './authSlice';
 import { makeAlertKey, persistAlerts } from '@/lib/alerts';
-import { deleteRemoteJob, deleteRemoteOffer, schedulePush } from '@/lib/backend/sync';
 
 function canPush(state: { auth: { userId: string | null; email: string | null; anonymous: boolean } }) {
   return Boolean(state.auth.userId && !state.auth.anonymous);
+}
+
+function queuePush(getState: () => RootState, dispatch: Dispatch) {
+  void import('@/lib/backend/sync').then(({ schedulePush }) => {
+    schedulePush(getState, dispatch);
+  });
+}
+
+async function dropRemoteJob(userId: string, id: string) {
+  const { deleteRemoteJob } = await import('@/lib/backend/sync');
+  await deleteRemoteJob(userId, id);
+}
+
+async function dropRemoteOffer(userId: string, id: string) {
+  const { deleteRemoteOffer } = await import('@/lib/backend/sync');
+  await deleteRemoteOffer(userId, id);
 }
 
 const listener = createListenerMiddleware();
@@ -110,7 +125,7 @@ listener.startListening({
       await persistSavedCatalog(items);
     }
     if (toggleSavedCatalog.match(action) && canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -123,7 +138,7 @@ listener.startListening({
       await persistSavedServices(items);
     }
     if (toggleSavedService.match(action) && canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -137,7 +152,7 @@ listener.startListening({
       await persistSaved(saved.items, saved.statuses, saved.statusAt);
     }
     if ((toggleSaved.match(action) || setApplyStatus.match(action)) && canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -148,7 +163,7 @@ listener.startListening({
     const ids = (listenerApi.getState() as RootState).sources.disabledIds;
     await persistDisabledSources(ids);
     if (toggleSource.match(action) && canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -159,7 +174,7 @@ listener.startListening({
     const items = (listenerApi.getState() as RootState).alerts.items;
     await persistAlerts(items);
     if (!replaceAlerts.match(action) && canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -181,7 +196,7 @@ listener.startListening({
     if (!filters.ready) return;
     await persistFilters(filters);
     if (!replaceFilters.match(action) && canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -203,9 +218,9 @@ listener.startListening({
       await persistLocalJobs(items);
       const state = listenerApi.getState() as RootState;
       if (removeLocalJob.match(action) && state.auth.userId) {
-        await deleteRemoteJob(state.auth.userId, action.payload);
+        await dropRemoteJob(state.auth.userId, action.payload);
       }
-      if (canPush(state)) schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      if (canPush(state)) queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -250,7 +265,7 @@ listener.startListening({
       (setFontSize.match(action) || setLocale.match(action) || setTheme.match(action)) &&
       canPush(listenerApi.getState() as RootState)
     ) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -260,7 +275,7 @@ listener.startListening({
   effect: async (action, listenerApi) => {
     await persistVisits((listenerApi.getState() as RootState).visits.items);
     if (!replaceVisits.match(action) && canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -273,9 +288,9 @@ listener.startListening({
     if (applyRemoteMedia.match(action) || replaceAccount.match(action)) return;
     const state = listenerApi.getState() as RootState;
     if (removeOffer.match(action) && state.auth.userId) {
-      await deleteRemoteOffer(state.auth.userId, action.payload);
+      await dropRemoteOffer(state.auth.userId, action.payload);
     }
-    if (canPush(state)) schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+    if (canPush(state)) queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
   },
 });
 
@@ -291,7 +306,7 @@ listener.startListening({
     });
     if (resetIdentity.match(action)) return;
     if (canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });
@@ -307,7 +322,7 @@ listener.startListening({
     }
     if (applyCompanyLogo.match(action)) return;
     if (canPush(listenerApi.getState() as RootState)) {
-      schedulePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
+      queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },
 });

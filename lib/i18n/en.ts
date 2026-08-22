@@ -184,7 +184,6 @@ export const en: Record<MsgId, string> = {
     'The board lives in Profile, under Kanban. Star a job and it lands in Applied. Drag by the left handle: review, interview, test, offer, rejected. You can add a job by hand.',
   'onboard.kanbanCard1': 'Frontend',
   'onboard.kanbanCard2': 'Support',
-  'onboard.next': 'Next',
   'onboard.gotIt': 'Got it',
   'onboard.done': 'Don’t show again',
   'settings.look': 'Look',

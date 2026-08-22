@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import type { BottomTabBarButtonProps } from 'expo-router/build/react-navigation/bottom-tabs';
@@ -7,6 +7,7 @@ import MaterialDesignIcons from '@react-native-vector-icons/material-design-icon
 import { ScreenBackdrop } from '@/components/ScreenBackdrop';
 import { useJobsQuery } from '@/lib/hooks/useJobsFeed';
 import { useTabBarLayout } from '@/lib/layout';
+import { noteShellReady } from '@/lib/shellReady';
 import { fonts, shadowsFor, useAppTheme, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { useT } from '@/lib/i18n/useT';
 
@@ -94,6 +95,9 @@ const TabLabel = memo(function TabLabel({
 
 export default function TabLayout() {
   useJobsQuery();
+  useEffect(() => {
+    noteShellReady();
+  }, []);
   const tabBar = useTabBarLayout();
   const t = useT();
   const { colors, scheme } = useAppTheme();
@@ -119,6 +123,11 @@ export default function TabLayout() {
           headerTitleStyle: { fontFamily: fonts.bold, fontSize: 18 },
           tabBarStyle: {
             position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            marginHorizontal: 0,
+            width: '100%',
             backgroundColor: colors.card,
             borderTopColor: colors.cardBorder,
             borderTopWidth: StyleSheet.hairlineWidth,

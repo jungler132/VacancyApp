@@ -1,5 +1,5 @@
 import '@/lib/alertsTask';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { Provider } from 'react-redux';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
@@ -24,7 +24,9 @@ import { FilterSheetHost } from '@/components/FilterSheetHost';
 import { PaywallHost } from '@/components/PaywallSheet';
 import { OnboardingHost } from '@/components/OnboardingHost';
 import { SyncOverlayHost } from '@/components/SyncOverlay';
+import { afterFirstPaint } from '@/lib/afterPaint';
 import { FONT_SCALE, FontScaleContext, scaleFont, useFontScale } from '@/lib/fontScale';
+import { onShellReady } from '@/lib/shellReady';
 import { store } from '@/lib/store';
 import { useAppSelector } from '@/lib/store/hooks';
 import { fonts, makePaperTheme, useAppTheme } from '@/lib/theme';
@@ -107,23 +109,79 @@ function Navigation() {
   );
 }
 
+function AfterPaintHosts() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => afterFirstPaint(() => setReady(true)), []);
+  if (!ready) return null;
+  return (
+    <>
+      <AlertsHost />
+      <BackendHost />
+      <AdsHost />
+      <PaywallHost />
+      <FilterSheetHost />
+      <SyncOverlayHost />
+      <AppNoticeHost />
+    </>
+  );
+}
+
+function AppBody({ onPainted }: { onPainted: () => void }) {
+  const appearanceReady = useAppSelector((state) => state.appearance.ready);
+  const onboardReady = useAppSelector((state) => state.onboarding.ready);
+  const dismissed = useAppSelector((state) => state.onboarding.dismissed);
+  const sawTour = useRef(false);
+  if (!dismissed) sawTour.current = true;
+  const [shellReady, setShellReady] = useState(false);
+
+  const bootReady = appearanceReady && onboardReady;
+  useEffect(() => {
+    if (bootReady) onPainted();
+  }, [bootReady, onPainted]);
+
+  useEffect(() => onShellReady(() => setShellReady(true)), []);
+
+  useEffect(() => {
+    if (!sawTour.current || !dismissed || shellReady) return undefined;
+    const timer = setTimeout(() => setShellReady(true), 8000);
+    return () => clearTimeout(timer);
+  }, [dismissed, shellReady]);
+
+  if (!bootReady) return null;
+
+  const held = sawTour.current && dismissed && !shellReady;
+  const showTour = !dismissed || held;
+  const showApp = dismissed;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: SPLASH_BG }} onLayout={onPainted}>
+      {showApp ? (
+        <>
+          <Navigation />
+          {shellReady ? <AfterPaintHosts /> : null}
+        </>
+      ) : null}
+      {showTour ? <OnboardingHost overlay={showApp} held={held} /> : null}
+    </View>
+  );
+}
+
 const SPLASH_BG = '#00236f';
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
+  useFonts({
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
     IBMPlexMono_600SemiBold,
     IBMPlexMono_700Bold,
   });
   const [painted, setPainted] = useState(false);
-  const fontsReady = loaded || Boolean(error);
   const onPainted = useCallback(() => setPainted(true), []);
 
   useEffect(() => {
-    if (!fontsReady || !painted) return;
+    if (!painted) return;
     SplashScreen.hideAsync().catch(() => undefined);
-  }, [fontsReady, painted]);
+  }, [painted]);
 
   useEffect(() => {
     const timer = setTimeout(() => SplashScreen.hideAsync().catch(() => undefined), 8000);
@@ -135,17 +193,7 @@ export default function RootLayout() {
       <ThemeBridge>
         <AppShell>
           <BillingHost>
-            <View style={{ flex: 1, backgroundColor: SPLASH_BG }} onLayout={onPainted}>
-              <AlertsHost />
-              <BackendHost />
-              <AdsHost />
-              <PaywallHost />
-              <Navigation />
-              <FilterSheetHost />
-              {fontsReady ? <OnboardingHost /> : null}
-              <SyncOverlayHost />
-              <AppNoticeHost />
-            </View>
+            <AppBody onPainted={onPainted} />
           </BillingHost>
         </AppShell>
       </ThemeBridge>

@@ -1,38 +1,19 @@
-import { memo, useCallback, useState } from 'react';
-import { View } from 'react-native';
-import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+import { memo, useEffect, useState, type ComponentType } from 'react';
 
-import { AD_KEYWORDS, bannerUnitId } from '@/lib/ads';
+import { afterFirstPaint } from '@/lib/afterPaint';
 import { useAppSelector } from '@/lib/store/hooks';
-import { useThemedStyles, type ThemeColors } from '@/lib/theme';
 
 export const AdBanner = memo(function AdBanner() {
-  const styles = useThemedStyles(adBannerStyles);
   const premium = useAppSelector((state) => state.premium.isPremium);
-  const [failed, setFailed] = useState(false);
-  const onFail = useCallback(() => setFailed(true), []);
+  const [Live, setLive] = useState<ComponentType | null>(null);
 
-  if (premium || failed) return null;
+  useEffect(() => {
+    if (premium) return undefined;
+    return afterFirstPaint(() => {
+      void import('@/components/AdBannerLive').then((mod) => setLive(() => mod.AdBannerLive));
+    });
+  }, [premium]);
 
-  return (
-    <View style={styles.wrap}>
-      <BannerAd
-        unitId={bannerUnitId()}
-        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-        requestOptions={{ keywords: AD_KEYWORDS }}
-        onAdFailedToLoad={onFail}
-      />
-    </View>
-  );
+  if (premium || !Live) return null;
+  return <Live />;
 });
-
-function adBannerStyles(colors: ThemeColors) {
-  return {
-    wrap: {
-      backgroundColor: colors.bg,
-      borderTopWidth: 1,
-      borderTopColor: colors.cardBorder,
-      alignItems: 'center' as const,
-    },
-  };
-}

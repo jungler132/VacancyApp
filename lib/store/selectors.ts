@@ -1,6 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit';
 
-import { enabledSourceIds } from '@/lib/api/aggregator';
+import { enabledSourceIds } from '@/lib/api/sources';
 import { apiCategory } from '@/lib/catalog';
 import { extraFiltersActive } from '@/lib/filters';
 import { computeJobStats } from '@/lib/stats';

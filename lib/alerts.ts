@@ -8,7 +8,7 @@ import {
   normalizeAlerts,
   type SavedSearch,
 } from '@/lib/alertModel';
-import { enabledSourceIds, searchJobs } from '@/lib/api/aggregator';
+import { enabledSourceIds } from '@/lib/api/sources';
 import { apiCategory } from '@/lib/catalog';
 import { filterFeedIds } from '@/lib/filters';
 import { notifyNewJobs } from '@/lib/notifications';
@@ -81,6 +81,7 @@ export async function checkSavedSearches(
       continue;
     }
     try {
+      const { searchJobs } = await import('@/lib/api/aggregator');
       const result = await searchJobs({
         query: alert.query,
         region: alert.region,

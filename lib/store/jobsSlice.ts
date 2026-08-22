@@ -1,7 +1,5 @@
 import { createAction, createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import { searchJobs } from '@/lib/api/aggregator';
-import { fetchHeadHunterDetails, hhVacancyId, isHhJobId } from '@/lib/api/providers/hh';
 import { isAbortError } from '@/lib/api/errors';
 import { feedLog } from '@/lib/feedLog';
 import { feedKeyOf, makeFeedKey } from '@/lib/feedKey';
@@ -167,6 +165,7 @@ export const fetchFeed = createAsyncThunk(
       sources: args.enabledSources,
     });
     const exhausted = args.mode === 'append' ? jobsState.feeds[key]?.exhaustedSources : undefined;
+    const { searchJobs } = await import('@/lib/api/aggregator');
     const result = await searchJobs(
       {
         query: args.query,
@@ -234,6 +233,7 @@ export const fetchFeed = createAsyncThunk(
 );
 
 export const hydrateJob = createAsyncThunk('jobs/hydrateJob', async (id: string, { signal }) => {
+  const { fetchHeadHunterDetails, hhVacancyId, isHhJobId } = await import('@/lib/api/providers/hh');
   if (!isHhJobId(id)) return null;
   const details = await fetchHeadHunterDetails(hhVacancyId(id), signal);
   return { id, details };

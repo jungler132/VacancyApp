@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import PagerView from 'react-native-pager-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { ServiceAvatar } from '@/components/ServiceAvatar';
 import { ServiceMasterCard } from '@/components/ServiceMasterCard';
 import { Text } from '@/components/AppText';
 import { ToneCard } from '@/components/ToneCard';
+import { afterFirstPaint } from '@/lib/afterPaint';
 import type { MsgId } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';
 import { DEFAULT_HOURS } from '@/lib/services/hours';
@@ -462,7 +463,13 @@ function OnboardLangSwitch() {
   );
 }
 
-export const OnboardingHost = memo(function OnboardingHost() {
+export const OnboardingHost = memo(function OnboardingHost({
+  overlay = false,
+  held = false,
+}: {
+  overlay?: boolean;
+  held?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const t = useT();
   const insets = useSafeAreaInsets();
@@ -476,19 +483,28 @@ export const OnboardingHost = memo(function OnboardingHost() {
   const [step, setStep] = useState(0);
   const [hideNext, setHideNext] = useState(false);
   const [neighborsReady, setNeighborsReady] = useState(false);
+  const [stageReady, setStageReady] = useState(false);
+  const [footerH, setFooterH] = useState(56);
+  const [finishing, setFinishing] = useState(false);
   const last = step >= STEPS.length - 1;
-  const open = appearanceReady && onboard.ready && !onboard.dismissed;
+  const busy = finishing || held;
+  const open = appearanceReady && onboard.ready && (!onboard.dismissed || held);
 
   useEffect(() => {
     if (!open) {
       setNeighborsReady(false);
+      setStageReady(false);
       return;
     }
     setStep(0);
     setHideNext(false);
     pager.current?.setPage(0);
-    const timer = setTimeout(() => setNeighborsReady(true), 80);
-    return () => clearTimeout(timer);
+    const stopStage = afterFirstPaint(() => setStageReady(true));
+    const timer = setTimeout(() => setNeighborsReady(true), 120);
+    return () => {
+      stopStage();
+      clearTimeout(timer);
+    };
   }, [open]);
 
   const goTo = useCallback((next: number) => {
@@ -497,89 +513,141 @@ export const OnboardingHost = memo(function OnboardingHost() {
     setStep(index);
   }, []);
 
-  const onBack = useCallback(() => {
-    if (step === 0) return;
-    goTo(step - 1);
-  }, [goTo, step]);
+  const onFinish = useCallback(() => {
+    if (busy) return;
+    setFinishing(true);
+  }, [busy]);
 
-  const onNext = useCallback(() => {
-    if (!last) {
-      goTo(step + 1);
-      return;
-    }
-    if (hideNext) void dispatch(dismissOnboarding());
-    else dispatch(hideOnboarding());
-  }, [dispatch, goTo, hideNext, last, step]);
+  useEffect(() => {
+    if (!finishing || onboard.dismissed) return;
+    const timer = setTimeout(() => {
+      if (hideNext) void dispatch(dismissOnboarding());
+      else dispatch(hideOnboarding());
+    }, 48);
+    return () => clearTimeout(timer);
+  }, [dispatch, finishing, hideNext, onboard.dismissed]);
+
+  const sheet = (
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 12) }]}>
+      <View style={styles.topRow}>
+        <Text style={styles.kicker}>{t('onboard.kicker')}</Text>
+        {step === 0 ? <OnboardLangSwitch /> : null}
+      </View>
+      <PagerView
+        ref={pager}
+        style={[styles.pager, { marginBottom: footerH }]}
+        initialPage={0}
+        scrollEnabled={!busy}
+        offscreenPageLimit={1}
+        onPageSelected={(event) => setStep(event.nativeEvent.position)}>
+        {STEPS.map((item, index) => (
+          <View key={item.title} collapsable={false} style={[styles.page, { width: pageWidth }]}>
+            <ScrollView
+              style={styles.slide}
+              contentContainerStyle={styles.slideBody}
+              showsVerticalScrollIndicator={false}
+              bounces={false}>
+              <Text style={styles.title}>{t(item.title)}</Text>
+              <Text style={styles.body}>{t(item.body)}</Text>
+              <View style={styles.stage}>
+                {stageReady && (index === step || (neighborsReady && Math.abs(index - step) <= 1)) ? (
+                  <StepVisual visual={item.visual} />
+                ) : null}
+              </View>
+            </ScrollView>
+          </View>
+        ))}
+      </PagerView>
+
+      <View
+        style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}
+        onLayout={(event) => {
+          const next = Math.ceil(event.nativeEvent.layout.height);
+          if (next > 0 && Math.abs(next - footerH) > 1) setFooterH(next);
+        }}>
+        <View style={styles.dots}>
+          {STEPS.map((item, index) => (
+            <Pressable key={item.title} onPress={busy ? undefined : () => goTo(index)} hitSlop={8}>
+              <View style={[styles.dot, index === step && styles.dotOn]} />
+            </Pressable>
+          ))}
+        </View>
+        {last ? (
+          <Pressable
+            onPress={busy ? undefined : () => setHideNext((value) => !value)}
+            style={styles.check}
+            hitSlop={6}>
+            <MaterialDesignIcons
+              name={hideNext ? 'checkbox-marked' : 'checkbox-blank-outline'}
+              size={20}
+              color={hideNext ? colors.accent : colors.faint}
+            />
+            <Text style={styles.checkLabel}>{t('onboard.done')}</Text>
+          </Pressable>
+        ) : null}
+        {last ? (
+          <Pressable
+            onPress={onFinish}
+            disabled={busy}
+            style={({ pressed }) => [styles.cta, pressed && !busy && styles.pressed, busy && styles.ctaBusy]}>
+            {busy ? (
+              <ActivityIndicator color={colors.accentText} />
+            ) : (
+              <Text
+                numberOfLines={1}
+                android_hyphenationFrequency="none"
+                textBreakStrategy="simple"
+                style={styles.ctaText}>
+                {t('onboard.gotIt')}
+              </Text>
+            )}
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  if (!overlay) {
+    return (
+      <View style={styles.shell}>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        {open ? sheet : null}
+      </View>
+    );
+  }
+
+  if (!open) return null;
+
+  const cover = (
+    <View style={styles.overlay}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      {sheet}
+    </View>
+  );
+
+  if (held) return cover;
 
   return (
-    <Modal visible={open} animationType="fade" presentationStyle="fullScreen" onRequestClose={onBack}>
-      {open ? <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} /> : null}
-      <View style={[styles.root, { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <View style={styles.topRow}>
-          <Text style={styles.kicker}>{t('onboard.kicker')}</Text>
-          {step === 0 ? <OnboardLangSwitch /> : null}
-        </View>
-        <PagerView
-          ref={pager}
-          style={styles.pager}
-          initialPage={0}
-          offscreenPageLimit={1}
-          onPageSelected={(event) => setStep(event.nativeEvent.position)}>
-          {STEPS.map((item, index) => (
-            <View key={item.title} collapsable={false} style={[styles.page, { width: pageWidth }]}>
-              <ScrollView
-                style={styles.slide}
-                contentContainerStyle={styles.slideBody}
-                showsVerticalScrollIndicator={false}
-                bounces={false}>
-                <Text style={styles.title}>{t(item.title)}</Text>
-                <Text style={styles.body}>{t(item.body)}</Text>
-                <View style={styles.stage}>
-                  {index === step || (neighborsReady && Math.abs(index - step) <= 1) ? (
-                    <StepVisual visual={item.visual} />
-                  ) : null}
-                </View>
-              </ScrollView>
-            </View>
-          ))}
-        </PagerView>
-
-        <View style={styles.footer}>
-          <View style={styles.dots}>
-            {STEPS.map((item, index) => (
-              <Pressable key={item.title} onPress={() => goTo(index)} hitSlop={8}>
-                <View style={[styles.dot, index === step && styles.dotOn]} />
-              </Pressable>
-            ))}
-          </View>
-          {last ? (
-            <Pressable onPress={() => setHideNext((value) => !value)} style={styles.check} hitSlop={6}>
-              <MaterialDesignIcons
-                name={hideNext ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                size={20}
-                color={hideNext ? colors.accent : colors.faint}
-              />
-              <Text style={styles.checkLabel}>{t('onboard.done')}</Text>
-            </Pressable>
-          ) : null}
-          <Pressable onPress={onNext} style={({ pressed }) => [styles.cta, pressed && styles.pressed]}>
-            <Text
-              numberOfLines={1}
-              android_hyphenationFrequency="none"
-              textBreakStrategy="simple"
-              style={styles.ctaText}>
-              {t(last ? 'onboard.gotIt' : 'onboard.next')}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+    <Modal visible animationType="fade" presentationStyle="fullScreen">
+      {cover}
     </Modal>
   );
 });
 
 function onboardStyles(colors: ThemeColors) {
   return {
-    root: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
+    shell: { flex: 1, backgroundColor: colors.bg },
+    overlay: {
+      position: 'absolute' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 50,
+      elevation: 50,
+      backgroundColor: colors.bg,
+    },
+    root: { flex: 1, backgroundColor: colors.bg },
     topRow: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
@@ -587,6 +655,7 @@ function onboardStyles(colors: ThemeColors) {
       gap: 12,
       marginBottom: 4,
       minHeight: 28,
+      paddingHorizontal: 20,
     },
     kicker: {
       color: colors.accent,
@@ -616,7 +685,7 @@ function onboardStyles(colors: ThemeColors) {
       letterSpacing: 0.4,
     },
     langTextOn: { color: colors.accent },
-    pager: { flex: 1, minHeight: 0 },
+    pager: { flex: 1, minHeight: 0, marginHorizontal: 20 },
     page: { flex: 1, minHeight: 0 },
     slide: { flex: 1, minHeight: 0 },
     slideBody: { flexGrow: 1, paddingBottom: 8 },
@@ -785,9 +854,11 @@ function onboardStyles(colors: ThemeColors) {
     },
     tabBar: {
       flexDirection: 'row' as const,
+      alignSelf: 'stretch' as const,
+      width: '100%' as const,
       borderTopWidth: 1,
       borderTopColor: colors.cardBorder,
-      paddingHorizontal: 4,
+      paddingHorizontal: 0,
       paddingTop: 8,
       paddingBottom: 10,
       backgroundColor: colors.card,
@@ -803,12 +874,16 @@ function onboardStyles(colors: ThemeColors) {
       paddingHorizontal: 1,
     },
     footer: {
+      position: 'absolute' as const,
+      left: 0,
+      right: 0,
+      bottom: 0,
       gap: 14,
       paddingTop: 12,
-      flexShrink: 0,
+      paddingHorizontal: 20,
       backgroundColor: colors.bg,
       zIndex: 2,
-      elevation: 4,
+      elevation: 8,
     },
     dots: { flexDirection: 'row' as const, justifyContent: 'center' as const, alignItems: 'center' as const, gap: 6 },
     dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.chipBorder },
@@ -822,6 +897,7 @@ function onboardStyles(colors: ThemeColors) {
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
     },
+    ctaBusy: { opacity: 0.92 },
     ctaText: {
       color: colors.accentText,
       fontFamily: fonts.bold,

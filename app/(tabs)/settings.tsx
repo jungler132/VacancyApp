@@ -10,7 +10,7 @@ import { ChoiceBar } from '@/components/ChoiceBar';
 import { FormScroll } from '@/components/FormScroll';
 import { NavRow } from '@/components/NavRow';
 import { Text } from '@/components/AppText';
-import { SOURCES, availableSourceIds } from '@/lib/api/aggregator';
+import { SOURCES, availableSourceIds } from '@/lib/api/sources';
 import { FONT_SIZE_OPTIONS, type FontSizeId } from '@/lib/fontScale';
 import { APP_LOCALES, keyOf, type AppLocale } from '@/lib/i18n';
 import { useT } from '@/lib/i18n/useT';

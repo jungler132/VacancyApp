@@ -61,12 +61,14 @@ export function useJobsQuery() {
   const category = apiCategory(categories);
   const placeId = useAppSelector((state) => state.filters.extra.placeId);
   const feedStatus = useAppSelector((state) => selectActiveFeed(state).status);
+  const tourDone = useAppSelector((state) => state.onboarding.dismissed);
   const [allowFetch, setAllowFetch] = useState(false);
 
   useEffect(() => {
+    if (!tourDone) return undefined;
     const timer = setTimeout(() => setAllowFetch(true), 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [tourDone]);
 
   useEffect(() => {
     if (!allowFetch) return;

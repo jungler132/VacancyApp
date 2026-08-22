@@ -10,11 +10,8 @@ export const AdsHost = memo(function AdsHost() {
 
   useEffect(() => {
     let stop: (() => void) | undefined;
-    const timer = setTimeout(() => {
-      stop = startAds(() => premiumRef.current);
-    }, 2500);
+    stop = startAds(() => premiumRef.current);
     return () => {
-      clearTimeout(timer);
       stop?.();
     };
   }, []);

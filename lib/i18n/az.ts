@@ -184,7 +184,6 @@ export const az: Record<MsgId, string> = {
     'Lövhə profildedir, «Kanban» bölməsi. Ulduz kartı «Müraciət etdim»ə salır. Soldakı zolaqlardan çəkin: baxılır, müsahibə, test, təklif, imtina. Əl ilə də əlavə etmək olar.',
   'onboard.kanbanCard1': 'Frontend',
   'onboard.kanbanCard2': 'Support',
-  'onboard.next': 'İrəli',
   'onboard.gotIt': 'Aydındır',
   'onboard.done': 'Bir daha göstərmə',
   'settings.look': 'Görünüş',
