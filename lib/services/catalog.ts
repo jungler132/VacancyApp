@@ -15,20 +15,48 @@ export function toServiceMaster(profile: ServiceProfile, offers: ServiceOffer[],
   return { ...profile, offers: ranked, mine };
 }
 
-export function offerKindLabel(offer: Pick<ServiceOffer, 'kind' | 'customKind'>, labelOf: (id: string) => string): string {
-  return offer.customKind?.trim() || labelOf(offer.kind);
+export function offerKindLabel(
+  offer: Pick<ServiceOffer, 'kind' | 'customKind'>,
+  labelOf: (id: string) => string,
+  profileCustomKinds?: string[],
+): string {
+  const own = offer.customKind?.trim();
+  if (own) return own;
+  const extras = [...new Set((profileCustomKinds ?? []).map((item) => item.trim()).filter(Boolean))];
+  const base = offer.kind && offer.kind !== 'other' ? labelOf(offer.kind) : '';
+  return [base, ...extras].filter(Boolean).join(' · ') || labelOf(offer.kind);
+}
+
+export function masterKindsLabel(
+  master: Pick<ServiceProfile, 'kinds' | 'customKinds'>,
+  labelOf: (id: string) => string,
+): string {
+  return [...master.kinds.map(labelOf), ...(master.customKinds ?? []).map((item) => item.trim())]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+const kindSearchCache = new Map<string, string>();
+
+function kindSearchBlob(id: string): string {
+  const hit = kindSearchCache.get(id);
+  if (hit) return hit;
+  const blob = APP_LOCALES.map((locale) => t(locale, keyOf('kind', id))).join(' ').toLowerCase();
+  kindSearchCache.set(id, blob);
+  return blob;
 }
 
 export function masterHaystack(master: ServiceMaster): string {
-  const kinds = master.kinds
-    .flatMap((id) => APP_LOCALES.map((locale) => t(locale, keyOf('kind', id))))
-    .join(' ');
+  const kinds = master.kinds.map(kindSearchBlob).join(' ');
   const offers = master.offers.map((item) => `${item.title} ${item.description} ${item.customKind ?? ''}`).join(' ');
   return `${master.displayName} ${master.bio} ${master.address ?? ''} ${placeLabel(master.cityId, 'ru')} ${placeLabel(master.cityId, 'en')} ${placeLabel(master.cityId, 'az')} ${kinds} ${master.customKinds.join(' ')} ${offers}`.toLowerCase();
 }
 
 export function liveOffers(offers: ServiceOffer[]): ServiceOffer[] {
-  return offers.filter((item) => !item.archived);
+  for (const item of offers) {
+    if (item.archived) return offers.filter((entry) => !entry.archived);
+  }
+  return offers;
 }
 
 export function mergeCatalogMasters(
@@ -41,7 +69,13 @@ export function mergeCatalogMasters(
   for (const item of remote) {
     const mine = isMine(item.id);
     if (mine) ownOnRemote = true;
-    out.push(mine && own ? { ...own, id: item.id, mine: true } : { ...item, mine });
+    if (mine && own) {
+      out.push({ ...own, id: item.id, mine: true });
+    } else if (Boolean(item.mine) === mine) {
+      out.push(item);
+    } else {
+      out.push({ ...item, mine });
+    }
   }
   if (own && liveOffers(own.offers).length && !ownOnRemote) {
     out.unshift({ ...own, mine: true });
@@ -62,10 +96,14 @@ export function filterServiceMasters(
     if (placeId && !matchesPlaceFilter(master.cityId, master.address, placeId) && !catalogOffers.some((item) => matchesPlaceFilter(item.cityId || master.cityId, item.address || master.address, placeId))) {
       continue;
     }
-    const offers = kind === 'all' ? catalogOffers : catalogOffers.filter((item) => item.kind === kind);
-    const kindsMatch = kind === 'all' || master.kinds.includes(kind) || offers.length > 0;
+    const offers = kind === 'all' ? catalogOffers : catalogOffers.filter((item) => item.kind === kind || (kind === 'other' && Boolean(item.customKind)));
+    const kindsMatch =
+      kind === 'all' ||
+      master.kinds.includes(kind) ||
+      offers.length > 0 ||
+      (kind === 'other' && (master.customKinds ?? []).some((item) => item.trim()));
     if (!kindsMatch) continue;
-    const next = { ...master, offers };
+    const next = kind === 'all' && offers === master.offers ? master : { ...master, offers };
     if (needle && !masterHaystack(next).includes(needle)) continue;
     out.push(next);
   }

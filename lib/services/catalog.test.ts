@@ -105,6 +105,8 @@ describe('services catalog', () => {
   it('подписывает услугу своей категорией', () => {
     assert.equal(offerKindLabel({ kind: 'other', customKind: 'Сварка' }, (id) => id), 'Сварка');
     assert.equal(offerKindLabel({ kind: 'repair' }, (id) => id), 'repair');
+    assert.equal(offerKindLabel({ kind: 'other' }, (id) => id, ['Сварка']), 'Сварка');
+    assert.equal(offerKindLabel({ kind: 'repair' }, (id) => id, ['Сварка']), 'repair · Сварка');
   });
 
   it('берёт адрес и телефон из профиля если в услуге пусто', () => {

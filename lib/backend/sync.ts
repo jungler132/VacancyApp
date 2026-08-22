@@ -12,7 +12,7 @@ import { replaceFilters } from '@/lib/store/filtersSlice';
 import { replaceAlerts } from '@/lib/store/alertsSlice';
 import { replaceDisabledSources } from '@/lib/store/sourcesSlice';
 import { replaceVisits } from '@/lib/store/visitsSlice';
-import { setRemoteMasters } from '@/lib/store/servicesCatalogSlice';
+import { setRemoteMasters, settleCatalog } from '@/lib/store/servicesCatalogSlice';
 import { setAppPublic } from '@/lib/store/jobsSlice';
 import { parseFormat } from '@/lib/prefs';
 import { MAX_JOBS, MAX_OFFERS } from '@/lib/limits';
@@ -114,24 +114,59 @@ export async function leaveAccount(dispatch: Dispatch, getState: () => SyncState
 }
 
 let publicGen = 0;
+let lastCatalogStamp = '';
+let lastJobsStamp = '';
+
+function catalogStamp(masters: { id: string; updatedAt: string; avatarUri?: string; offers: { id: string; updatedAt: string }[] }[]): string {
+  return masters
+    .map((item) => `${item.id}:${item.updatedAt}:${item.avatarUri ?? ''}:${item.offers.map((offer) => offer.id + offer.updatedAt).join(',')}`)
+    .join('|');
+}
+
+function jobsStamp(jobs: Job[]): string {
+  return jobs.map((item) => `${item.id}:${item.publishedAt ?? ''}`).join('|');
+}
 
 export async function refreshPublic(dispatch: Dispatch, _userId?: string | null, force = false) {
   const now = Date.now();
   const ttl = lastPublicCount > 0 ? 5 * 60 * 1000 : 15 * 1000;
-  if (!force && now - lastPublic < ttl) return;
-  const gen = ++publicGen;
-  const [masters, jobs] = await Promise.all([fetchPublicCatalog(), fetchPublicJobs()]);
-  if (gen !== publicGen) return;
-  if (!masters.length && lastPublicCount > 0 && !force) {
-    lastPublic = Date.now();
-    dispatch(setAppPublic(jobs));
+  if (!force && now - lastPublic < ttl) {
+    dispatch(settleCatalog());
     return;
   }
-  lastPublic = Date.now();
-  lastPublicUser = _userId ?? null;
-  lastPublicCount = masters.length;
-  dispatch(setRemoteMasters(masters));
-  dispatch(setAppPublic(jobs));
+  const gen = ++publicGen;
+  try {
+    const [masters, jobs] = await Promise.all([fetchPublicCatalog(), fetchPublicJobs()]);
+    if (gen !== publicGen) return;
+    if (!masters.length && lastPublicCount > 0 && !force) {
+      lastPublic = Date.now();
+      const nextJobs = jobsStamp(jobs);
+      if (nextJobs !== lastJobsStamp) {
+        lastJobsStamp = nextJobs;
+        dispatch(setAppPublic(jobs));
+      }
+      dispatch(settleCatalog());
+      return;
+    }
+    lastPublic = Date.now();
+    lastPublicUser = _userId ?? null;
+    lastPublicCount = masters.length;
+    const nextCatalog = catalogStamp(masters);
+    const nextJobs = jobsStamp(jobs);
+    if (nextCatalog !== lastCatalogStamp) {
+      lastCatalogStamp = nextCatalog;
+      dispatch(setRemoteMasters(masters));
+    } else {
+      dispatch(settleCatalog());
+    }
+    if (nextJobs !== lastJobsStamp) {
+      lastJobsStamp = nextJobs;
+      dispatch(setAppPublic(jobs));
+    }
+  } catch (error) {
+    dispatch(settleCatalog());
+    throw error;
+  }
 }
 
 export async function pullAccount(dispatch: Dispatch, getState: () => SyncState) {

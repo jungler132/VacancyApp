@@ -9,7 +9,7 @@ export type ServicesCatalogState = {
 
 const initialState: ServicesCatalogState = {
   items: [],
-  ready: true,
+  ready: false,
 };
 
 const servicesCatalogSlice = createSlice({
@@ -18,9 +18,13 @@ const servicesCatalogSlice = createSlice({
   reducers: {
     setRemoteMasters(state, action: PayloadAction<ServiceMaster[]>) {
       state.items = action.payload;
+      state.ready = true;
+    },
+    settleCatalog(state) {
+      state.ready = true;
     },
   },
 });
 
-export const { setRemoteMasters } = servicesCatalogSlice.actions;
+export const { setRemoteMasters, settleCatalog } = servicesCatalogSlice.actions;
 export default servicesCatalogSlice.reducer;

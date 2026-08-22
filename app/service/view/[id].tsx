@@ -49,7 +49,7 @@ export default function ServiceOfferViewScreen() {
     [master, offer],
   );
   const place = offer && master ? formatPlaceLine(locale, offer.cityId || master.cityId, contact.address) : '';
-  const kind = offer ? offerKindLabel(offer, (item) => t(keyOf('kind', item))) : '';
+  const kind = offer ? offerKindLabel(offer, (item) => t(keyOf('kind', item)), master.customKinds) : '';
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: offer?.title || t('nav.offer') });

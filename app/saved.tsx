@@ -62,6 +62,11 @@ const SavedServiceRow = memo(function SavedServiceRow({ item }: { item: SavedSer
   );
 });
 
+const SavedSep = memo(function SavedSep() {
+  const styles = useThemedStyles(savedStyles);
+  return <View style={styles.sep} />;
+});
+
 export default function SavedScreen() {
   const t = useT();
   const styles = useThemedStyles(savedStyles);
@@ -142,9 +147,10 @@ export default function SavedScreen() {
           keyExtractor={keyExtractor}
           renderItem={renderJob}
           contentContainerStyle={styles.list}
-          initialNumToRender={8}
-          maxToRenderPerBatch={8}
-          windowSize={7}
+          initialNumToRender={6}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          updateCellsBatchingPeriod={50}
           ListEmptyComponent={
             <EmptyState
               title={t('common.empty')}
@@ -158,10 +164,11 @@ export default function SavedScreen() {
           keyExtractor={serviceKey}
           renderItem={renderService}
           contentContainerStyle={styles.list}
-          initialNumToRender={8}
-          maxToRenderPerBatch={8}
+          initialNumToRender={6}
+          maxToRenderPerBatch={4}
           windowSize={5}
-          ItemSeparatorComponent={() => <View style={styles.sep} />}
+          updateCellsBatchingPeriod={50}
+          ItemSeparatorComponent={SavedSep}
           ListEmptyComponent={<EmptyState title={t('common.empty')} subtitle={t('saved.emptyServices')} />}
         />
       ) : (
@@ -170,9 +177,10 @@ export default function SavedScreen() {
           keyExtractor={resourceKey}
           renderItem={renderResource}
           contentContainerStyle={styles.list}
-          initialNumToRender={8}
-          maxToRenderPerBatch={8}
+          initialNumToRender={6}
+          maxToRenderPerBatch={4}
           windowSize={5}
+          updateCellsBatchingPeriod={50}
           ListEmptyComponent={<EmptyState title={t('common.empty')} subtitle={t('saved.emptyResources')} />}
         />
       )}

@@ -9,6 +9,7 @@ import { formatServiceSchedule } from '@/lib/services/hours';
 import type { ServiceMaster } from '@/lib/services/types';
 import { ToneCard } from '@/components/ToneCard';
 import { formatPlaceLine } from '@/lib/places';
+import { masterKindsLabel } from '@/lib/services/catalog';
 import { fonts, useThemedStyles, type ColorSchemeName, type ThemeColors } from '@/lib/theme';
 import { keyOf } from '@/lib/i18n';
 import { useLocale, useT } from '@/lib/i18n/useT';
@@ -27,9 +28,7 @@ export const ServiceMasterCard = memo(function ServiceMasterCard({
   const locale = useLocale();
   const dispatch = useAppDispatch();
   const styles = useThemedStyles(serviceMasterCardStyles);
-  const kinds = [...master.kinds.map((id) => t(keyOf('kind', id))), ...(master.customKinds ?? [])]
-    .filter(Boolean)
-    .join(' · ');
+  const kinds = masterKindsLabel(master, (id) => t(keyOf('kind', id)));
   const hours = formatServiceSchedule(master.hours, (id) => t(keyOf('week', id)), t('week.all'));
   const place = formatPlaceLine(locale, master.cityId, master.address);
   const count = master.offers.length;

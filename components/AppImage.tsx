@@ -1,14 +1,17 @@
 import { memo, useEffect, useState } from 'react';
-import { Image, type ImageStyle, type StyleProp } from 'react-native';
+import { type ImageStyle, type StyleProp } from 'react-native';
+import { Image } from 'expo-image';
 
 export const AppImage = memo(function AppImage({
   uri,
   style,
   onError,
+  contentFit = 'cover',
 }: {
   uri: string;
   style?: StyleProp<ImageStyle>;
   onError?: () => void;
+  contentFit?: 'cover' | 'contain';
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -22,8 +25,11 @@ export const AppImage = memo(function AppImage({
     <Image
       source={{ uri }}
       style={style}
-      resizeMode="cover"
-      resizeMethod="resize"
+      contentFit={contentFit}
+      cachePolicy="memory-disk"
+      recyclingKey={uri}
+      transition={0}
+      priority="low"
       onError={() => {
         setFailed(true);
         onError?.();

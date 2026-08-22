@@ -66,7 +66,7 @@ function OfferForm() {
   const insets = useSafeAreaInsets();
   const [currency, setCurrency] = useState(existing?.currency ?? 'RUB');
   const [kind, setKind] = useState<ServiceKindId>(existing?.kind ?? profile?.kinds[0] ?? 'other');
-  const [customKind, setCustomKind] = useState(existing?.customKind ?? '');
+  const [customKind, setCustomKind] = useState(existing?.customKind ?? profile?.customKinds?.[0] ?? '');
   const [featured, setFeatured] = useState(Boolean(existing?.featured));
   const [cityId, setCityId] = useState(contact.cityId);
   const [address, setAddress] = useState(contact.address);
@@ -82,7 +82,9 @@ function OfferForm() {
   }, [existing?.cityId, profile?.cityId]);
 
   const onKind = useCallback((next: string | number) => {
-    if (isServiceKindId(next)) setKind(next);
+    if (!isServiceKindId(next)) return;
+    setKind(next);
+    if (next !== 'other') setCustomKind('');
   }, []);
   const onCustomKindChip = useCallback((next: string | number) => {
     const name = String(next);
@@ -166,7 +168,7 @@ function OfferForm() {
             cityId: cityId || undefined,
             phone: phone.trim() || undefined,
             kind,
-            customKind: customKind.trim() || undefined,
+            customKind: customKind.trim() || profile?.customKinds?.[0] || undefined,
             featured: featured && isPremium,
             archived: existing?.archived,
             updatedAt: new Date().toISOString(),
@@ -183,7 +185,7 @@ function OfferForm() {
     } finally {
       setSaving(false);
     }
-  }, [address, cityId, currency, customKind, description, dispatch, existing?.archived, existing?.id, featured, images, isNew, isPremium, kind, limits.offers, negotiable, offers.length, phone, price, profile?.displayName, router, saving, store, t, title]);
+  }, [address, cityId, currency, customKind, description, dispatch, existing?.archived, existing?.id, featured, images, isNew, isPremium, kind, limits.offers, negotiable, offers.length, phone, price, profile?.customKinds, profile?.displayName, router, saving, store, t, title]);
 
   const onDelete = useCallback(() => {
     if (!existing) return;

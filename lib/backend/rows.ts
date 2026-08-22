@@ -1,4 +1,4 @@
-import { OWN_PROFILE_ID } from '@/lib/store/freelanceSlice';
+import { OWN_PROFILE_ID, parseCustomKinds } from '@/lib/store/freelanceSlice';
 import { asPlaceId } from '@/lib/places';
 import { DEFAULT_HOURS } from '@/lib/services/hours';
 import { isServiceKindId } from '@/lib/services/kinds';
@@ -85,8 +85,8 @@ export function profileFromRow(row: ProfileRow, own = false): ServiceProfile {
     photos: [],
     email: row.email,
     phone: row.phone,
-    kinds: (row.kinds ?? []) as ServiceProfile['kinds'],
-    customKinds: row.custom_kinds ?? [],
+    kinds: (row.kinds ?? []).filter(isServiceKindId),
+    customKinds: parseCustomKinds(row.custom_kinds),
     address: row.address || undefined,
     cityId: asPlaceId(row.city_id),
     hours: {

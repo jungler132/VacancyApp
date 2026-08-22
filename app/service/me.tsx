@@ -23,7 +23,7 @@ import { formatServiceSchedule, WORKDAYS } from '@/lib/services/hours';
 import { pickServiceImage } from '@/lib/services/images';
 import { SERVICE_KINDS } from '@/lib/services/kinds';
 import type { ServiceKindId, WeekdayId } from '@/lib/services/types';
-import { CUSTOM_KINDS_LIMIT, emptyProfile, saveProfile } from '@/lib/store/freelanceSlice';
+import { CUSTOM_KINDS_LIMIT, appendCustomKind, emptyProfile, saveProfile } from '@/lib/store/freelanceSlice';
 import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 import { selectOwnMaster } from '@/lib/store/selectors';
@@ -146,7 +146,7 @@ function ProfileForm() {
             avatarUri: nextAvatar,
             photos: own?.photos ?? [],
             kinds,
-            customKinds,
+            customKinds: appendCustomKind(customKinds, customKindDraft),
             hours: { open, close, days },
             updatedAt: new Date().toISOString(),
           }),
@@ -162,7 +162,7 @@ function ProfileForm() {
     } finally {
       setSaving(false);
     }
-  }, [address, anonymous, avatarUri, bio, cityId, close, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, saving, store, t, userId]);
+  }, [address, anonymous, avatarUri, bio, cityId, close, customKindDraft, customKinds, days, dispatch, displayName, email, kinds, open, own, phone, router, saving, store, t, userId]);
 
   return (
     <View style={formStyles.screen}>
@@ -208,6 +208,8 @@ function ProfileForm() {
           value={customKindDraft}
           onChangeText={setCustomKindDraft}
           placeholder={t('me.customKindPh')}
+          onSubmitEditing={addCustomKind}
+          returnKeyType="done"
         />
         <Pressable onPress={addCustomKind} hitSlop={8}>
           <Text style={styles.link}>{t('me.addKind')}</Text>

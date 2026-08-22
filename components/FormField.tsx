@@ -13,6 +13,8 @@ export const FormField = memo(function FormField({
   multiline,
   keyboardType,
   maxLength,
+  onSubmitEditing,
+  returnKeyType,
 }: {
   label: string;
   value: string;
@@ -21,6 +23,8 @@ export const FormField = memo(function FormField({
   multiline?: boolean;
   keyboardType?: TextInputProps['keyboardType'];
   maxLength?: number;
+  onSubmitEditing?: TextInputProps['onSubmitEditing'];
+  returnKeyType?: TextInputProps['returnKeyType'];
 }) {
   const colors = useColors();
   const formStyles = useFormStyles();
@@ -41,6 +45,9 @@ export const FormField = memo(function FormField({
         multiline={multiline}
         keyboardType={keyboardType}
         maxLength={maxLength}
+        onSubmitEditing={onSubmitEditing}
+        returnKeyType={returnKeyType}
+        blurOnSubmit={!multiline}
         autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
         textAlignVertical={multiline ? 'top' : 'center'}
       />

@@ -35,6 +35,10 @@ export default function TodayJobsScreen() {
       renderItem={renderItem}
       contentContainerStyle={styles.list}
       style={styles.screen}
+      initialNumToRender={6}
+      maxToRenderPerBatch={4}
+      windowSize={5}
+      updateCellsBatchingPeriod={50}
     />
   );
 }

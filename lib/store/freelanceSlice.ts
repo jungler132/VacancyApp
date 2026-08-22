@@ -73,6 +73,12 @@ function parseCustomKinds(raw: unknown): string[] {
   return out.slice(0, CUSTOM_KINDS_LIMIT);
 }
 
+export { parseCustomKinds };
+
+export function appendCustomKind(list: string[], draft: string): string[] {
+  return parseCustomKinds([...list, draft]);
+}
+
 export function parseProfile(raw: unknown): ServiceProfile | null {
   if (!raw || typeof raw !== 'object') return null;
   const row = raw as Partial<ServiceProfile>;

@@ -15,7 +15,7 @@ import { requestInterstitial } from '@/lib/ads';
 import { keyOf } from '@/lib/i18n';
 import { useLocale, useT } from '@/lib/i18n/useT';
 import { formatPlaceLine } from '@/lib/places';
-import { liveOffers, offerEditorHref, offerViewHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
+import { masterKindsLabel, liveOffers, offerEditorHref, offerViewHref, SERVICE_ME_HREF } from '@/lib/services/catalog';
 import { formatServiceSchedule } from '@/lib/services/hours';
 import { useLimits } from '@/lib/hooks/useLimits';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
@@ -50,7 +50,7 @@ export default function ServicePublicScreen() {
   );
   const kinds = useMemo(() => {
     if (!master) return '';
-    return [...master.kinds.map((id) => t(keyOf('kind', id))), ...(master.customKinds ?? [])].filter(Boolean).join(' · ');
+    return masterKindsLabel(master, (id) => t(keyOf('kind', id)));
   }, [master, t]);
   const gallery = useMemo(
     () => (master?.photos ?? []).filter((uri) => uri && uri !== master?.avatarUri),

@@ -1,6 +1,5 @@
 import { memo, useCallback, useRef, useState } from 'react';
 import {
-  Image,
   Modal,
   Platform,
   Pressable,
@@ -8,6 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import PagerView from 'react-native-pager-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -82,7 +82,15 @@ const ZoomPage = memo(function ZoomPage({ uri, width, height }: { uri: string; w
         bouncesZoom
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}>
-        <Image source={{ uri }} style={{ width, height }} resizeMode="contain" />
+        <Image
+          source={{ uri }}
+          style={{ width, height }}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          recyclingKey={uri}
+          transition={0}
+          priority="high"
+        />
       </ScrollView>
     );
   }
@@ -134,9 +142,15 @@ const AndroidZoom = memo(function AndroidZoom({
       onResponderMove={onTouchMove}>
       <Image
         source={{ uri }}
-        resizeMode="contain"
+        contentFit="contain"
+        cachePolicy="memory-disk"
+        recyclingKey={uri}
+        transition={0}
+        priority="high"
         style={{ width, height, transform: [{ scale }] }}
       />
     </View>
   );
 });
+
+export default PhotoLightbox;

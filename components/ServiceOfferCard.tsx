@@ -33,7 +33,7 @@ export const ServiceOfferCard = memo(function ServiceOfferCard({
   const dispatch = useAppDispatch();
   const styles = useThemedStyles(serviceOfferCardStyles);
   const contact = offerContact(offer, profile);
-  const kind = offerKindLabel(offer, (id) => t(keyOf('kind', id)));
+  const kind = offerKindLabel(offer, (id) => t(keyOf('kind', id)), profile.customKinds);
   const extras = offer.images.slice(1);
   const canSave = profile.id !== OWN_PROFILE_ID;
   const place = formatPlaceLine(locale, offer.cityId || profile.cityId, contact.address);

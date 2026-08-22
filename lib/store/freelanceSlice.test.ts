@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import reducer, { OWN_PROFILE_ID, applyRemoteMedia, parseFreelance, parseOffer, saveProfile, setOfferArchived, upsertOffer } from './freelanceSlice';
+import reducer, { OWN_PROFILE_ID, appendCustomKind, applyRemoteMedia, parseFreelance, parseOffer, saveProfile, setOfferArchived, upsertOffer } from './freelanceSlice';
 
 describe('freelance persist', () => {
   it('отбрасывает профиль без имени и кривые услуги', () => {
@@ -94,6 +94,11 @@ describe('freelance persist', () => {
     );
     assert.equal(saved.offers[0]?.customKind, 'Сварка');
     assert.equal(saved.offers[0]?.featured, true);
+  });
+
+  it('добавляет черновик своей категории в список', () => {
+    assert.deepEqual(appendCustomKind(['Сварка'], '  няня  '), ['Сварка', 'няня']);
+    assert.deepEqual(appendCustomKind(['Сварка'], 'сварка'), ['Сварка']);
   });
 
   it('читает архив из persist и переключает флаг', () => {

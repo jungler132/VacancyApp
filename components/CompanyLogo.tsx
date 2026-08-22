@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
+import { Image } from 'expo-image';
 
 import { normalizeLogoUrl } from '@/lib/logo';
 import { useThemedStyles, type ThemeColors } from '@/lib/theme';
@@ -31,17 +32,17 @@ export const CompanyLogo = memo(function CompanyLogo({
       style={[styles.wrap, box, showCompany ? styles.company : styles.app]}
       accessibilityRole="image"
       accessibilityLabel={name}>
-      {showCompany ? (
-        <Image
-          source={{ uri: src }}
-          style={styles.image}
-          resizeMode="contain"
-          onError={() => setFailed(true)}
-          accessibilityIgnoresInvertColors
-        />
-      ) : (
-        <Image source={APP_ICON} style={styles.image} resizeMode="cover" accessibilityIgnoresInvertColors />
-      )}
+      <Image
+        source={showCompany ? { uri: src } : APP_ICON}
+        style={styles.image}
+        contentFit={showCompany ? 'contain' : 'cover'}
+        cachePolicy="memory-disk"
+        recyclingKey={showCompany ? src : 'app-icon'}
+        transition={0}
+        priority="low"
+        onError={() => setFailed(true)}
+        accessibilityIgnoresInvertColors
+      />
     </View>
   );
 });
