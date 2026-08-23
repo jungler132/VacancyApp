@@ -10,6 +10,11 @@ describe('normalizeLogoUrl', () => {
     assert.equal(normalizeLogoUrl('http://cdn.example.com/a.png'), 'https://cdn.example.com/a.png');
   });
 
+  it('принимает локальный файл для своего логотипа', () => {
+    assert.equal(normalizeLogoUrl('file:///data/user/0/app/cache/logo.jpg'), 'file:///data/user/0/app/cache/logo.jpg');
+    assert.equal(normalizeLogoUrl('content://media/external/images/1'), 'content://media/external/images/1');
+  });
+
   it('отбрасывает мусор', () => {
     assert.equal(normalizeLogoUrl(''), undefined);
     assert.equal(normalizeLogoUrl('not-a-url'), undefined);

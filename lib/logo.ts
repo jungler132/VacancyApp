@@ -5,6 +5,7 @@ export function normalizeLogoUrl(value?: string | null): string | undefined {
   const raw = String(value ?? '').trim();
   if (!raw || raw.length > 800) return undefined;
   if (raw.startsWith('data:image/')) return raw;
+  if (/^(file|content):\/\//i.test(raw)) return raw;
   const url = raw.startsWith('//') ? `https:${raw}` : raw.startsWith('http://') ? `https://${raw.slice(7)}` : raw;
   if (!/^https:\/\//i.test(url)) return undefined;
   return url;

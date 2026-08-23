@@ -1,6 +1,9 @@
 export const INTERSTITIAL_COOLDOWN_MS = 90_000;
 export const INTERSTITIAL_EVERY_N = 3;
 
+/** Bottom banner above the tab bar. Set false for store screenshots. */
+export const TAB_BANNER_ENABLED = true;
+
 export const AD_KEYWORDS = ['jobs', 'career', 'employment', 'vacancy', 'hiring'];
 
 const TEST_INTERSTITIAL = 'ca-app-pub-3940256099942544/1033173712';

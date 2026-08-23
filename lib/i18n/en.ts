@@ -442,6 +442,7 @@ export const en: Record<MsgId, string> = {
   'company.save': 'Save',
   'company.needName': 'Enter a name.',
   'company.saving': 'Saving company…',
+  'company.logoFail': 'Could not upload the logo. Check the network and save again.',
   'me.lead': 'Your storefront: name, contacts and service types. Saving binds this page to the email you signed in with.',
   'me.leadGuest': 'You are a guest — this page stays on this phone. Sign in from Profile to sync it.',
   'me.avatar': 'Avatar from gallery',

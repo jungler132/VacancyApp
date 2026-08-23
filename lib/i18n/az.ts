@@ -442,6 +442,7 @@ export const az: Record<MsgId, string> = {
   'company.save': 'Saxla',
   'company.needName': 'Ad yazın.',
   'company.saving': 'Şirkət saxlanılır…',
+  'company.logoFail': 'Loqo yüklənmədi. Şəbəkəni yoxlayın və yenidən saxlayın.',
   'me.lead': 'Özünəməşğul vitrini: ad, əlaqə və xidmət növləri. Saxlama səhifəni daxil olduğunuz e-poçta bağlayır.',
   'me.leadGuest': 'İndi qonaqsınız — səhifə yalnız bu telefondadır. Buluda yazmaq üçün profildən daxil olun.',
   'me.avatar': 'Qalereyadan avatar',

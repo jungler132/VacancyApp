@@ -119,7 +119,6 @@ function AfterPaintHosts() {
       <BackendHost />
       <AdsHost />
       <PaywallHost />
-      <FilterSheetHost />
       <SyncOverlayHost />
       <AppNoticeHost />
     </>
@@ -158,6 +157,7 @@ function AppBody({ onPainted }: { onPainted: () => void }) {
       {showApp ? (
         <>
           <Navigation />
+          <FilterSheetHost />
           {shellReady ? <AfterPaintHosts /> : null}
         </>
       ) : null}

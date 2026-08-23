@@ -192,6 +192,7 @@ export async function pullAccount(dispatch: Dispatch, getState: () => SyncState)
   }
 
   const localAvatar = getState().freelance.profile?.avatarUri;
+  const localLogo = getState().company?.logoUri;
   const remoteProfile = remote.profile ? profileFromRow(remote.profile, true) : null;
   if (remoteProfile) {
     remoteProfile.avatarUri = preferMediaUri(remoteProfile.avatarUri, localAvatar);
@@ -219,7 +220,7 @@ export async function pullAccount(dispatch: Dispatch, getState: () => SyncState)
       replaceCompany({
         name: remote.profile?.company_name ?? '',
         about: remote.profile?.company_about ?? '',
-        logoUri: remote.profile?.company_logo || undefined,
+        logoUri: preferMediaUri(remote.profile?.company_logo || undefined, localLogo),
       }),
     );
   });
@@ -295,7 +296,10 @@ async function pushAccountInner(state: SyncState, dispatch?: Dispatch) {
   if (avatar && !isRemoteUri(avatar)) avatar = await uploadMedia(userId, avatar, 'avatar', 'main');
   if (profile?.avatarUri && avatar && !isRemoteUri(avatar)) throw new Error('avatar upload failed');
   let companyLogo = state.company?.logoUri;
-  if (companyLogo) companyLogo = await uploadMedia(userId, companyLogo, 'company', 'logo');
+  if (companyLogo && !isRemoteUri(companyLogo)) companyLogo = await uploadMedia(userId, companyLogo, 'company', 'logo');
+  if (state.company?.logoUri && !isRemoteUri(state.company.logoUri) && (!companyLogo || !isRemoteUri(companyLogo))) {
+    throw new Error('company logo upload failed');
+  }
   const uploadedOffers: ServiceOffer[] = [];
   for (const offer of offers) {
     uploadedOffers.push({ ...offer, images: await uploadMany(userId, offer.images, `offers/${offer.id}`) });

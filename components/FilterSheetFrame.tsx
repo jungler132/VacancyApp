@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -39,6 +39,10 @@ export const FilterSheetFrame = memo(function FilterSheetFrame({
   const keyboard = useKeyboardInset();
   const windowH = Dimensions.get('window').height;
   const sheetMax = open && keyboard ? Math.max(280, windowH - keyboard - 12) : undefined;
+  const scrollMax = useMemo(() => {
+    const cap = typeof sheetMax === 'number' ? sheetMax : windowH * 0.82;
+    return Math.max(160, cap - 168);
+  }, [sheetMax, windowH]);
   const colors = useColors();
   const styles = useThemedStyles(filterSheetFrameStyles);
   const progress = useSharedValue(0);
@@ -83,9 +87,10 @@ export const FilterSheetFrame = memo(function FilterSheetFrame({
         </View>
         <FormScroll
           active={open}
+          fill={false}
           padForKeyboard={false}
           showsVerticalScrollIndicator={false}
-          style={{ flexGrow: 0, flexShrink: 1 }}>
+          style={{ maxHeight: scrollMax }}>
           {children}
         </FormScroll>
         {footer}

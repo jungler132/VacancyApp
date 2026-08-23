@@ -4,10 +4,12 @@ import { useRouter } from 'expo-router';
 
 import { FormField, useFormStyles } from '@/components/FormField';
 import { FormScroll } from '@/components/FormScroll';
-import { ServiceAvatar } from '@/components/ServiceAvatar';
+import { CompanyLogo } from '@/components/CompanyLogo';
 import { runWithOverlay } from '@/components/SyncOverlay';
 import { Text } from '@/components/AppText';
 import { flushAccount } from '@/lib/backend/sync';
+import { isRemoteUri } from '@/lib/backend/merge';
+import { uploadMedia } from '@/lib/backend/storage';
 import { useT } from '@/lib/i18n/useT';
 import { pickServiceImage } from '@/lib/services/images';
 import { saveCompany } from '@/lib/store/companySlice';
@@ -30,6 +32,7 @@ function CompanyForm() {
   const styles = useThemedStyles(companyMeStyles);
   const company = useAppSelector((state) => state.company);
   const userId = useAppSelector((state) => state.auth.userId);
+  const anonymous = useAppSelector((state) => state.auth.anonymous);
   const [name, setName] = useState(company.name);
   const [about, setAbout] = useState(company.about);
   const [logoUri, setLogoUri] = useState(company.logoUri);
@@ -52,7 +55,16 @@ function CompanyForm() {
     setNotice('');
     try {
       await runWithOverlay(t('company.saving'), async () => {
-        dispatch(saveCompany({ name: next, about: about.trim(), logoUri }));
+        let nextLogo = logoUri;
+        if (userId && !anonymous && nextLogo && !isRemoteUri(nextLogo)) {
+          try {
+            nextLogo = await uploadMedia(userId, nextLogo, 'company', 'logo');
+          } catch {
+            setNotice(t('company.logoFail'));
+            return;
+          }
+        }
+        dispatch(saveCompany({ name: next, about: about.trim(), logoUri: nextLogo }));
         try {
           await flushAccount(() => store.getState(), dispatch);
         } catch {
@@ -64,14 +76,14 @@ function CompanyForm() {
     } finally {
       setSaving(false);
     }
-  }, [about, dispatch, logoUri, name, router, saving, store, t]);
+  }, [about, anonymous, dispatch, logoUri, name, router, saving, store, t, userId]);
 
   return (
     <View style={formStyles.screen}>
       <FormScroll contentContainerStyle={formStyles.content}>
         <Text style={formStyles.lead}>{t(userId ? 'company.lead' : 'company.leadGuest')}</Text>
         <Pressable onPress={pickLogo} style={styles.avatarWrap}>
-          <ServiceAvatar uri={logoUri} name={name || t('create.company')} size={88} />
+          <CompanyLogo uri={logoUri} name={name || t('create.company')} size={88} />
           <Text style={styles.avatarHint}>{t('company.logo')}</Text>
         </Pressable>
         <FormField label={t('company.name')} value={name} onChangeText={setName} placeholder={t('company.namePh')} />

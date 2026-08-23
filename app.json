@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vakano",
     "slug": "Vakano",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "vakano",
@@ -14,7 +14,7 @@
     },
     "android": {
       "package": "app.vakano.jobs",
-      "versionCode": 1,
+      "versionCode": 3,
       "backgroundColor": "#00236f",
       "userInterfaceStyle": "automatic",
       "icon": "./assets/images/icon.png",

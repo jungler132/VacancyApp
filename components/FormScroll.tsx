@@ -23,9 +23,10 @@ export function FormScroll({
   style,
   active = true,
   padForKeyboard = true,
+  fill = true,
   onScroll,
   ...rest
-}: ScrollViewProps & { children: ReactNode; active?: boolean; padForKeyboard?: boolean }) {
+}: ScrollViewProps & { children: ReactNode; active?: boolean; padForKeyboard?: boolean; fill?: boolean }) {
   const ref = useRef<ScrollView>(null);
   const offsetY = useRef(0);
   const inset = useKeyboardInset();
@@ -66,7 +67,7 @@ export function FormScroll({
     <ScrollView
       ref={ref}
       {...rest}
-      style={[{ flex: 1 }, style]}
+      style={[fill ? { flex: 1 } : null, style]}
       keyboardShouldPersistTaps="always"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
