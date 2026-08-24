@@ -149,6 +149,14 @@ export const STATS_HREF = '/stats' as unknown as Href;
 export const SAVED_HREF = '/saved' as unknown as Href;
 export const PIPELINE_HREF = '/pipeline' as unknown as Href;
 export const PIPELINE_ADD_HREF = '/pipeline/add' as unknown as Href;
+
+export function jobCreateHref(id?: string): Href {
+  return (id ? { pathname: '/job/create', params: { id } } : '/job/create') as unknown as Href;
+}
+
+export function pipelineAddHref(id?: string): Href {
+  return (id ? { pathname: '/pipeline/add', params: { id } } : '/pipeline/add') as unknown as Href;
+}
 export const PREFS_HREF = '/prefs' as unknown as Href;
 export const TODAY_HREF = '/today' as unknown as Href;
 export const SETTINGS_HREF = '/settings' as unknown as Href;

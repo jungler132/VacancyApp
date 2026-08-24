@@ -2,8 +2,7 @@ import type { Job, SearchParams } from '../../types';
 import { CIS_AREAS, buildQuery } from '../../catalog';
 import { excerptOf, formatSalary, htmlToText, stripHtml, toPublishedAt } from '../../format';
 import { inferPlaceId } from '../../places';
-import { fetchJson } from '../../http';
-import { SUPPORT_EMAIL } from '@/lib/support';
+import { fetchHhApi } from '../hhProxy';
 
 type HhSalary = { from?: number | null; to?: number | null; currency?: string | null };
 type HhVacancy = {
@@ -22,12 +21,6 @@ type HhVacancy = {
 };
 
 type HhSearch = { items?: HhVacancy[]; pages?: number };
-
-const HOSTS = ['https://api.hh.ru'];
-const HH_HEADERS = {
-  'User-Agent': `WorklyJobs/1.0 (${SUPPORT_EMAIL})`,
-  'HH-User-Agent': `WorklyJobs/1.0 (${SUPPORT_EMAIL})`,
-};
 
 type HhBoard = {
   id: 'hh' | 'hhaz';
@@ -48,17 +41,14 @@ export function hhVacancyId(id: string): string {
 
 async function searchHh(params: SearchParams, board: HhBoard): Promise<Job[]> {
   const text = buildQuery(params.query, params.category, board.lang);
-  const url = new URL(`${HOSTS[0]}/vacancies`);
-  if (text) url.searchParams.set('text', text);
-  url.searchParams.set('per_page', '25');
-  url.searchParams.set('page', String(params.page));
-  url.searchParams.set('order_by', 'publication_time');
-  for (const area of board.areas) url.searchParams.append('area', area);
+  const query = new URLSearchParams();
+  if (text) query.set('text', text);
+  query.set('per_page', '25');
+  query.set('page', String(params.page));
+  query.set('order_by', 'publication_time');
+  for (const area of board.areas) query.append('area', area);
 
-  const data = await fetchJson<HhSearch>(url.toString(), {
-    signal: params.signal,
-    headers: HH_HEADERS,
-  });
+  const data = await fetchHhApi<HhSearch>('search', query, params.signal);
 
   return (data.items ?? []).map((item) => {
     const snippet = [item.snippet?.responsibility, item.snippet?.requirement]
@@ -110,7 +100,7 @@ export async function searchHeadHunterAz(params: SearchParams): Promise<Job[]> {
 }
 
 export async function fetchHeadHunterDetails(vacancyId: string, signal?: AbortSignal): Promise<Partial<Job>> {
-  const data = await fetchJson<{
+  const data = await fetchHhApi<{
     description?: string;
     salary?: HhSalary | null;
     name?: string;
@@ -120,10 +110,7 @@ export async function fetchHeadHunterDetails(vacancyId: string, signal?: AbortSi
     schedule?: { name?: string };
     employment?: { name?: string };
     experience?: { name?: string };
-  }>(`https://api.hh.ru/vacancies/${vacancyId}`, {
-    signal,
-    headers: HH_HEADERS,
-  });
+  }>('details', new URLSearchParams({ id: vacancyId }), signal);
   return {
     title: data.name,
     company: data.employer?.name,

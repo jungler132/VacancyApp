@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { nextApplyStatus } from './apply';
-import { jobsForStatus, makeTrackedJob, pipelineStats, sourceNameFromUrl } from './pipeline';
+import { jobsForStatus, makeTrackedJob, patchTrackedJob, pipelineStats, sourceNameFromUrl } from './pipeline';
 
 describe('pipeline', () => {
   it('собирает вакансию вручную и читает источник из ссылки', () => {
@@ -16,6 +16,17 @@ describe('pipeline', () => {
     assert.equal(job.url, 'https://linkedin.com/jobs/view/1');
     assert.equal(job.sourceName, 'linkedin.com');
     assert.equal(sourceNameFromUrl(''), 'Manual');
+    const patched = patchTrackedJob(job, {
+      title: 'RN Dev',
+      company: 'Nova',
+      url: 'https://hh.ru/vacancy/1',
+      description: 'онсайт, 3 дня',
+    });
+    assert.equal(patched.id, job.id);
+    assert.equal(patched.title, 'RN Dev');
+    assert.equal(patched.company, 'Nova');
+    assert.equal(patched.sourceName, 'hh.ru');
+    assert.equal(patched.description, 'онсайт, 3 дня');
   });
 
   it('считает воронку за месяц и лучший источник', () => {

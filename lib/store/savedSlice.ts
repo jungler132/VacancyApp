@@ -113,6 +113,15 @@ const savedSlice = createSlice({
       state.statuses[job.id] = status;
       state.statusAt[job.id] = new Date().toISOString();
     },
+    patchSavedJob(state, action: PayloadAction<Job>) {
+      const next = action.payload;
+      const index = state.items.findIndex((item) => item.id === next.id);
+      if (index < 0) {
+        state.items = [next, ...state.items];
+        return;
+      }
+      state.items[index] = { ...state.items[index], ...next, id: next.id };
+    },
     replaceSaved(state, action: PayloadAction<SavedPersist>) {
       const next = parseSavedPersist(action.payload);
       state.items = next.items;
@@ -133,7 +142,7 @@ const savedSlice = createSlice({
   },
 });
 
-export const { toggleSaved, setApplyStatus, replaceSaved } = savedSlice.actions;
+export const { toggleSaved, setApplyStatus, patchSavedJob, replaceSaved } = savedSlice.actions;
 export default savedSlice.reducer;
 
 export function persistSaved(

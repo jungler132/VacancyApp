@@ -9,7 +9,7 @@ import jobsReducer, {
   pruneUnreferencedJobs,
   rememberJobs,
 } from './jobsSlice';
-import savedReducer, { hydrateSaved, persistSaved, replaceSaved, setApplyStatus, toggleSaved } from './savedSlice';
+import savedReducer, { hydrateSaved, persistSaved, patchSavedJob, replaceSaved, setApplyStatus, toggleSaved } from './savedSlice';
 import savedCatalogReducer, {
   hydrateSavedCatalog,
   persistSavedCatalog,
@@ -144,14 +144,22 @@ listener.startListening({
 });
 
 listener.startListening({
-  matcher: isAnyOf(toggleSaved, setApplyStatus, hydrateSaved.fulfilled, replaceSaved),
+  matcher: isAnyOf(toggleSaved, setApplyStatus, patchSavedJob, hydrateSaved.fulfilled, replaceSaved),
   effect: async (action, listenerApi) => {
     const saved = (listenerApi.getState() as RootState).saved;
     listenerApi.dispatch(rememberJobs(saved.items));
-    if (toggleSaved.match(action) || setApplyStatus.match(action) || replaceSaved.match(action)) {
+    if (
+      toggleSaved.match(action) ||
+      setApplyStatus.match(action) ||
+      patchSavedJob.match(action) ||
+      replaceSaved.match(action)
+    ) {
       await persistSaved(saved.items, saved.statuses, saved.statusAt);
     }
-    if ((toggleSaved.match(action) || setApplyStatus.match(action)) && canPush(listenerApi.getState() as RootState)) {
+    if (
+      (toggleSaved.match(action) || setApplyStatus.match(action) || patchSavedJob.match(action)) &&
+      canPush(listenerApi.getState() as RootState)
+    ) {
       queuePush(() => listenerApi.getState() as RootState, listenerApi.dispatch);
     }
   },

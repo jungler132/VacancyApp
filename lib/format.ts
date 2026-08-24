@@ -440,6 +440,19 @@ export function salaryAmount(salary?: string): number | null {
   return Math.max(...values);
 }
 
+export function salaryFormParts(salary?: string, fallbackCurrency = 'RUB'): { amount: string; currency: string } {
+  const text = String(salary ?? '').trim();
+  const amount = salaryAmount(text);
+  let currency = fallbackCurrency;
+  for (const item of SALARY_CURRENCIES) {
+    if (text.includes(item.label) || new RegExp(`\\b${item.id}\\b`, 'i').test(text)) {
+      currency = item.id;
+      break;
+    }
+  }
+  return { amount: amount != null ? String(Math.round(amount)) : '', currency };
+}
+
 export function jobTags(job: {
   remote?: boolean;
   employment?: string;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { ChipWrap } from '@/components/ChipWrap';
 import { CompanyLogo } from '@/components/CompanyLogo';
@@ -9,7 +9,7 @@ import { FormField, useFormStyles } from '@/components/FormField';
 import { FormScroll } from '@/components/FormScroll';
 import { Text } from '@/components/AppText';
 import { CATEGORIES } from '@/lib/catalog';
-import { SALARY_CURRENCIES } from '@/lib/format';
+import { SALARY_CURRENCIES, salaryFormParts } from '@/lib/format';
 import { keyOf } from '@/lib/i18n';
 import { PlacePicker } from '@/components/PlacePicker';
 import { useLocale, useT } from '@/lib/i18n/useT';
@@ -22,6 +22,7 @@ import { saveCompany } from '@/lib/store/companySlice';
 import { buildLocalJob, upsertLocalJob } from '@/lib/store/localJobsSlice';
 import { jobHref } from '@/lib/jobRoute';
 import { pinViewedJob } from '@/lib/store/jobsSlice';
+import { patchSavedJob } from '@/lib/store/savedSlice';
 import { openPaywall } from '@/lib/store/premiumSlice';
 import { useAppDispatch, useAppSelector, useAppStore } from '@/lib/store/hooks';
 import type { CategoryId, JobTier } from '@/lib/types';
@@ -41,6 +42,12 @@ export default function CreateJobScreen() {
   const store = useAppStore();
   const formStyles = useFormStyles();
   const styles = useThemedStyles(createJobStyles);
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const editId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const existing = useAppSelector((state) =>
+    editId ? state.localJobs.items.find((item) => item.id === editId) : undefined,
+  );
+  const editing = Boolean(existing);
   const isPremium = useAppSelector((state) => state.premium.isPremium);
   const paywallOpen = useAppSelector((state) => state.premium.paywallOpen);
   const localCount = useAppSelector((state) => state.localJobs.items.length);
@@ -62,6 +69,26 @@ export default function CreateJobScreen() {
   const [experience, setExperience] = useState('');
   const [schedule, setSchedule] = useState('');
   const [notice, setNotice] = useState('');
+  const filled = useRef(false);
+
+  useEffect(() => {
+    if (!existing || filled.current) return;
+    filled.current = true;
+    const parts = salaryFormParts(existing.salary);
+    setTitle(existing.title);
+    setCompanyName(existing.company);
+    setLogoUri(existing.companyLogo);
+    setCityId(existing.cityId ?? '');
+    setSalary(parts.amount);
+    setCurrency(parts.currency);
+    setContact(existing.contact ?? '');
+    setDescription(existing.description ?? '');
+    if (existing.category && existing.category !== 'all') setCategory(existing.category as CategoryId);
+    setRemote(Boolean(existing.remote));
+    setEmployment(existing.employment ?? '');
+    setExperience(existing.experience ?? '');
+    setSchedule(existing.schedule ?? '');
+  }, [existing]);
 
   const pendingPremium = useRef(false);
   const formRef = useRef({
@@ -118,7 +145,7 @@ export default function CreateJobScreen() {
         setNotice(t('create.needCity'));
         return;
       }
-      if (localCount >= limits.jobs) {
+      if (!editing && localCount >= limits.jobs) {
         setNotice(t('create.limit', { limit: limits.jobs }));
         return;
       }
@@ -131,6 +158,7 @@ export default function CreateJobScreen() {
         }),
       );
       const job = buildLocalJob({
+        id: existing?.id,
         title: nextTitle,
         company: nextCompany,
         companyLogo: form.logoUri,
@@ -145,9 +173,12 @@ export default function CreateJobScreen() {
         employment: form.employment || undefined,
         experience: form.experience || undefined,
         schedule: form.schedule || undefined,
-        tier,
+        tier: existing?.tier === 1 ? 1 : tier,
+        publishedAt: existing?.publishedAt,
+        archived: existing?.archived,
       });
       dispatch(upsertLocalJob(job));
+      dispatch(patchSavedJob(job));
       dispatch(pinViewedJob(job));
       try {
         await flushAccount(() => store.getState(), dispatch);
@@ -157,7 +188,7 @@ export default function CreateJobScreen() {
       }
       router.replace(jobHref(job.id));
     },
-    [dispatch, limits.jobs, locale, localCount, router, store, t],
+    [dispatch, editing, existing, limits.jobs, locale, localCount, router, store, t],
   );
 
   const onFree = useCallback(() => {
@@ -199,8 +230,9 @@ export default function CreateJobScreen() {
 
   return (
     <View style={formStyles.screen}>
+      <Stack.Screen options={{ title: t(editing ? 'nav.editJob' : 'nav.createJob') }} />
       <FormScroll contentContainerStyle={formStyles.content}>
-        <Text style={formStyles.lead}>{t('create.lead')}</Text>
+        <Text style={formStyles.lead}>{t(editing ? 'create.editLead' : 'create.lead')}</Text>
         <Text style={formStyles.label}>{t('create.preview')}</Text>
         <ToneCard tone="app" style={styles.preview}>
           <CompanyLogo uri={logoUri} name={previewCompany} size={48} />
@@ -319,11 +351,13 @@ export default function CreateJobScreen() {
         />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
         <Pressable onPress={onFree} style={({ pressed }) => [formStyles.primary, pressed && formStyles.pressed]}>
-          <Text style={formStyles.primaryText}>{t('create.publish')}</Text>
+          <Text style={formStyles.primaryText}>{t(editing ? 'create.save' : 'create.publish')}</Text>
         </Pressable>
-        <Pressable onPress={onPremium} style={({ pressed }) => [styles.premium, pressed && formStyles.pressed]}>
-          <Text style={styles.premiumText}>{t('create.premium')}</Text>
-        </Pressable>
+        {editing ? null : (
+          <Pressable onPress={onPremium} style={({ pressed }) => [styles.premium, pressed && formStyles.pressed]}>
+            <Text style={styles.premiumText}>{t('create.premium')}</Text>
+          </Pressable>
+        )}
       </FormScroll>
     </View>
   );

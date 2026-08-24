@@ -28,6 +28,8 @@ import { isHhJobId } from '@/lib/api/providers/hh';
 import { hydrateJob } from '@/lib/store/jobsSlice';
 import { removeLocalJob, setLocalJobArchived } from '@/lib/store/localJobsSlice';
 import { matchRouteJobId, parseJobIdParam } from '@/lib/jobRoute';
+import { isTrackedJob } from '@/lib/pipeline';
+import { jobCreateHref, pipelineAddHref } from '@/lib/services/catalog';
 import { selectIsSaved, selectJobById, selectViewedJob } from '@/lib/store/selectors';
 import { setApplyStatus, toggleSaved } from '@/lib/store/savedSlice';
 import { isAppJobId, isLocalJob, jobTier } from '@/lib/tiers';
@@ -293,6 +295,9 @@ export default function JobDetailsScreen() {
         </Button>
         {ownJob ? (
           <>
+            <Button mode="outlined" onPress={() => router.push(jobCreateHref(ownJob.id))} style={styles.secondary}>
+              {t('job.edit')}
+            </Button>
             <Button mode="outlined" onPress={onArchive} style={styles.secondary}>
               {ownJob.archived ? t('job.restore') : t('job.archive')}
             </Button>
@@ -300,6 +305,10 @@ export default function JobDetailsScreen() {
               {t('job.delete')}
             </Button>
           </>
+        ) : applyStatus || isTrackedJob(job) ? (
+          <Button mode="outlined" onPress={() => router.push(pipelineAddHref(job.id))} style={styles.secondary}>
+            {t('job.edit')}
+          </Button>
         ) : null}
       </ScrollView>
       {job.url ? (

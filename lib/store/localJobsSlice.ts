@@ -119,6 +119,7 @@ export const { upsertLocalJob, removeLocalJob, replaceLocalJobs, stampCompanyOnJ
 export default localJobsSlice.reducer;
 
 export function buildLocalJob(input: {
+  id?: string;
   title: string;
   company: string;
   companyLogo?: string;
@@ -134,11 +135,13 @@ export function buildLocalJob(input: {
   experience?: string;
   schedule?: string;
   tier: JobTier;
+  publishedAt?: string;
+  archived?: boolean;
 }): Job {
   const title = input.title.trim();
   const excerpt = input.description.trim().slice(0, 180);
   return {
-    id: makeLocalJobId(),
+    id: input.id?.trim() || makeLocalJobId(),
     sourceId: APP_SOURCE_ID,
     sourceName: 'Vakano',
     title,
@@ -152,12 +155,12 @@ export function buildLocalJob(input: {
     experience: input.experience?.trim() || undefined,
     schedule: input.schedule?.trim() || undefined,
     category: input.category,
-    publishedAt: new Date().toISOString(),
+    publishedAt: input.publishedAt || new Date().toISOString(),
     url: '',
     excerpt,
     description: input.description.trim(),
     contact: input.contact?.trim() || undefined,
     tier: input.tier === 1 ? 1 : 2,
-    archived: false,
+    archived: Boolean(input.archived),
   };
 }

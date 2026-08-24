@@ -44,6 +44,24 @@ export function makeTrackedJob(input: { title: string; company: string; url?: st
   };
 }
 
+export function patchTrackedJob(
+  job: Job,
+  input: { title: string; company: string; url?: string; description?: string },
+): Job {
+  const url = normalizeJobUrl(input.url ?? job.url ?? '');
+  const description = input.description?.trim();
+  const excerpt = description ? description.slice(0, 180) : job.excerpt;
+  return {
+    ...job,
+    title: input.title.trim() || job.title,
+    company: input.company.trim() || job.company,
+    url,
+    sourceName: sourceNameFromUrl(url, job.sourceName),
+    excerpt,
+    description: description || job.description,
+  };
+}
+
 export type PipelineStats = {
   total: number;
   replies: number;
