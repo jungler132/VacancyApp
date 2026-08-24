@@ -43,7 +43,7 @@ async function searchHh(params: SearchParams, board: HhBoard): Promise<Job[]> {
   const text = buildQuery(params.query, params.category, board.lang);
   const query = new URLSearchParams();
   if (text) query.set('text', text);
-  query.set('per_page', '25');
+  query.set('per_page', '20');
   query.set('page', String(params.page));
   query.set('order_by', 'publication_time');
   for (const area of board.areas) query.append('area', area);

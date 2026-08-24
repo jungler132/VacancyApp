@@ -39,6 +39,7 @@ export async function fetchHhApi<T>(
       const key = backendAnonKey();
       return await fetchJson<T>(hhProxyUrl(action, params), {
         signal,
+        timeoutMs: 20000,
         cacheTtlMs: HH_PROXY_CACHE_MS,
         headers: {
           Authorization: `Bearer ${key}`,

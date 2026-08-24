@@ -42,8 +42,8 @@ const FAST_CONCURRENCY = 4;
 const DUMP_CONCURRENCY = 2;
 
 const PROVIDERS: Provider[] = [
-  { id: 'hh', run: searchHeadHunter, regions: ['all', 'cis'], paginated: true, pageSize: 25 },
-  { id: 'hhaz', run: searchHeadHunterAz, regions: ['az'], paginated: true, pageSize: 25 },
+  { id: 'hh', run: searchHeadHunter, regions: ['all', 'cis'], paginated: true, pageSize: 20 },
+  { id: 'hhaz', run: searchHeadHunterAz, regions: ['az'], paginated: true, pageSize: 20 },
   { id: 'birjob', run: searchBirJob, regions: ['all', 'cis', 'az'] },
   { id: 'trudvsem', run: searchTrudvsem, regions: ['all', 'cis'], paginated: true, pageSize: 20 },
   { id: 'arbeitnow', run: searchArbeitnow, regions: ['all', 'europe', 'remote'] },
