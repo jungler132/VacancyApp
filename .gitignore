@@ -45,3 +45,5 @@ credentials.json
 # generated native folders
 /ios
 /android
+
+supabase/.temp/

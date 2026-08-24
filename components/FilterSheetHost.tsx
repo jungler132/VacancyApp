@@ -7,17 +7,14 @@ import { requestAlertPermission } from '@/lib/notifications';
 import { applySearch } from '@/lib/store/filtersSlice';
 import { removeSearch, saveSearch, toggleSearch } from '@/lib/store/alertsSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks';
-import { selectActiveFeed, selectVisibleCount, selectVisibleIds } from '@/lib/store/selectors';
+import { selectVisibleIds } from '@/lib/store/selectors';
 
 export const FilterSheetHost = memo(function FilterSheetHost() {
   const dispatch = useAppDispatch();
   const sheet = useFilterSheet();
   const locale = useAppSelector((state) => state.appearance.locale);
-  const count = useAppSelector(selectVisibleCount);
   const visibleIds = useAppSelector(selectVisibleIds);
-  const status = useAppSelector((state) => selectActiveFeed(state).status);
   const alerts = useAppSelector((state) => state.alerts.items);
-  const resultCount = status === 'loading' && count === 0 ? null : count;
   const snapshot = useMemo(
     () => ({
       query: sheet.query ?? '',
@@ -58,7 +55,6 @@ export const FilterSheetHost = memo(function FilterSheetHost() {
       region={sheet.region}
       categories={sheet.categories}
       extra={sheet.extra}
-      resultCount={resultCount}
       watching={watching}
       watches={watches}
       onToggleWatch={onToggleWatch}

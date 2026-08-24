@@ -80,7 +80,8 @@ async function search(params: URLSearchParams): Promise<Response> {
     return json(rssRes.status || 502, { errors: [{ type: 'forbidden' }], source: 'rss' });
   }
   const items = parseHhRss(xml);
-  const body = JSON.stringify({ items, found: items.length, pages: items.length >= 20 ? 40 : 1 });
+  // RSS не отдаёт total — не подставляем found=items.length (это ломает оценку «сколько на площадке»).
+  const body = JSON.stringify({ items, pages: items.length >= 20 ? 40 : 1 });
   store(key, 200, body);
   return new Response(body, {
     status: 200,

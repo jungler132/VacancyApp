@@ -19,13 +19,19 @@ import { searchUsaJobs } from './providers/usajobs';
 import { searchTheMuse } from './providers/themuse';
 import { searchWorkingNomads } from './providers/workingnomads';
 
+export type ProviderOutcome = Job[] | { jobs: Job[]; found?: number };
+
 type Provider = {
   id: string;
-  run: (params: SearchParams) => Promise<Job[]>;
+  run: (params: SearchParams) => Promise<ProviderOutcome>;
   regions: Array<SearchParams['region'] | 'any'>;
   paginated?: boolean;
   pageSize?: number;
 };
+
+function normalizeOutcome(out: ProviderOutcome): { jobs: Job[]; found?: number } {
+  return Array.isArray(out) ? { jobs: out } : out;
+}
 
 export type JobProvider = Provider;
 
@@ -35,6 +41,7 @@ export type SearchBatch = {
   error?: SourceError;
   exhausted?: boolean;
   pageFull?: boolean;
+  found?: number;
 };
 
 export const DUMP_SOURCE_IDS = new Set(['remoteok', 'birjob', 'workingnomads', 'arbeitnow']);
@@ -214,6 +221,9 @@ async function runSearchJobs(
   const seen = new Set<string>();
   const nextExhausted: string[] = [];
   let hasMore = false;
+  let boardTotal = 0;
+  let boardTotalKnown = false;
+  const boardBySource: Record<string, number> = {};
 
   const runProvider = async (provider: Provider) => {
     if (params.signal?.aborted) {
@@ -223,7 +233,8 @@ async function runSearchJobs(
     const started = Date.now();
     feedLog('source:start', { source: provider.id, dump: isDumpSource(provider.id) ? 1 : 0 });
     try {
-      const raw = await provider.run({ ...params, signal: params.signal });
+      const outcome = normalizeOutcome(await provider.run({ ...params, signal: params.signal }));
+      const raw = outcome.jobs;
       if (params.signal?.aborted) {
         feedLog('abort', { source: provider.id, ms: Date.now() - started });
         return;
@@ -240,6 +251,11 @@ async function runSearchJobs(
           sourceExhausted = true;
         }
       }
+      if (!params.page && typeof outcome.found === 'number' && outcome.found > 0) {
+        boardTotal += outcome.found;
+        boardTotalKnown = true;
+        boardBySource[sourceName(provider.id)] = outcome.found;
+      }
       const accepted = acceptJobs(raw, params, seen);
       jobs.push(...accepted);
       feedLog('source:ok', {
@@ -247,12 +263,14 @@ async function runSearchJobs(
         ms: Date.now() - started,
         raw: raw.length,
         keep: accepted.length,
+        found: outcome.found ?? '-',
       });
       onBatch?.({
         sourceId: provider.id,
         jobs: accepted,
         exhausted: sourceExhausted || undefined,
         pageFull: pageFull || undefined,
+        found: !params.page ? outcome.found : undefined,
       });
     } catch (reason) {
       const ms = Date.now() - started;
@@ -294,6 +312,8 @@ async function runSearchJobs(
     errors,
     hasMore,
     exhaustedSources: nextExhausted,
+    boardTotal: boardTotalKnown ? boardTotal : undefined,
+    boardBySource: boardTotalKnown ? boardBySource : undefined,
   };
 }
 

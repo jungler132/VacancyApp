@@ -1,4 +1,5 @@
 import type { Job, SearchParams } from '../../types';
+import { parseFound } from '../found';
 import { buildQuery } from '../../catalog';
 import { annotateSalary, excerptOf, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
@@ -15,11 +16,11 @@ type JoobleJob = {
   updated?: string;
 };
 
-type JoobleResponse = { jobs?: JoobleJob[] };
+type JoobleResponse = { jobs?: JoobleJob[]; totalCount?: number | string; total?: number | string };
 
-export async function searchJooble(params: SearchParams): Promise<Job[]> {
+export async function searchJooble(params: SearchParams): Promise<{ jobs: Job[]; found?: number }> {
   const key = process.env.EXPO_PUBLIC_JOOBLE_KEY;
-  if (!key) return [];
+  if (!key) return { jobs: [] };
 
   const lang = joobleLang(params.placeId, params.region);
   const location = joobleLocation(params.placeId, params.region);
@@ -35,7 +36,7 @@ export async function searchJooble(params: SearchParams): Promise<Job[]> {
     }),
   });
 
-  return (data.jobs ?? []).slice(0, 20).map((job, index) => ({
+  const jobs = (data.jobs ?? []).slice(0, 20).map((job, index) => ({
     id: `jooble:${job.link ?? index}`,
     sourceId: 'jooble',
     sourceName: 'Jooble',
@@ -50,4 +51,6 @@ export async function searchJooble(params: SearchParams): Promise<Job[]> {
     excerpt: excerptOf(job.snippet || job.title || ''),
     description: htmlToText(job.snippet),
   }));
+  const found = parseFound(data);
+  return { jobs, found };
 }

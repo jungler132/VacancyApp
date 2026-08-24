@@ -223,7 +223,12 @@ export default function JobDetailsScreen() {
       <ScrollView contentContainerStyle={[styles.content, job.url && styles.contentCta]}>
         <ToneCard tone={cardTone} style={styles.hero}>
           <View style={styles.logo}>
-            <CompanyLogo uri={job.companyLogo || logoFromApplyUrl(job.url)} name={company} size={80} />
+            <CompanyLogo
+              uri={job.companyLogo || logoFromApplyUrl(job.url)}
+              name={company}
+              size={80}
+              sourceId={job.sourceId}
+            />
           </View>
           {premium ? <PremiumBadge /> : null}
           <Text variant="headlineSmall" style={styles.headline}>

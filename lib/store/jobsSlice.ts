@@ -1,6 +1,6 @@
 import { createAction, createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import { isAbortError } from '@/lib/api/errors';
+import { SOURCES } from '@/lib/api/sources';
 import { feedLog } from '@/lib/feedLog';
 import { feedKeyOf, makeFeedKey } from '@/lib/feedKey';
 import { compareJobsByDate } from '@/lib/freshness';
@@ -23,6 +23,10 @@ export type FeedCache = {
   status: FeedStatus;
   requestId?: string;
   replacePending?: boolean;
+  /** Оценка «сколько на площадках по этому поиску» (сумма found). */
+  boardTotal?: number;
+  boardBySource?: Record<string, number>;
+  boardAcc?: boolean;
 };
 
 export type FetchFeedArgs = {
@@ -44,6 +48,7 @@ export type FeedBatchPayload = {
   exhausted?: boolean;
   pageFull?: boolean;
   sourceId?: string;
+  found?: number;
 };
 
 export function shouldFetchFeed(
@@ -126,6 +131,10 @@ function pruneById(state: JobsState, extraKeep: string[] = []) {
   }
 }
 
+function sourceName(id: string): string {
+  return SOURCES.find((item) => item.id === id)?.name ?? id;
+}
+
 function mergeExhausted(prev: string[] | undefined, next: string[]): string[] {
   if (!prev?.length) return next;
   const seen = new Set(prev);
@@ -191,6 +200,7 @@ export const fetchFeed = createAsyncThunk(
             exhausted: batch.exhausted,
             pageFull: batch.pageFull,
             sourceId: batch.sourceId,
+            found: batch.found,
           }),
         );
       },
@@ -273,7 +283,7 @@ const jobsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(ingestFeedBatch, (state, action) => {
-        const { key, requestId, mode, jobs, error, exhausted, pageFull, sourceId } = action.payload;
+        const { key, requestId, mode, jobs, error, exhausted, pageFull, sourceId, found } = action.payload;
         const feed = state.feeds[key];
         if (!feed || feed.requestId !== requestId) return;
         upsertJobs(state, jobs, mode === 'append');
@@ -284,6 +294,17 @@ const jobsSlice = createSlice({
         }
         if (exhausted && sourceId) feed.exhaustedSources = mergeExhausted(feed.exhaustedSources, [sourceId]);
         if (pageFull) feed.hasMore = true;
+        if (mode !== 'append' && typeof found === 'number' && found > 0 && sourceId) {
+          const name = sourceName(sourceId);
+          if (!feed.boardAcc) {
+            feed.boardAcc = true;
+            feed.boardTotal = found;
+            feed.boardBySource = { [name]: found };
+          } else {
+            feed.boardTotal = (feed.boardTotal ?? 0) + found;
+            feed.boardBySource = { ...feed.boardBySource, [name]: found };
+          }
+        }
         if (!jobs.length) return;
         if (feed.replacePending) {
           feed.ids = [];
@@ -312,11 +333,14 @@ const jobsSlice = createSlice({
           status,
           requestId: action.meta.requestId,
           replacePending: mode !== 'append',
+          boardTotal: current?.boardTotal,
+          boardBySource: current?.boardBySource,
+          boardAcc: false,
         };
         touchLru(state, key);
       })
       .addCase(fetchFeed.fulfilled, (state, action) => {
-        const { key, jobs, errors, hasMore, exhaustedSources, page, mode } = action.payload;
+        const { key, jobs, errors, hasMore, exhaustedSources, page, mode, boardTotal, boardBySource } = action.payload;
         const current = state.feeds[key];
         if (!current || current.requestId !== action.meta.requestId) return;
         upsertJobs(state, jobs, mode === 'append');
@@ -340,6 +364,9 @@ const jobsSlice = createSlice({
           status: ids.length === 0 && errors.length > 0 ? 'error' : 'ready',
           requestId: action.meta.requestId,
           replacePending: false,
+          boardTotal: mode === 'append' ? current.boardTotal : (boardTotal ?? current.boardTotal),
+          boardBySource: mode === 'append' ? current.boardBySource : (boardBySource ?? current.boardBySource),
+          boardAcc: false,
         };
         touchLru(state, key);
       })

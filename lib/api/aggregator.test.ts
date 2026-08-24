@@ -189,6 +189,40 @@ describe('searchJobs', () => {
     assert.deepEqual(result.exhaustedSources, []);
   });
 
+  it('складывает boardTotal из found и дампов', async () => {
+    const result = await searchJobs(params({ enabledSources: ['page', 'dump'] }), [
+      provider(
+        'page',
+        async () => ({
+          jobs: [job({ id: '1', title: 'A' }), job({ id: '2', title: 'B' }), job({ id: '3', title: 'C' })],
+          found: 1200,
+        }),
+        { paginated: true, pageSize: 3 },
+      ),
+      provider('dump', async () => [job({ id: 'd1', title: 'Dump 1' }), job({ id: 'd2', title: 'Dump 2' })]),
+    ]);
+    assert.equal(result.boardTotal, 1200);
+    assert.deepEqual(result.boardBySource, { page: 1200 });
+  });
+
+  it('без found у дампа не врёт boardTotal длиной страницы', async () => {
+    const result = await searchJobs(params({ enabledSources: ['dump'] }), [
+      provider('dump', async () => [job({ id: 'd1', title: 'Dump 1' }), job({ id: 'd2', title: 'Dump 2' })]),
+    ]);
+    assert.equal(result.boardTotal, undefined);
+  });
+
+  it('без found у paginated не врёт boardTotal из длины страницы', async () => {
+    const result = await searchJobs(params({ enabledSources: ['page'] }), [
+      provider(
+        'page',
+        async () => [job({ id: '1', title: 'A' }), job({ id: '2', title: 'B' }), job({ id: '3', title: 'C' })],
+        { paginated: true, pageSize: 3 },
+      ),
+    ]);
+    assert.equal(result.boardTotal, undefined);
+  });
+
   it('на следующей странице не вызывает exhausted-источник', async () => {
     const called: string[] = [];
     await searchJobs(params({ page: 1, enabledSources: ['dead', 'live'], exhaustedSources: ['dead'] }), [

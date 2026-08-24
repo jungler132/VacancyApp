@@ -3,6 +3,7 @@ import { CIS_AREAS, buildQuery } from '../../catalog';
 import { excerptOf, formatSalary, htmlToText, stripHtml, toPublishedAt } from '../../format';
 import { inferPlaceId } from '../../places';
 import { fetchHhApi } from '../hhProxy';
+import { parseFound } from '../found';
 
 type HhSalary = { from?: number | null; to?: number | null; currency?: string | null };
 type HhVacancy = {
@@ -20,7 +21,7 @@ type HhVacancy = {
   experience?: { name?: string };
 };
 
-type HhSearch = { items?: HhVacancy[]; pages?: number };
+type HhSearch = { items?: HhVacancy[]; pages?: number; found?: number };
 
 type HhBoard = {
   id: 'hh' | 'hhaz';
@@ -39,7 +40,10 @@ export function hhVacancyId(id: string): string {
   return id.startsWith('hhaz:') ? id.slice(5) : id.slice(3);
 }
 
-async function searchHh(params: SearchParams, board: HhBoard): Promise<Job[]> {
+async function searchHh(
+  params: SearchParams,
+  board: HhBoard,
+): Promise<{ jobs: Job[]; found?: number }> {
   const text = buildQuery(params.query, params.category, board.lang);
   const query = new URLSearchParams();
   if (text) query.set('text', text);
@@ -49,8 +53,7 @@ async function searchHh(params: SearchParams, board: HhBoard): Promise<Job[]> {
   for (const area of board.areas) query.append('area', area);
 
   const data = await fetchHhApi<HhSearch>('search', query, params.signal);
-
-  return (data.items ?? []).map((item) => {
+  const jobs = (data.items ?? []).map((item) => {
     const snippet = [item.snippet?.responsibility, item.snippet?.requirement]
       .filter(Boolean)
       .join(' ');
@@ -75,9 +78,11 @@ async function searchHh(params: SearchParams, board: HhBoard): Promise<Job[]> {
       description: stripHtml(snippet),
     };
   });
+  const found = parseFound(data);
+  return { jobs, found: found && found > jobs.length ? found : undefined };
 }
 
-export async function searchHeadHunter(params: SearchParams): Promise<Job[]> {
+export async function searchHeadHunter(params: SearchParams) {
   return searchHh(params, {
     id: 'hh',
     name: 'HeadHunter',
@@ -88,7 +93,7 @@ export async function searchHeadHunter(params: SearchParams): Promise<Job[]> {
   });
 }
 
-export async function searchHeadHunterAz(params: SearchParams): Promise<Job[]> {
+export async function searchHeadHunterAz(params: SearchParams) {
   return searchHh(params, {
     id: 'hhaz',
     name: 'HeadHunter AZ',

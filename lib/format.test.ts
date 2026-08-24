@@ -1,7 +1,30 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { annotateSalary, composeSalary, currencyLabel, formatSalary, jobFacts, jobTags, salaryAmount, salaryFormParts } from './format';
+import {
+  annotateSalary,
+  composeSalary,
+  currencyLabel,
+  formatCount,
+  formatCompactCount,
+  formatSalary,
+  jobFacts,
+  jobTags,
+  salaryAmount,
+  salaryFormParts,
+} from './format';
+
+describe('formatCount', () => {
+  it('группирует тысячи', () => {
+    const ru = formatCount(3939044, 'ru').replace(/\s/g, ' ');
+    assert.equal(ru, '3 939 044');
+  });
+
+  it('сжимает миллионы для кольца', () => {
+    assert.equal(formatCompactCount(3942443, 'ru'), '3,9 млн');
+    assert.equal(formatCompactCount(3942443, 'en'), '3.9M');
+  });
+});
 
 describe('formatSalary', () => {
   it('всегда пишет валюту рядом с суммой', () => {

@@ -69,6 +69,9 @@ export type SearchResult = {
   errors: SourceError[];
   hasMore: boolean;
   exhaustedSources: string[];
+  /** Сумма found/total от площадок по текущему поиску (не размер ленты). */
+  boardTotal?: number;
+  boardBySource?: Record<string, number>;
 };
 
 export type SourceStatus = 'live' | 'key' | 'soon';

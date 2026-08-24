@@ -234,6 +234,28 @@ export function toPublishedAt(value?: string | number | null): string | undefine
   return date.toISOString();
 }
 
+export function formatCount(value: number, locale: AppLocale = 'ru'): string {
+  return new Intl.NumberFormat(DATE_LOCALE[locale], { maximumFractionDigits: 0 }).format(Math.round(value));
+}
+
+export function formatCompactCount(value: number, locale: AppLocale = 'ru'): string {
+  if (value >= 1_000_000) {
+    const n = value / 1_000_000;
+    const digits = n >= 10 ? n.toFixed(0) : n.toFixed(1).replace(/\.0$/, '');
+    const num = locale === 'en' ? digits : digits.replace('.', ',');
+    if (locale === 'en') return `${num}M`;
+    if (locale === 'az') return `${num} mln`;
+    return `${num} млн`;
+  }
+  if (value >= 10_000) {
+    const n = Math.round(value / 1000);
+    if (locale === 'en') return `${n}K`;
+    if (locale === 'az') return `${n} min`;
+    return `${n} тыс`;
+  }
+  return formatCount(value, locale);
+}
+
 export function formatDate(iso?: string, locale: AppLocale = 'ru'): string {
   const normalized = toPublishedAt(iso) ?? iso;
   if (!normalized) return '';

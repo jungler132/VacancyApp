@@ -72,7 +72,12 @@ export const JobCardView = memo(function JobCardView({
   return (
     <ToneCard tone={toneForTier(tier)} onPress={onOpen} style={styles.card}>
       <View style={styles.top}>
-        <CompanyLogo uri={job.companyLogo || logoFromApplyUrl(job.url)} name={company} size={56} />
+        <CompanyLogo
+          uri={job.companyLogo || logoFromApplyUrl(job.url)}
+          name={company}
+          size={56}
+          sourceId={job.sourceId}
+        />
         <View style={styles.head}>
           <Text style={styles.title} numberOfLines={2}>
             {job.title}

@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { PieChart } from 'react-native-gifted-charts';
 
+import { formatCount } from '@/lib/format';
 import { tokenLabel } from '@/lib/i18n';
 import { useLocale, useT } from '@/lib/i18n/useT';
 import type { StatSlice } from '@/lib/stats';
@@ -61,7 +62,7 @@ export const StatsDonut = memo(function StatsDonut({
               isAnimated={false}
               centerLabelComponent={() => (
                 <Text variant="titleMedium" style={styles.center}>
-                  {total}
+                  {formatCount(total, locale)}
                 </Text>
               )}
             />
@@ -78,7 +79,7 @@ export const StatsDonut = memo(function StatsDonut({
               <Text variant="bodySmall" numberOfLines={1} style={styles.legendLabel}>
                 {tokenLabel(locale, slice.id, STAT_PREFIXES)}
               </Text>
-              <Text variant="labelSmall">{slice.value}</Text>
+              <Text variant="labelSmall">{formatCount(slice.value, locale)}</Text>
             </View>
           ))}
         </View>

@@ -7,7 +7,8 @@ import { FiltersButton } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { StatsBars } from '@/components/StatsBars';
 import { StatsDonut } from '@/components/StatsDonut';
-import { useT } from '@/lib/i18n/useT';
+import { formatCount } from '@/lib/format';
+import { useLocale, useT } from '@/lib/i18n/useT';
 import { useJobsFeed } from '@/lib/hooks/useJobsFeed';
 import { useAppSelector } from '@/lib/store/hooks';
 import { selectJobStats } from '@/lib/store/selectors';
@@ -15,11 +16,13 @@ import { radius, useThemedStyles, type ColorSchemeName, type ThemeColors } from 
 
 export default function StatsScreen() {
   const t = useT();
+  const locale = useLocale();
   const styles = useThemedStyles(statsScreenStyles);
   const focused = useIsFocused();
   const [chartsReady, setChartsReady] = useState(false);
   const feed = useJobsFeed();
   const stats = useAppSelector(selectJobStats);
+  const hasData = stats.total > 0;
 
   useEffect(() => {
     if (!focused || chartsReady) return;
@@ -30,13 +33,13 @@ export default function StatsScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.toolbar}>
-        <Text style={styles.note}>{t('stats.note', { count: stats.total })}</Text>
+        <Text style={styles.note}>{t('stats.note')}</Text>
         <FiltersButton active={feed.filtersActive} onPress={feed.openSheet} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        {feed.loading && !stats.total ? (
+        {feed.loading && !hasData ? (
           <EmptyState title={t('stats.loading')} subtitle={t('stats.loadingHint')} />
-        ) : !stats.total ? (
+        ) : !hasData ? (
           <EmptyState
             title={t('common.empty')}
             subtitle={t('stats.emptyHint')}
@@ -45,17 +48,23 @@ export default function StatsScreen() {
           />
         ) : (
           <>
-            <View style={styles.kpis}>
-              <View style={styles.kpi}>
-                <Text variant="headlineSmall">{stats.total}</Text>
+            {typeof feed.boardTotal === 'number' ? (
+              <View style={styles.boardCard}>
+                <Text variant="headlineMedium">{formatCount(feed.boardTotal, locale)}</Text>
                 <Text variant="bodySmall">{t('stats.jobs')}</Text>
               </View>
+            ) : null}
+            <View style={styles.kpis}>
               <View style={styles.kpi}>
-                <Text variant="headlineSmall">{stats.remote}</Text>
+                <Text variant="headlineSmall">{formatCount(stats.total, locale)}</Text>
+                <Text variant="bodySmall">{t('stats.feed')}</Text>
+              </View>
+              <View style={styles.kpi}>
+                <Text variant="headlineSmall">{formatCount(stats.remote, locale)}</Text>
                 <Text variant="bodySmall">{t('stats.remote')}</Text>
               </View>
               <View style={styles.kpi}>
-                <Text variant="headlineSmall">{stats.withSalary}</Text>
+                <Text variant="headlineSmall">{formatCount(stats.withSalary, locale)}</Text>
                 <Text variant="bodySmall">{t('stats.salary')}</Text>
               </View>
             </View>
@@ -93,6 +102,12 @@ function statsScreenStyles(colors: ThemeColors, _scheme: ColorSchemeName) {
       backgroundColor: colors.card,
       borderRadius: radius.lg,
       padding: 12,
+    },
+    boardCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      padding: 14,
+      marginBottom: 12,
     },
   };
 }

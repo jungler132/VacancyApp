@@ -50,6 +50,10 @@ function toSlices(counts: Map<string, number>, limit = 8): StatSlice[] {
   return slices.filter((item) => item.value > 0);
 }
 
+export function slicesFromCounts(counts: Record<string, number>, limit = 8): StatSlice[] {
+  return toSlices(new Map(Object.entries(counts).filter(([, value]) => value > 0)), limit);
+}
+
 function categoryId(job: Job): string {
   const hay = `${job.title} ${job.excerpt} ${job.category ?? ''}`;
   for (const category of CATEGORIES) {

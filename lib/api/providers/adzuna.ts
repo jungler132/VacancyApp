@@ -1,4 +1,5 @@
 import type { Job, SearchParams } from '../../types';
+import { parseFound } from '../found';
 import { buildQuery } from '../../catalog';
 import { excerptOf, formatSalary, htmlToText, toPublishedAt } from '../../format';
 import { fetchJson } from '../../http';
@@ -17,7 +18,7 @@ type AdzunaJob = {
   contract_time?: string;
 };
 
-type AdzunaResponse = { results?: AdzunaJob[] };
+type AdzunaResponse = { results?: AdzunaJob[]; count?: number };
 
 const ADZUNA_CURRENCY: Record<string, string> = {
   gb: 'GBP',
@@ -32,13 +33,13 @@ const ADZUNA_CURRENCY: Record<string, string> = {
   sg: 'SGD',
 };
 
-export async function searchAdzuna(params: SearchParams): Promise<Job[]> {
+export async function searchAdzuna(params: SearchParams): Promise<{ jobs: Job[]; found?: number }> {
   const appId = process.env.EXPO_PUBLIC_ADZUNA_APP_ID;
   const appKey = process.env.EXPO_PUBLIC_ADZUNA_APP_KEY;
-  if (!appId || !appKey) return [];
+  if (!appId || !appKey) return { jobs: [] };
 
   const target = adzunaTarget(params.placeId, params.region, params.page);
-  if (!target) return [];
+  if (!target) return { jobs: [] };
 
   const what = buildQuery(params.query, params.category, 'en');
   const page = params.page + 1;
@@ -51,7 +52,7 @@ export async function searchAdzuna(params: SearchParams): Promise<Job[]> {
   url.searchParams.set('content-type', 'application/json');
 
   const data = await fetchJson<AdzunaResponse>(url.toString(), { signal: params.signal });
-  return (data.results ?? []).map((job) => ({
+  const jobs = (data.results ?? []).map((job) => ({
     id: `adzuna:${target.country}:${job.id ?? job.title}`,
     sourceId: 'adzuna',
     sourceName: 'Adzuna',
@@ -66,4 +67,6 @@ export async function searchAdzuna(params: SearchParams): Promise<Job[]> {
     excerpt: excerptOf(job.description || job.title || ''),
     description: htmlToText(job.description),
   }));
+  const found = parseFound(data);
+  return { jobs, found };
 }

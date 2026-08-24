@@ -27,7 +27,6 @@ export const FiltersSheet = memo(function FiltersSheet({
   region,
   categories,
   extra,
-  resultCount,
   watching,
   watches,
   onToggleWatch,
@@ -44,7 +43,6 @@ export const FiltersSheet = memo(function FiltersSheet({
   region: RegionId;
   categories: CategoryId[];
   extra?: ExtraFilters | null;
-  resultCount?: number | null;
   watching?: boolean;
   watches?: { id: string; label: string; enabled: boolean }[];
   onToggleWatch?: () => void;
@@ -62,7 +60,7 @@ export const FiltersSheet = memo(function FiltersSheet({
   const current = extra ?? DEFAULT_EXTRA_FILTERS;
   const dirty =
     extraFiltersActive(current) || categories.length > 1 || categories[0] !== 'all' || region !== 'all';
-  const doneLabel = resultCount == null ? t('common.show') : t('filters.showJobs', { count: resultCount });
+  const doneLabel = t('common.show');
 
   const onAge = useCallback(
     (id: string | number) => onChangeExtra({ ...current, maxAgeDays: id as ExtraFilters['maxAgeDays'] }),
